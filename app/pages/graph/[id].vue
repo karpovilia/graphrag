@@ -1,10 +1,10 @@
 <script setup lang="ts">
-  import { getByPath, isArray } from "@krainovsd/js-helpers";
-  import { VHomeOutlined } from "@krainovsd/vue-icons";
-  import { VButton, VText } from "@krainovsd/vue-ui";
+  import { getByPath, isArray, jsonParse, readFile } from "@krainovsd/js-helpers";
+  import { VHomeOutlined, VUploadOutlined } from "@krainovsd/vue-icons";
+  import { VButton, VImport, VText, VTooltip } from "@krainovsd/vue-ui";
   import { useAsyncData, useRoute } from "nuxt/app";
   import { computed, ref, useTemplateRef } from "vue";
-  import { createPagePath, themeBehaviorSubject } from "@/entities/tech";
+  import { createPagePath, messageSubject, themeBehaviorSubject } from "@/entities/tech";
   import CityGraph from "@/components/organisms/CityGraph/CityGraph.vue";
   import type { ICityGraph } from "@/components/organisms/CityGraph/city-graph.types";
   import CityInfo, {
@@ -53,6 +53,20 @@
 
     return null;
   });
+
+  async function importGraph(fileBinary: File[]) {
+    const file = await readFile(fileBinary[0]);
+    if (!file) return;
+
+    const json = jsonParse<ICityGraph>(file);
+    if (!json || !isArray(json.links) || !isArray(json.nodes)) {
+      messageSubject.next("Не верный формат графа");
+
+      return;
+    }
+
+    info.value = { name: fileBinary[0].name, graph: json };
+  }
 </script>
 
 <template>
@@ -67,6 +81,15 @@
           </VButton>
         </NuxtLink>
         <VText size="lg"> {{ info?.name }}</VText>
+        <VImport @upload="importGraph">
+          <VTooltip text="Загрузить граф">
+            <VButton type="text" :class="$style.import">
+              <template #icon>
+                <VUploadOutlined :size="20" />
+              </template>
+            </VButton>
+          </VTooltip>
+        </VImport>
       </div>
       <CityGraph
         v-if="info != undefined && isArray(info.graph.links) && isArray(info.graph.nodes)"
@@ -75,6 +98,9 @@
         :theme="theme"
         :graph="info.graph"
       />
+      <div v-else :class="$style.empty">
+        <VText size="xl" :strong="true">Граф не обнаружен</VText>
+      </div>
     </div>
     <CityInfo
       v-if="info != undefined"
@@ -106,6 +132,20 @@
     width: 100%;
     height: 100%;
     flex: 1;
+  }
+
+  .import {
+    margin-left: auto;
+  }
+
+  .empty {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ksd-padding);
   }
 
   .header {

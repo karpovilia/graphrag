@@ -2,6 +2,7 @@
   import { VThemeProvider, extractThemeVariables } from "@krainovsd/vue-ui";
   import "@krainovsd/vue-ui/styles";
   import { useHead } from "nuxt/app";
+  import RootProvider from "./components/providers/RootProvider.vue";
   import { THEME_CONFIG, themeBehaviorSubject } from "./entities/tech";
   import "./global.scss";
 
@@ -21,7 +22,9 @@
 <template>
   <div :class="$style.base">
     <VThemeProvider :theme-config="THEME_CONFIG" :theme="theme" :font-size="14">
-      <NuxtPage />
+      <RootProvider>
+        <NuxtPage />
+      </RootProvider>
     </VThemeProvider>
   </div>
 </template>
