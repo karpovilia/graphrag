@@ -22,8 +22,8 @@
   const props = defineProps<Props>();
   const graphRef = useTemplateRef("graph");
   let graphController: GraphCanvas<ICityGraphNodeData, ICityGraphLinkData> | undefined;
-  const selectedNodes = defineModel<id[]>("nodes", { default: [] });
-  const selectedLink = defineModel<id | null>("link", { default: null });
+  const selectedNodes = defineModel<id[]>("selectedNodes", { default: [] });
+  const selectedLink = defineModel<id | null>("selectedLink", { default: null });
   const checkedGraph = computed(() => getCorrectData(props.graph.nodes, props.graph.links));
 
   function onClick(
