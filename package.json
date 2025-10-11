@@ -1,0 +1,36 @@
+{
+  "name": "country",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev --host --force",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@krainovsd/js-helpers": "0.16.6",
+    "@krainovsd/vue-ui": "0.4.0-beta.23",
+    "@krainovsd/vue-icons": "0.1.4",
+    "@krainovsd/graph": "0.12.0-beta.2",
+    "rxjs": "7.8.2",
+    "nuxt": "4.1.3",
+    "vue": "3.5.22",
+    "vue-router": "4.5.1",
+    "marked": "15.0.7",
+    "dompurify": "3.2.4"
+  },
+  "devDependencies": {
+    "sass-embedded": "1.93.2",
+    "@types/node": "24.7.1",
+    "@types/lodash": "4.17.20",
+    "@krainovsd/presets": "0.3.6",
+    "prettier": "3.6.1",
+    "eslint": "9.29.0",
+    "typescript": "5.8.3",
+    "vite": "7.1.9",
+    "@trivago/prettier-plugin-sort-imports": "5.2.2",
+    "vue-tsc": "3.1.1"
+  }
+}

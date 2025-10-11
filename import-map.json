@@ -1,0 +1,122 @@
+[
+  {
+    "path": "static/az_pos.json",
+    "id": "az_pos",
+    "name": "Близость позитивных слов для Азербайджана"
+  },
+  {
+    "path": "static/tad_pos.json",
+    "id": "tad_pos",
+    "name": "Близость позитивных слов для Таджикистана"
+  },
+  {
+    "path": "static/bel_pos.json",
+    "id": "bel_pos",
+    "name": "Близость позитивных слов для Беларуси"
+  },
+  {
+    "path": "static/kir_pos.json",
+    "id": "kir_pos",
+    "name": "Близость позитивных слов для Киргизии"
+  },
+  {
+    "path": "static/abh_pos.json",
+    "id": "abh_pos",
+    "name": "Близость позитивных слов для Абхазии"
+  },
+  {
+    "path": "static/os_pos.json",
+    "id": "os_pos",
+    "name": "Близость позитивных слов для Южной Осетии"
+  },
+  {
+    "path": "static/kz_pos.json",
+    "id": "kz_pos",
+    "name": "Близость позитивных слов для Казахстана"
+  },
+  {
+    "path": "static/rus_pos.json",
+    "id": "rus_pos",
+    "name": "Близость позитивных слов для России"
+  },
+  {
+    "path": "static/arm_pos.json",
+    "id": "arm_pos",
+    "name": "Близость позитивных слов для Армении"
+  },
+  {
+    "path": "static/uzb_pos.json",
+    "id": "uzb_pos",
+    "name": "Близость позитивных слов для Узбекистана"
+  },
+  {
+    "path": "static/m_pos.json",
+    "id": "m_pos",
+    "name": "Близость позитивных слов для Молдовы"
+  },
+  {
+    "path": "static/mon_pos.json",
+    "id": "mon_pos",
+    "name": "Близость позитивных слов для Монголии"
+  },
+  {
+    "path": "static/az_neg.json",
+    "id": "az_neg",
+    "name": "Близость негативных слов для Азербайджана"
+  },
+  {
+    "path": "static/tad_neg.json",
+    "id": "tad_neg",
+    "name": "Близость негативных слов для Таджикистана"
+  },
+  {
+    "path": "static/bel_neg.json",
+    "id": "bel_neg",
+    "name": "Близость негативных слов для Беларуси"
+  },
+  {
+    "path": "static/kir_neg.json",
+    "id": "kir_neg",
+    "name": "Близость негативных слов для Киргизии"
+  },
+  {
+    "path": "static/abh_neg.json",
+    "id": "abh_neg",
+    "name": "Близость негативных слов для Абхазии"
+  },
+  {
+    "path": "static/os_neg.json",
+    "id": "os_neg",
+    "name": "Близость негативных слов для Южной Осетии"
+  },
+  {
+    "path": "static/kz_neg.json",
+    "id": "kz_neg",
+    "name": "Близость негативных слов для Казахстана"
+  },
+  {
+    "path": "static/rus_neg.json",
+    "id": "rus_neg",
+    "name": "Близость негативных слов для России"
+  },
+  {
+    "path": "static/arm_neg.json",
+    "id": "arm_neg",
+    "name": "Близость негативных слов для Армении"
+  },
+  {
+    "path": "static/uzb_neg.json",
+    "id": "uzb_neg",
+    "name": "Близость негативных слов для Узбекистана"
+  },
+  {
+    "path": "static/m_neg.json",
+    "id": "m_neg",
+    "name": "Близость негативных слов для Молдовы"
+  },
+  {
+    "path": "static/mon_neg.json",
+    "id": "mon_neg",
+    "name": "Близость негативных слов для Монголии"
+  }
+]

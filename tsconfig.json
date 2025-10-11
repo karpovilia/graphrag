@@ -1,0 +1,23 @@
+{
+  // https://nuxt.com/docs/guide/concepts/typescript
+  "extends": "@krainovsd/presets/typescript/common",
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["./app/*"]
+    }
+  },
+  "files": [],
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.js",
+    "app/**/*.vue",
+    "app/vite-env.d.ts",
+    "app/typings.d.ts",
+    "app/types.d.ts",
+    "eslint.config.js",
+    ".prettierrc.mjs",
+    "nuxt.config.ts"
+  ]
+}
