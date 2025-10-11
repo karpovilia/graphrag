@@ -12,8 +12,8 @@ importers:
         specifier: 0.12.0-beta.2
         version: 0.12.0-beta.2
       '@krainovsd/js-helpers':
-        specifier: 0.16.6
-        version: 0.16.6
+        specifier: 0.16.7
+        version: 0.16.7
       '@krainovsd/vue-icons':
         specifier: 0.1.4
         version: 0.1.4(vue@3.5.22(typescript@5.8.3))
@@ -515,8 +515,8 @@ packages:
   '@krainovsd/graph@0.12.0-beta.2':
     resolution: {integrity: sha512-Gt+NXMb1Rtjc4TJn7k7MRh1gW8dqzq2H9RpBWIuumnrDQlzEWoPocquTmW2ttnMeHjh5ZC7YylVxvY5Kq92vGQ==}
 
-  '@krainovsd/js-helpers@0.16.6':
-    resolution: {integrity: sha512-UJ28eJIQSFFKEKeDjI1EyqUzACYjf49/uHVvCHML7ObFCEg2TNMDros3WpGGCGggSczmVmAh7WvGe2Kp2npQuA==}
+  '@krainovsd/js-helpers@0.16.7':
+    resolution: {integrity: sha512-Ht12DuZlpfGiV+OJoF200S9QCREuauaMij4WEWMQuAsza4OJrEvXJDNfr1upnzTYN4326P+a5hVxg9ZT8WSBqg==}
 
   '@krainovsd/markdown-editor@0.4.8':
     resolution: {integrity: sha512-SbAakaloHDx07xQR1k58QBQlCwsd8Y4VfeZwmEREwHBDxUGBzbiYPf+gSw7Dtk95qM0zaOQ6w4Y3Tct5KhW8yg==}
@@ -5827,7 +5827,7 @@ snapshots:
 
   '@krainovsd/graph@0.12.0-beta.2':
     dependencies:
-      '@krainovsd/js-helpers': 0.16.6
+      '@krainovsd/js-helpers': 0.16.7
       '@types/d3-drag': 3.0.7
       '@types/d3-force': 3.0.10
       '@types/d3-zoom': 3.0.8
@@ -5838,7 +5838,7 @@ snapshots:
       d3-zoom: 3.0.0
       lodash: 4.17.21
 
-  '@krainovsd/js-helpers@0.16.6':
+  '@krainovsd/js-helpers@0.16.7':
     dependencies:
       dayjs: 1.11.18
 
@@ -5919,7 +5919,7 @@ snapshots:
 
   '@krainovsd/vue-ui@0.4.0-beta.23(@codemirror/search@6.5.11)(vue@3.5.22(typescript@5.8.3))':
     dependencies:
-      '@krainovsd/js-helpers': 0.16.6
+      '@krainovsd/js-helpers': 0.16.7
       '@krainovsd/markdown-editor': 0.4.8(@codemirror/search@6.5.11)
       '@krainovsd/vue-icons': 0.1.4(vue@3.5.22(typescript@5.8.3))
       '@tanstack/vue-table': 8.21.3(vue@3.5.22(typescript@5.8.3))

@@ -10,7 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@krainovsd/js-helpers": "0.16.6",
+    "@krainovsd/js-helpers": "0.16.7",
     "@krainovsd/vue-ui": "0.4.0-beta.23",
     "@krainovsd/vue-icons": "0.1.4",
     "@krainovsd/graph": "0.12.0-beta.2",

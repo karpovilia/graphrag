@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: country-frontend
+spec:
+  ingressClassName: traefik-staging
+  rules:
+    - host: country.aps
+      http:
+        paths:
+          - backend:
+              service:
+                name: country-frontend
+                port:
+                  number: 80
+            path: /
+            pathType: ImplementationSpecific
