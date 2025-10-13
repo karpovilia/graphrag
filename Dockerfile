@@ -9,6 +9,8 @@ RUN pnpm install --ignore-scripts --frozen-lockfile
 COPY tsconfig.json tsconfig.json
 COPY nuxt.config.ts nuxt.config.ts
 COPY public public
+COPY static static
+COPY import-map.json import-map.json
 COPY server server
 COPY app app
 RUN pnpm build

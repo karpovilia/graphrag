@@ -16,7 +16,7 @@
     <div :class="$style.list">
       <template v-if="isArray(imports)">
         <div v-for="item in imports" :key="item.id" :class="$style.item">
-          <NuxtLink :to="createPagePath.graph(item.id)"> {{ item.name }}</NuxtLink>
+          <NuxtLink :to="createPagePath.graph(item.id)" no-prefetch> {{ item.name }}</NuxtLink>
         </div>
       </template>
     </div>

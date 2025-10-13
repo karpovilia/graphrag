@@ -9,10 +9,15 @@ export default defineNuxtConfig({
     fuzzysort: "fuzzysort",
     lodash: "lodash",
   },
+  nitro: {
+    prerender: {
+      crawlLinks: true,
+    },
+  },
+
   build: {
     transpile: ["@krainovsd/vue-ui", "@krainovsd/js-helpers", "@krainovsd/graph"],
   },
-  vite: {},
   typescript: {
     typeCheck: true,
   },
