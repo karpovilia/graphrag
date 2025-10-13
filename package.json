@@ -13,7 +13,7 @@
     "@krainovsd/js-helpers": "0.16.7",
     "@krainovsd/vue-ui": "0.4.0-beta.23",
     "@krainovsd/vue-icons": "0.1.4",
-    "@krainovsd/graph": "0.12.0-beta.2",
+    "@krainovsd/graph": "0.12.0-beta.3",
     "rxjs": "7.8.2",
     "nuxt": "4.1.3",
     "vue": "3.5.22",

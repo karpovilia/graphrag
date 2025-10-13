@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@krainovsd/graph':
-        specifier: 0.12.0-beta.2
-        version: 0.12.0-beta.2
+        specifier: 0.12.0-beta.3
+        version: 0.12.0-beta.3
       '@krainovsd/js-helpers':
         specifier: 0.16.7
         version: 0.16.7
@@ -512,8 +512,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@krainovsd/graph@0.12.0-beta.2':
-    resolution: {integrity: sha512-Gt+NXMb1Rtjc4TJn7k7MRh1gW8dqzq2H9RpBWIuumnrDQlzEWoPocquTmW2ttnMeHjh5ZC7YylVxvY5Kq92vGQ==}
+  '@krainovsd/graph@0.12.0-beta.3':
+    resolution: {integrity: sha512-7iIyw6MvYeHuOPDtfLk8aPxzjzWqwOCGCwj7NgxwpRcci/jSX4xnuDxk2sv5FvPbmAfyVAYQpZYh/nK6X1xXeg==}
 
   '@krainovsd/js-helpers@0.16.7':
     resolution: {integrity: sha512-Ht12DuZlpfGiV+OJoF200S9QCREuauaMij4WEWMQuAsza4OJrEvXJDNfr1upnzTYN4326P+a5hVxg9ZT8WSBqg==}
@@ -5825,7 +5825,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@krainovsd/graph@0.12.0-beta.2':
+  '@krainovsd/graph@0.12.0-beta.3':
     dependencies:
       '@krainovsd/js-helpers': 0.16.7
       '@types/d3-drag': 3.0.7
