@@ -3,7 +3,6 @@ kind: Ingress
 metadata:
   name: country-frontend
 spec:
-  ingressClassName: traefik-staging
   rules:
     - host: country.aps
       http:
@@ -19,9 +18,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: country-frontend
+  name: country-frontend-public
 spec:
-  ingressClassName: traefik-staging
   rules:
     - host: country.apsolutions.ru
       http:

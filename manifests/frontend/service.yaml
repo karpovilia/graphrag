@@ -8,7 +8,4 @@ spec:
       name: http
       protocol: TCP
       targetPort: 3000
-  selector:
-    app: country-frontend
-  sessionAffinity: None
   type: ClusterIP
