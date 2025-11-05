@@ -1,22 +1,27 @@
 import { jsonParse } from "@krainovsd/js-helpers";
 import fs from "fs/promises";
 import path from "path";
-import type { ICityGraphImportMap } from "@/entities/cities";
+import type { ICityGraphImportMap, ICityGraphText } from "@/entities/cities";
 
 export default defineEventHandler(async (event) => {
   try {
-    const id = getRouterParam(event, "id");
+    const gid = getRouterParam(event, "gid");
+    const tid = getRouterParam(event, "tid");
+
     const importMap = jsonParse<ICityGraphImportMap[]>(
       await fs.readFile(path.join(process.cwd(), "import-map.json"), "utf-8"),
     );
-    const graphInfo = importMap?.find?.((i) => i.id === id);
+    const graphInfo = importMap?.find?.((i) => i.id === gid);
 
     if (!graphInfo) throw new Error("Path not found");
-    const graph = jsonParse(
-      await fs.readFile(path.join(process.cwd(), `${graphInfo.path}/graph.json`), "utf-8"),
+    const text = jsonParse<ICityGraphText[]>(
+      await fs.readFile(
+        path.join(process.cwd(), `${graphInfo.path}/${tid?.replace?.(".json", "")}.json`),
+        "utf-8",
+      ),
     );
 
-    return { name: graphInfo.name, graph };
+    return { name: graphInfo.name, text };
   } catch (error) {
     console.error(error);
 
