@@ -87,8 +87,6 @@
     :width="535"
   >
     <template #content>
-      <!-- eslint-disable vue/no-v-html -->
-      <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
       <VText v-for="(text, index) in content" :key="index" v-html="mdFormat(text)"></VText>
     </template>
   </VDrawer>

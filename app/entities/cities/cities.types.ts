@@ -17,3 +17,7 @@ export type ICityGraphNodeData = {
 export type ICityGraphLinkData = { explanation: string; color: string; id: number };
 export type ICityGraphLink = LinkInterface<ICityGraphNodeData, ICityGraphLinkData>;
 export type ICityGraphNode = NodeInterface<ICityGraphNodeData>;
+export type ICityGraphText = {
+  pid: number;
+  text: string;
+};

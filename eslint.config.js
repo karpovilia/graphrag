@@ -9,6 +9,8 @@ export default [
     rules: {
       camelcase: "off",
       "max-params": ["error", 4],
+      "vue/no-v-text-v-html-on-component": "off",
+      "vue/no-v-html": "off",
     },
   },
 ];

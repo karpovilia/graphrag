@@ -1,122 +1,127 @@
 [
   {
-    "path": "static/az_pos.json",
+    "path": "static/az_pos",
     "id": "az_pos",
     "name": "Близость позитивных слов для Азербайджана"
   },
   {
-    "path": "static/tad_pos.json",
+    "path": "static/tad_pos",
     "id": "tad_pos",
     "name": "Близость позитивных слов для Таджикистана"
   },
   {
-    "path": "static/bel_pos.json",
+    "path": "static/bel_pos",
     "id": "bel_pos",
     "name": "Близость позитивных слов для Беларуси"
   },
   {
-    "path": "static/kir_pos.json",
+    "path": "static/kir_pos",
     "id": "kir_pos",
     "name": "Близость позитивных слов для Киргизии"
   },
   {
-    "path": "static/abh_pos.json",
+    "path": "static/abh_pos",
     "id": "abh_pos",
     "name": "Близость позитивных слов для Абхазии"
   },
   {
-    "path": "static/os_pos.json",
+    "path": "static/os_pos",
     "id": "os_pos",
     "name": "Близость позитивных слов для Южной Осетии"
   },
   {
-    "path": "static/kz_pos.json",
+    "path": "static/kz_pos",
     "id": "kz_pos",
     "name": "Близость позитивных слов для Казахстана"
   },
   {
-    "path": "static/rus_pos.json",
+    "path": "static/rus_pos",
     "id": "rus_pos",
     "name": "Близость позитивных слов для России"
   },
   {
-    "path": "static/arm_pos.json",
+    "path": "static/arm_pos",
     "id": "arm_pos",
     "name": "Близость позитивных слов для Армении"
   },
   {
-    "path": "static/uzb_pos.json",
+    "path": "static/uzb_pos",
     "id": "uzb_pos",
     "name": "Близость позитивных слов для Узбекистана"
   },
   {
-    "path": "static/m_pos.json",
+    "path": "static/m_pos",
     "id": "m_pos",
     "name": "Близость позитивных слов для Молдовы"
   },
   {
-    "path": "static/mon_pos.json",
+    "path": "static/mon_pos",
     "id": "mon_pos",
     "name": "Близость позитивных слов для Монголии"
   },
   {
-    "path": "static/az_neg.json",
+    "path": "static/az_neg",
     "id": "az_neg",
     "name": "Близость негативных слов для Азербайджана"
   },
   {
-    "path": "static/tad_neg.json",
+    "path": "static/tad_neg",
     "id": "tad_neg",
     "name": "Близость негативных слов для Таджикистана"
   },
   {
-    "path": "static/bel_neg.json",
+    "path": "static/bel_neg",
     "id": "bel_neg",
     "name": "Близость негативных слов для Беларуси"
   },
   {
-    "path": "static/kir_neg.json",
+    "path": "static/kir_neg",
     "id": "kir_neg",
     "name": "Близость негативных слов для Киргизии"
   },
   {
-    "path": "static/abh_neg.json",
+    "path": "static/abh_neg",
     "id": "abh_neg",
     "name": "Близость негативных слов для Абхазии"
   },
   {
-    "path": "static/os_neg.json",
+    "path": "static/os_neg",
     "id": "os_neg",
     "name": "Близость негативных слов для Южной Осетии"
   },
   {
-    "path": "static/kz_neg.json",
+    "path": "static/kz_neg",
     "id": "kz_neg",
     "name": "Близость негативных слов для Казахстана"
   },
   {
-    "path": "static/rus_neg.json",
+    "path": "static/rus_neg",
     "id": "rus_neg",
     "name": "Близость негативных слов для России"
   },
   {
-    "path": "static/arm_neg.json",
+    "path": "static/arm_neg",
     "id": "arm_neg",
     "name": "Близость негативных слов для Армении"
   },
   {
-    "path": "static/uzb_neg.json",
+    "path": "static/uzb_neg",
     "id": "uzb_neg",
     "name": "Близость негативных слов для Узбекистана"
   },
   {
-    "path": "static/m_neg.json",
+    "path": "static/m_neg",
     "id": "m_neg",
     "name": "Близость негативных слов для Молдовы"
   },
   {
-    "path": "static/mon_neg.json",
+    "path": "static/mon_neg",
     "id": "mon_neg",
     "name": "Близость негативных слов для Монголии"
+  },
+  {
+    "path": "static/test",
+    "id": "test",
+    "name": "Тестовый граф"
   }
 ]
