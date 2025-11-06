@@ -1,5 +1,15 @@
 [
   {
+    "path": "static/kazakhstan",
+    "id": "armenia",
+    "name": "Граф Знаний Казахстан"
+  },
+  {
+    "path": "static/azerbaijan",
+    "id": "armenia",
+    "name": "Граф Знаний Азербайджан"
+  },
+  {
     "path": "static/armenia",
     "id": "armenia",
     "name": "Граф Знаний Армения"
