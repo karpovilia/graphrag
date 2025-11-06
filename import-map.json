@@ -1,5 +1,10 @@
 [
   {
+    "path": "static/armenia",
+    "id": "armenia",
+    "name": "Граф Знаний Армения"
+  },
+  {
     "path": "static/az_pos",
     "id": "az_pos",
     "name": "Близость позитивных слов для Азербайджана"
