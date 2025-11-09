@@ -40,13 +40,15 @@
     return pids;
   });
   const highlightMap = computed<HighlightMap>(() => {
-    if (!isArray(route.query.highlight)) {
+    if (route.query.highlight == undefined) {
       return {};
     }
 
     const highlights: HighlightMap = {};
 
-    for (const highlight of route.query.highlight) {
+    for (const highlight of isArray(route.query.highlight)
+      ? route.query.highlight
+      : [route.query.highlight]) {
       const [pid, start, length] = highlight?.split?.(",") ?? [];
       if (
         pid != undefined &&
@@ -69,9 +71,46 @@
     return highlights;
   });
   const preprocessedText = computed<ICityGraphText[] | undefined>(() => {
-    console.log(highlightMap.value);
+    const START_MARK = "<mark>";
+    const END_MARK = "</mark>";
 
-    return info.value?.text;
+    return info.value?.text?.map((t) => {
+      if (highlightMap.value[t.pid] == undefined) return t;
+
+      const highlights = [...highlightMap.value[t.pid]];
+      let text = "";
+      let cursor = 0;
+      // let additionalLength = 0;
+      let nextHighlight = highlights.shift();
+
+      while (cursor < t.text.length) {
+        const code = t.text.codePointAt(cursor);
+        if (code == undefined) {
+          cursor++;
+          continue;
+        }
+
+        if (nextHighlight == undefined) {
+          text += String.fromCharCode(code);
+        } else if (cursor === nextHighlight.start) {
+          text += START_MARK;
+          text += String.fromCharCode(code);
+        } else if (cursor === nextHighlight.start + nextHighlight.length) {
+          text += END_MARK;
+          text += String.fromCharCode(code);
+          nextHighlight = highlights.shift();
+        } else {
+          text += String.fromCharCode(code);
+        }
+
+        cursor++;
+      }
+
+      return {
+        pid: t.pid,
+        text,
+      };
+    });
   });
 
   watch(
@@ -165,6 +204,11 @@
 
   .paragraph {
     position: relative;
+
+    & mark {
+      background-color: var(--ksd-warning-active-color);
+    }
+
     &.selected {
       &::before {
         content: "";
