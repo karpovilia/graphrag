@@ -7,7 +7,7 @@
         "texts": [
           {
             "id": 0,
-            "text": "[тестовая ссылка](/text/test/beautiful_text/6)"
+            "text": "[тестовая ссылка](/text/test/beautiful_text/6) \n\n\n [тестовая ссылка c подсветкой текста](/text/test/beautiful_text?highlight=4,2,8&highlight=4,11,16&highlight=4,16,3&highlight=4,0,10&highlight=5,2,8&highlight=5,11,16&highlight=5,16,3&highlight=5,0,10&highlight=6,11,8&highlight=6,16,11&paragraph=2)"
           }
         ],
         "color": "#3498db",

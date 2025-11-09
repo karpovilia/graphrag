@@ -1,11 +1,12 @@
 import type { ThemeName } from "@krainovsd/vue-ui";
 import { createBehaviorSubject } from "@/lib/create-behavior-subject";
 import { createSubject } from "@/lib/create-subject";
+import { DEFAULT_THEME } from "./tech.constants";
 // import { setToStorage } from "@/lib/set-to-storage";
 import type { IMessageSubjectPayload, INotificationSubjectPayload } from "./tech.types";
 
 // const THEME_STORAGE_KEY = "__themes__";
-export const themeBehaviorSubject = createBehaviorSubject<ThemeName>("light");
+export const themeBehaviorSubject = createBehaviorSubject<ThemeName>(DEFAULT_THEME);
 // themeBehaviorSubject.subscribe((val) => {
 //   setToStorage(THEME_STORAGE_KEY, val);
 // });

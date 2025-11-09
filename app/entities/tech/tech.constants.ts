@@ -9,5 +9,5 @@ export const THEME_CONFIG: Record<ThemeName, ThemeVariableConfig> = {
   light: THEME.light,
   dark: THEME.dark,
 };
-export const DEFAULT_THEME: ThemeName = "light";
+export const DEFAULT_THEME: ThemeName = "dark";
 export const REQUEST_DELAY = 1500;
