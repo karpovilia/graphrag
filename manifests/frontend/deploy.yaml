@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: country-frontend
+  name: graph-rag-frontend
 spec:
   replicas: 2
   template:
@@ -9,7 +9,7 @@ spec:
       containers:
         - image: harbor.apsolutions.ru/research/graph-rag-frontend:debug
           imagePullPolicy: IfNotPresent
-          name: country-frontend
+          name: graph-rag-frontend
           ports:
             - containerPort: 3000
               protocol: TCP
