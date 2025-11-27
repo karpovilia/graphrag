@@ -7,7 +7,7 @@ spec:
   template:
     spec:
       containers:
-        - image: harbor.apsolutions.ru/research/country/frontend:debug
+        - image: harbor.apsolutions.ru/research/graph-rag-frontend:debug
           imagePullPolicy: IfNotPresent
           name: country-frontend
           ports:

@@ -1,15 +1,15 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: country-frontend
+  name: graph-rag-frontend
 spec:
   rules:
-    - host: country.aps
+    - host: graph-rag.aps
       http:
         paths:
           - backend:
               service:
-                name: country-frontend
+                name: graph-rag-frontend
                 port:
                   number: 80
             path: /
@@ -18,15 +18,15 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: country-frontend-public
+  name: graph-rag-frontend-public
 spec:
   rules:
-    - host: country.apsolutions.ru
+    - host: graph-rag.apsolutions.ru
       http:
         paths:
           - backend:
               service:
-                name: country-frontend
+                name: graph-rag-frontend
                 port:
                   number: 80
             path: /
