@@ -10,7 +10,7 @@ import type { ICityGraphSettings } from "./city-graph.types";
 
 export const DEFAULT_SETTINGS: ICityGraphSettings = {
   forceSettings: {
-    forces: false,
+    forces: true,
   },
   graphSettings: {
     ...GRAPH_SETTINGS,
@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: ICityGraphSettings = {
   nodeSettings: NODE_SETTINGS,
   highlightSettings: { ...HIGHLIGHT_SETTINGS },
 };
-export const HIGHLIGHT_COLOR = "#ce7a1c";
+export const HIGHLIGHT_COLOR = "#000000";
 export const TEXT_DARK_COLOR = "#d2d2d2";
 export const TEXT_LIGHT_COLOR = "#21252D";
 export const LINK_DARK_COLOR = "#C5C5C5FF";

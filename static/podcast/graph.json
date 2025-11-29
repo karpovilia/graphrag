@@ -1,0 +1,4407 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "data": {
+        "texts": [
+          {
+            "id": 0,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "ДАНИЭЛ",
+      "vx": 0,
+      "vy": 0,
+      "x": 76.51328030129365,
+      "y": 73.72337982979094
+    },
+    {
+      "id": 1,
+      "data": {
+        "texts": [
+          {
+            "id": 1,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ГЛЕБ",
+      "vx": 0,
+      "vy": 0,
+      "x": -154.20650869058306,
+      "y": -48.91309770554134
+    },
+    {
+      "id": 2,
+      "data": {
+        "texts": [
+          {
+            "id": 2,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a summary, please supply the entities and the description list."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "Т-БАНК",
+      "vx": 0,
+      "vy": 0,
+      "x": -123.98610997323347,
+      "y": -16.778319648520792
+    },
+    {
+      "id": 3,
+      "data": {
+        "texts": [
+          {
+            "id": 3,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ЯНДЕКС",
+      "vx": 0,
+      "vy": 0,
+      "x": 9.302852314657875,
+      "y": 6.550051528202419
+    },
+    {
+      "id": 4,
+      "data": {
+        "texts": [
+          {
+            "id": 4,
+            "text": "TYPE: ORGANIZATION\n\n\n Группа, которой руководит Глеб как хобби>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "МИКАН",
+      "vx": 0,
+      "vy": 0,
+      "x": -146.0134628204649,
+      "y": -76.81973426003223
+    },
+    {
+      "id": 5,
+      "data": {
+        "texts": [
+          {
+            "id": 5,
+            "text": "TYPE: ORGANIZATION\n\n\n El is a company that created its own market for applications>"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "EL",
+      "vx": 0,
+      "vy": 0,
+      "x": -143.157083887804,
+      "y": 116.07106202028737
+    },
+    {
+      "id": 6,
+      "data": {
+        "texts": [
+          {
+            "id": 6,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "IOS",
+      "vx": 0,
+      "vy": 0,
+      "x": -150.79641796067506,
+      "y": 96.41690726616012
+    },
+    {
+      "id": 7,
+      "data": {
+        "texts": [
+          {
+            "id": 7,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the description list."
+          }
+        ],
+        "color": "#2ca02c",
+        "size": 2
+      },
+      "name": "ANDROID",
+      "vx": 0,
+      "vy": 0,
+      "x": -155.84500988126823,
+      "y": 131.8542593490816
+    },
+    {
+      "id": 8,
+      "data": {
+        "texts": [
+          {
+            "id": 8,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "GOOGLE",
+      "vx": 0,
+      "vy": 0,
+      "x": 26.270044609406206,
+      "y": 84.84187846436714
+    },
+    {
+      "id": 9,
+      "data": {
+        "texts": [
+          {
+            "id": 9,
+            "text": "TYPE: ORGANIZATION\n\n\n Aura is a new platform appearing on the Russian market"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "АВРОРА",
+      "vx": 0,
+      "vy": 0,
+      "x": 39.61830347164295,
+      "y": 119.63409331265966
+    },
+    {
+      "id": 10,
+      "data": {
+        "texts": [
+          {
+            "id": 10,
+            "text": "TYPE: \n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "APPLE",
+      "vx": 0,
+      "vy": 0,
+      "x": 41.492009107018866,
+      "y": 135.99579534182345
+    },
+    {
+      "id": 11,
+      "data": {
+        "texts": [
+          {
+            "id": 11,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the description list."
+          }
+        ],
+        "color": "#ff9896",
+        "size": 2
+      },
+      "name": "Т БАНК",
+      "vx": 0,
+      "vy": 0,
+      "x": -52.22892231799031,
+      "y": -20.029352528067356
+    },
+    {
+      "id": 12,
+      "data": {
+        "texts": [
+          {
+            "id": 12,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "JAVA",
+      "vx": 0,
+      "vy": 0,
+      "x": 68.30770984337337,
+      "y": 137.84681689054452
+    },
+    {
+      "id": 13,
+      "data": {
+        "texts": [
+          {
+            "id": 13,
+            "text": "TYPE: EVENT\n\n\n Разработка функции «сторис» в мобильном банке>"
+          }
+        ],
+        "color": "#ff9896",
+        "size": 2
+      },
+      "name": "STORIES IN BANK",
+      "vx": 0,
+      "vy": 0,
+      "x": 74.53669240161224,
+      "y": 165.23847416143485
+    },
+    {
+      "id": 14,
+      "data": {
+        "texts": [
+          {
+            "id": 14,
+            "text": "TYPE: ORGANIZATION\n\n\n Команда разработчиков высокого уровня, которая занимается вопросами безопасности в мобильной разработке>"
+          }
+        ],
+        "color": "#2ca02c",
+        "size": 2
+      },
+      "name": "СЕНЬОР РАЗРАБОТЧИКИ",
+      "vx": 0,
+      "vy": 0,
+      "x": -207.85223049845968,
+      "y": -74.02196781976761
+    },
+    {
+      "id": 15,
+      "data": {
+        "texts": [
+          {
+            "id": 15,
+            "text": "TYPE: ORGANIZATION\n\n\n Фулбек — это компонент или система, которая упоминается в контексте работы приложения и отказоустойчивости>"
+          }
+        ],
+        "color": "#9467bd",
+        "size": 2
+      },
+      "name": "ФУЛБЕК",
+      "vx": 0,
+      "vy": 0,
+      "x": -77.39195230066801,
+      "y": 194.53467817906665
+    },
+    {
+      "id": 16,
+      "data": {
+        "texts": [
+          {
+            "id": 16,
+            "text": "TYPE: ORGANIZATION\n\n\n BigTech are large corporations that can afford to hire dedicated mobile developers>"
+          }
+        ],
+        "color": "#98df8a",
+        "size": 2
+      },
+      "name": "BIGTECH",
+      "vx": 0,
+      "vy": 0,
+      "x": -72.7707757180926,
+      "y": -202.30229029103805
+    },
+    {
+      "id": 17,
+      "data": {
+        "texts": [
+          {
+            "id": 17,
+            "text": "TYPE: PERSON\n\n\n Человек, с которым ведётся диалог>"
+          }
+        ],
+        "color": "#98df8a",
+        "size": 2
+      },
+      "name": "ДАНИЛ",
+      "vx": 0,
+      "vy": 0,
+      "x": -214.8321786243638,
+      "y": -23.24567514316728
+    },
+    {
+      "id": 18,
+      "data": {
+        "texts": [
+          {
+            "id": 18,
+            "text": "TYPE: ORGANIZATION\n\n\n Язык программирования, который становится популярным и замещает Джаву в Android-разработке>"
+          }
+        ],
+        "color": "#c5b0d5",
+        "size": 2
+      },
+      "name": "КОТЛИН",
+      "vx": 0,
+      "vy": 0,
+      "x": 128.81224938475634,
+      "y": 58.51188662746193
+    },
+    {
+      "id": 19,
+      "data": {
+        "texts": [
+          {
+            "id": 19,
+            "text": "TYPE: PERSON\n\n\n Игорь Маслов — директор базовых технологий в Тенькове, имеет опыт работы программистом в различных российских компаниях, включая Абу и Лабораторию Касперского>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "ИГОРЬ МАСЛОВ",
+      "vx": 0,
+      "vy": 0,
+      "x": 139.98580824551843,
+      "y": -158.34643758137176
+    },
+    {
+      "id": 20,
+      "data": {
+        "texts": [
+          {
+            "id": 20,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "ЛАБОРАТОРИЯ КАСПЕРСКОГО",
+      "vx": 0,
+      "vy": 0,
+      "x": 159.0473172903568,
+      "y": -142.74787415242363
+    },
+    {
+      "id": 21,
+      "data": {
+        "texts": [
+          {
+            "id": 21,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a summary, please supply the entity names and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ВМК",
+      "vx": 0,
+      "vy": 0,
+      "x": 76.09714821860481,
+      "y": -57.54044649846519
+    },
+    {
+      "id": 22,
+      "data": {
+        "texts": [
+          {
+            "id": 22,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "МЕХМАТ",
+      "vx": 0,
+      "vy": 0,
+      "x": 44.419306052023096,
+      "y": -9.634162336882495
+    },
+    {
+      "id": 23,
+      "data": {
+        "texts": [
+          {
+            "id": 23,
+            "text": "TYPE: PERSON\n\n\n Иван Пузыревский работает в Инк Cloud, стоял у истоков специализации по распределённым системам в бакалавриате>"
+          }
+        ],
+        "color": "#98df8a",
+        "size": 2
+      },
+      "name": "ИВАН ПУЗЫРЕВСКИЙ",
+      "vx": 0,
+      "vy": 0,
+      "x": 216.31303047846146,
+      "y": 51.55946330030485
+    },
+    {
+      "id": 24,
+      "data": {
+        "texts": [
+          {
+            "id": 24,
+            "text": "TYPE: ORGANIZATION\n\n\n Подразделение Яндекса, куда герой перешёл в 2021 году"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ЯНДЕКС ОБЛАКО",
+      "vx": 0,
+      "vy": 0,
+      "x": 46.50713229486495,
+      "y": -88.91555732531403
+    },
+    {
+      "id": 25,
+      "data": {
+        "texts": [
+          {
+            "id": 25,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ГЕРОЙ",
+      "vx": 0,
+      "vy": 0,
+      "x": 42.18849804714779,
+      "y": -42.477830389978806
+    },
+    {
+      "id": 26,
+      "data": {
+        "texts": [
+          {
+            "id": 26,
+            "text": "TYPE: \n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "МГУ",
+      "vx": 0,
+      "vy": 0,
+      "x": 61.48984401298815,
+      "y": -13.353766327501964
+    },
+    {
+      "id": 27,
+      "data": {
+        "texts": [
+          {
+            "id": 27,
+            "text": "TYPE: ORGANIZATION\n\n\n JavaScript — это язык программирования, который обсуждался в контексте его востребованности и актуальности>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "JAVASCRIPT",
+      "vx": 0,
+      "vy": 0,
+      "x": 206.55952606322694,
+      "y": -53.92224747460067
+    },
+    {
+      "id": 28,
+      "data": {
+        "texts": [
+          {
+            "id": 28,
+            "text": "TYPE: GEO\n\n\n Название места, откуда совершался перелёт>"
+          }
+        ],
+        "color": "#98df8a",
+        "size": 2
+      },
+      "name": "СИРИУС",
+      "vx": 0,
+      "vy": 0,
+      "x": 144.3424260835739,
+      "y": -101.13089903728147
+    },
+    {
+      "id": 29,
+      "data": {
+        "texts": [
+          {
+            "id": 29,
+            "text": "TYPE: ORGANIZATION\n\n\n ВШЕ — это организация, в которой есть программа по анализу данных>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "ВШЕ",
+      "vx": 0,
+      "vy": 0,
+      "x": -31.953179198970982,
+      "y": -213.98502824781383
+    },
+    {
+      "id": 30,
+      "data": {
+        "texts": [
+          {
+            "id": 30,
+            "text": "TYPE: ORGANIZATION\n\n\n Инфраструктура — это система, которая обеспечивает поддержку и обслуживание других систем или процессов>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "ИНФРАСТРУКТУРА",
+      "vx": 0,
+      "vy": 0,
+      "x": -34.150745604290776,
+      "y": -196.2567899639506
+    },
+    {
+      "id": 31,
+      "data": {
+        "texts": [
+          {
+            "id": 31,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#d62728",
+        "size": 2
+      },
+      "name": "ИГОРЬ",
+      "vx": 0,
+      "vy": 0,
+      "x": -57.49362565311841,
+      "y": 42.848427386406804
+    },
+    {
+      "id": 32,
+      "data": {
+        "texts": [
+          {
+            "id": 32,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#2ca02c",
+        "size": 2
+      },
+      "name": "EB",
+      "vx": 0,
+      "vy": 0,
+      "x": 89.30990779443938,
+      "y": -129.3737194822022
+    },
+    {
+      "id": 33,
+      "data": {
+        "texts": [
+          {
+            "id": 33,
+            "text": "TYPE: GEO\n\n\n To provide a comprehensive summary, please supply the entities and the description list."
+          }
+        ],
+        "color": "#2ca02c",
+        "size": 2
+      },
+      "name": "РОССИЯ",
+      "vx": 0,
+      "vy": 0,
+      "x": 93.74403296414995,
+      "y": -94.21713695077264
+    },
+    {
+      "id": 34,
+      "data": {
+        "texts": [
+          {
+            "id": 34,
+            "text": "TYPE: PERSON\n\n\n Дарья Касьяненко — академический руководитель онлайн-магистратуры по агроинжинирингу и преподаватель>"
+          }
+        ],
+        "color": "#9467bd",
+        "size": 2
+      },
+      "name": "ДАША КАСЬЯНЕНКО",
+      "vx": 0,
+      "vy": 0,
+      "x": -197.0870808065682,
+      "y": 81.20960524954931
+    },
+    {
+      "id": 35,
+      "data": {
+        "texts": [
+          {
+            "id": 35,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, в которой работает Влад Бояров>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "ВКУСНАЯ ТОЧКА",
+      "vx": 0,
+      "vy": 0,
+      "x": -198.0899796643108,
+      "y": 20.029088459747477
+    },
+    {
+      "id": 36,
+      "data": {
+        "texts": [
+          {
+            "id": 36,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, в которой Влад Бояров работал ранее>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "БЕРЕ",
+      "vx": 0,
+      "vy": 0,
+      "x": -211.27079548087886,
+      "y": 46.74122319431541
+    },
+    {
+      "id": 37,
+      "data": {
+        "texts": [
+          {
+            "id": 37,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, в которой Влад Бояров работал ранее>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "МИНЕРАЛЬНЫЕ ЦИФРЫ",
+      "vx": 0,
+      "vy": 0,
+      "x": -177.17875398145028,
+      "y": 47.25873339663608
+    },
+    {
+      "id": 38,
+      "data": {
+        "texts": [
+          {
+            "id": 38,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "DATA ENGINEER",
+      "vx": 0,
+      "vy": 0,
+      "x": -140.41442361786937,
+      "y": -140.75768642702715
+    },
+    {
+      "id": 39,
+      "data": {
+        "texts": [
+          {
+            "id": 39,
+            "text": "TYPE: PERSON\n\n\n A data analyst uses the data prepared by the data engineer to solve specific tasks and build dashboards>"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "DATA ANALYST",
+      "vx": 0,
+      "vy": 0,
+      "x": -159.2414106042977,
+      "y": -130.06222126461262
+    },
+    {
+      "id": 40,
+      "data": {
+        "texts": [
+          {
+            "id": 40,
+            "text": "TYPE: PERSON\n\n\n A data scientist works with data, often focusing on machine learning model training>"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "DATA SCIENTIST",
+      "vx": 0,
+      "vy": 0,
+      "x": -142.6966350436963,
+      "y": -159.9860942455128
+    },
+    {
+      "id": 41,
+      "data": {
+        "texts": [
+          {
+            "id": 41,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "DATA ENGINEERING",
+      "vx": 0,
+      "vy": 0,
+      "x": 45.96125090269151,
+      "y": 186.12326481233478
+    },
+    {
+      "id": 42,
+      "data": {
+        "texts": [
+          {
+            "id": 42,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the description list."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ФКН",
+      "vx": 0,
+      "vy": 0,
+      "x": 8.153819645524045,
+      "y": -57.01939616448943
+    },
+    {
+      "id": 43,
+      "data": {
+        "texts": [
+          {
+            "id": 43,
+            "text": "TYPE: ORGANIZATION\n\n\n Oracle — это компания, продукты которой упоминаются в контексте перехода на другие системы управления базами данных>"
+          }
+        ],
+        "color": "#9467bd",
+        "size": 2
+      },
+      "name": "ORACLE",
+      "vx": 0,
+      "vy": 0,
+      "x": 164.39631057006596,
+      "y": 144.24686230070543
+    },
+    {
+      "id": 44,
+      "data": {
+        "texts": [
+          {
+            "id": 44,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#d62728",
+        "size": 2
+      },
+      "name": "ВЛАД",
+      "vx": 0,
+      "vy": 0,
+      "x": -113.93316566636251,
+      "y": 165.66691333548522
+    },
+    {
+      "id": 45,
+      "data": {
+        "texts": [
+          {
+            "id": 45,
+            "text": "TYPE: ORGANIZATION\n\n\n Факультет компьютерных наук Высшей школы экономики, которому в 2024 году исполняется 10 лет"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "ФАКУЛЬТЕТ КОМПЬЮТЕРНЫХ НАУК ВЫСШЕЙ ШКОЛЫ ЭКОНОМИКИ",
+      "vx": 0,
+      "vy": 0,
+      "x": 69.90107640930069,
+      "y": -197.7973787010501
+    },
+    {
+      "id": 46,
+      "data": {
+        "texts": [
+          {
+            "id": 46,
+            "text": "TYPE: PERSON\n\n\n Директор по машинному интеллекту в Яндекс-Маркете и один из основателей факультета компьютерных наук Высшей школы экономики"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "МИХАИЛ ЛЕВИН",
+      "vx": 0,
+      "vy": 0,
+      "x": 51.727998530391524,
+      "y": -196.1166285331242
+    },
+    {
+      "id": 47,
+      "data": {
+        "texts": [
+          {
+            "id": 47,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ВЫСШАЯ ШКОЛА ЭКОНОМИКИ",
+      "vx": 0,
+      "vy": 0,
+      "x": 44.046132537587454,
+      "y": 27.667614362744622
+    },
+    {
+      "id": 48,
+      "data": {
+        "texts": [
+          {
+            "id": 48,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ШУТ",
+      "vx": 0,
+      "vy": 0,
+      "x": 12.858347884432238,
+      "y": -40.20285721764041
+    },
+    {
+      "id": 49,
+      "data": {
+        "texts": [
+          {
+            "id": 49,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ВЫШКА",
+      "vx": 0,
+      "vy": 0,
+      "x": 79.50162135647435,
+      "y": -11.05208566131813
+    },
+    {
+      "id": 50,
+      "data": {
+        "texts": [
+          {
+            "id": 50,
+            "text": "TYPE: PERSON\n\n\n To provide a summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#d62728",
+        "size": 2
+      },
+      "name": "ЯРОСЛАВ ИВАНОВИЧ",
+      "vx": 0,
+      "vy": 0,
+      "x": 58.95852278827271,
+      "y": 87.75340924950899
+    },
+    {
+      "id": 51,
+      "data": {
+        "texts": [
+          {
+            "id": 51,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ФАКУЛЬТЕТ КОМПЬЮТЕРНЫХ НАУК",
+      "vx": 0,
+      "vy": 0,
+      "x": 16.31465417242819,
+      "y": 74.59723134083667
+    },
+    {
+      "id": 52,
+      "data": {
+        "texts": [
+          {
+            "id": 52,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#c5b0d5",
+        "size": 2
+      },
+      "name": "ВЫШКА (ВЫСШАЯ ШКОЛА ЭКОНОМИКИ)",
+      "vx": 0,
+      "vy": 0,
+      "x": 106.79887644623452,
+      "y": -0.5717135600554268
+    },
+    {
+      "id": 53,
+      "data": {
+        "texts": [
+          {
+            "id": 53,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "ШЕНЬ",
+      "vx": 0,
+      "vy": 0,
+      "x": -30.99782743296661,
+      "y": -88.88646174232886
+    },
+    {
+      "id": 54,
+      "data": {
+        "texts": [
+          {
+            "id": 54,
+            "text": "TYPE: ORGANIZATION\n\n\n Яндекс — компания, которая спонсирует мероприятия и привлекает талантливых людей на новый факультет>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "ЯНСИКС (ЯНДЕКС)",
+      "vx": 0,
+      "vy": 0,
+      "x": -57.59705580449592,
+      "y": -96.02247997666055
+    },
+    {
+      "id": 55,
+      "data": {
+        "texts": [
+          {
+            "id": 55,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "МИША",
+      "vx": 0,
+      "vy": 0,
+      "x": 50.50029778784545,
+      "y": 14.190396564122631
+    },
+    {
+      "id": 56,
+      "data": {
+        "texts": [
+          {
+            "id": 56,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#f7b6d2",
+        "size": 2
+      },
+      "name": "АЛЕКСАНДР ШИН",
+      "vx": 0,
+      "vy": 0,
+      "x": 66.28997506926441,
+      "y": -80.94178343738938
+    },
+    {
+      "id": 57,
+      "data": {
+        "texts": [
+          {
+            "id": 57,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ЯРОСЛАВ ИВАНОВИЧ КУЗЬМИНОВ",
+      "vx": 0,
+      "vy": 0,
+      "x": 149.58424560787006,
+      "y": 5.064136339184833
+    },
+    {
+      "id": 58,
+      "data": {
+        "texts": [
+          {
+            "id": 58,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ФАКУЛЬТЕТ",
+      "vx": 0,
+      "vy": 0,
+      "x": 104.42518025898383,
+      "y": 24.912755463724814
+    },
+    {
+      "id": 59,
+      "data": {
+        "texts": [
+          {
+            "id": 59,
+            "text": "TYPE: ORGANIZATION\n\n\n SpaceX — известная компания, в которой для работы требуются специалисты с глубокими знаниями>"
+          }
+        ],
+        "color": "#c5b0d5",
+        "size": 2
+      },
+      "name": "SPACEX",
+      "vx": 0,
+      "vy": 0,
+      "x": -40.95859121603084,
+      "y": 7.053048604959152
+    },
+    {
+      "id": 60,
+      "data": {
+        "texts": [
+          {
+            "id": 60,
+            "text": "TYPE: ORGANIZATION\n\n\n Стэнфорд — известный университет>"
+          }
+        ],
+        "color": "#c5b0d5",
+        "size": 2
+      },
+      "name": "СТЕНОФОРД",
+      "vx": 0,
+      "vy": 0,
+      "x": -36.00999996097917,
+      "y": 211.19664162248478
+    },
+    {
+      "id": 61,
+      "data": {
+        "texts": [
+          {
+            "id": 61,
+            "text": "TYPE: ORGANIZATION\n\n\n University in Canada where the speaker attended a conference and met a student who recognized the Higher School of Economics>"
+          }
+        ],
+        "color": "#ff9896",
+        "size": 2
+      },
+      "name": "MEMORIAL UNIVERSITY, NEW FOUND",
+      "vx": 0,
+      "vy": 0,
+      "x": 17.99288937528308,
+      "y": -216.33247458850022
+    },
+    {
+      "id": 62,
+      "data": {
+        "texts": [
+          {
+            "id": 62,
+            "text": "TYPE: ORGANIZATION\n\n\n Russian university with a strong reputation for its online courses>"
+          }
+        ],
+        "color": "#ff9896",
+        "size": 2
+      },
+      "name": "HIGHER SCHOOL OF ECONOMICS",
+      "vx": 0,
+      "vy": 0,
+      "x": 6.666162044446597,
+      "y": -202.69295062560093
+    },
+    {
+      "id": 63,
+      "data": {
+        "texts": [
+          {
+            "id": 63,
+            "text": "TYPE: EVENT\n\n\n Мероприятие, на котором присутствовали люди с футболками, связанными с курсом «Укос»>"
+          }
+        ],
+        "color": "#ff9896",
+        "size": 2
+      },
+      "name": "ДЕНЬ СТАЖЁРА",
+      "vx": 0,
+      "vy": 0,
+      "x": -106.87669710297145,
+      "y": -185.13811606896058
+    },
+    {
+      "id": 64,
+      "data": {
+        "texts": [
+          {
+            "id": 64,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, в которой Даниэл работает Android-разработчиком>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "ВК-КЛИПЫ",
+      "vx": 0,
+      "vy": 0,
+      "x": 111.02160845854108,
+      "y": 83.47043196562517
+    },
+    {
+      "id": 65,
+      "data": {
+        "texts": [
+          {
+            "id": 65,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, в которой Даниэл работал>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "ЯНДЕКС-ТАКСИ",
+      "vx": 0,
+      "vy": 0,
+      "x": 110.5115064079545,
+      "y": 104.715155376624
+    },
+    {
+      "id": 66,
+      "data": {
+        "texts": [
+          {
+            "id": 66,
+            "text": "TYPE: ORGANIZATION\n\n\n Университет, в котором учился Глеб>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ВМК МГУ",
+      "vx": 0,
+      "vy": 0,
+      "x": -166.8763888217888,
+      "y": -71.65337827290521
+    },
+    {
+      "id": 67,
+      "data": {
+        "texts": [
+          {
+            "id": 67,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, в которой Глеб работал до Т-Банка>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ЛЕНКО",
+      "vx": 0,
+      "vy": 0,
+      "x": -179.11519148838482,
+      "y": -55.0668828229335
+    },
+    {
+      "id": 68,
+      "data": {
+        "texts": [
+          {
+            "id": 68,
+            "text": "TYPE: EVENT\n\n\n Мероприятие, в рамках которого обсуждаются вопросы образования и разработки>"
+          }
+        ],
+        "color": "#c49c94",
+        "size": 2
+      },
+      "name": "ПОДКАСТ УЮТНЫЙ ФКК",
+      "vx": 0,
+      "vy": 0,
+      "x": -176.66017218402703,
+      "y": -34.82383729777187
+    },
+    {
+      "id": 69,
+      "data": {
+        "texts": [
+          {
+            "id": 69,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#ff9896",
+        "size": 2
+      },
+      "name": "ВК",
+      "vx": 0,
+      "vy": 0,
+      "x": -66.36291619866357,
+      "y": -6.539086279293249
+    },
+    {
+      "id": 70,
+      "data": {
+        "texts": [
+          {
+            "id": 70,
+            "text": "TYPE: PERSON\n\n\n Сотрудник Т-банка, которому задан вопрос о внедрении искусственного интеллекта в мобильные приложения>"
+          }
+        ],
+        "color": "#9edae5",
+        "size": 2
+      },
+      "name": "ГЛОБ",
+      "vx": 0,
+      "vy": 0,
+      "x": -139.12795820251466,
+      "y": 8.412853598843908
+    },
+    {
+      "id": 71,
+      "data": {
+        "texts": [
+          {
+            "id": 71,
+            "text": "TYPE: ORGANIZATION\n\n\n Отдел в Т-банке, занимающийся разработкой генеративных моделей>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "DEPARTMENT OF ARTIFICIAL INTELLIGENCE",
+      "vx": 0,
+      "vy": 0,
+      "x": -152.36330515250702,
+      "y": -5.549307197870537
+    },
+    {
+      "id": 72,
+      "data": {
+        "texts": [
+          {
+            "id": 72,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#c49c94",
+        "size": 2
+      },
+      "name": "ТЕЛЕГРАМ",
+      "vx": 0,
+      "vy": 0,
+      "x": -143.722243502786,
+      "y": -25.937962553951415
+    },
+    {
+      "id": 73,
+      "data": {
+        "texts": [
+          {
+            "id": 73,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#e377c2",
+        "size": 2
+      },
+      "name": "FACEBOOK",
+      "vx": 0,
+      "vy": 0,
+      "x": -31.88199760988912,
+      "y": 36.13622170159233
+    },
+    {
+      "id": 74,
+      "data": {
+        "texts": [
+          {
+            "id": 74,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#8c564b",
+        "size": 2
+      },
+      "name": "ГОВОРЯЩИЙ",
+      "vx": 0,
+      "vy": 0,
+      "x": -15.96879218118239,
+      "y": -23.018000207765112
+    },
+    {
+      "id": 75,
+      "data": {
+        "texts": [
+          {
+            "id": 75,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "КУЗЬМИНОВ",
+      "vx": 0,
+      "vy": 0,
+      "x": 16.508526514159605,
+      "y": 30.87268874635516
+    },
+    {
+      "id": 76,
+      "data": {
+        "texts": [
+          {
+            "id": 76,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ЛЕНА БУНИНА",
+      "vx": 0,
+      "vy": 0,
+      "x": 21.27105641348087,
+      "y": -7.295842366563336
+    },
+    {
+      "id": 77,
+      "data": {
+        "texts": [
+          {
+            "id": 77,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#e377c2",
+        "size": 2
+      },
+      "name": "ЦЕНТР НЕПРЫВНОГО ОБРАЗОВАНИЯ",
+      "vx": 0,
+      "vy": 0,
+      "x": -40.87376622519821,
+      "y": 22.656431049560098
+    },
+    {
+      "id": 78,
+      "data": {
+        "texts": [
+          {
+            "id": 78,
+            "text": "TYPE: ORGANIZATION\n\n\n Факультет компьютерных наук, созданный при участии Яндекса>"
+          }
+        ],
+        "color": "#c5b0d5",
+        "size": 2
+      },
+      "name": "ФАКУЛЬТЕТ КOMПЬЮТЕРНЫХ НАУК",
+      "vx": 0,
+      "vy": 0,
+      "x": 65.12316922336508,
+      "y": 5.431472246623983
+    },
+    {
+      "id": 79,
+      "data": {
+        "texts": [
+          {
+            "id": 79,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#e377c2",
+        "size": 2
+      },
+      "name": "ВУЗЫ",
+      "vx": 0,
+      "vy": 0,
+      "x": -22.4733263074735,
+      "y": 17.736763893363616
+    },
+    {
+      "id": 80,
+      "data": {
+        "texts": [
+          {
+            "id": 80,
+            "text": "TYPE: PERSON\n\n\n Член команды, разрабатывавшей концепцию, читал лекцию о применении математического анализа в компьютерных науках>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "МИХАИЛ",
+      "vx": 0,
+      "vy": 0,
+      "x": 40.86501459902914,
+      "y": -20.02578164954582
+    },
+    {
+      "id": 81,
+      "data": {
+        "texts": [
+          {
+            "id": 81,
+            "text": "TYPE: ORGANIZATION\n\n\n OpenAI — известная компания, в которой для работы требуются специалисты с глубокими знаниями>"
+          }
+        ],
+        "color": "#c5b0d5",
+        "size": 2
+      },
+      "name": "OPEN AI",
+      "vx": 0,
+      "vy": 0,
+      "x": -34.95248193834932,
+      "y": -4.560006299979101
+    },
+    {
+      "id": 82,
+      "data": {
+        "texts": [
+          {
+            "id": 82,
+            "text": "TYPE: GEO\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "МОСКВА",
+      "vx": 0,
+      "vy": 0,
+      "x": -32.10195494944778,
+      "y": -51.37117738150675
+    },
+    {
+      "id": 83,
+      "data": {
+        "texts": [
+          {
+            "id": 83,
+            "text": "TYPE: GEO\n\n\n Город, где проходила конференция Яндекса>"
+          }
+        ],
+        "color": "#e377c2",
+        "size": 2
+      },
+      "name": "БЕРЛИН",
+      "vx": 0,
+      "vy": 0,
+      "x": -16.682696738986316,
+      "y": -3.421719305445332
+    },
+    {
+      "id": 84,
+      "data": {
+        "texts": [
+          {
+            "id": 84,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#9edae5",
+        "size": 2
+      },
+      "name": "ГУГЛ",
+      "vx": 0,
+      "vy": 0,
+      "x": -30.572282847959936,
+      "y": -23.88091268260236
+    },
+    {
+      "id": 85,
+      "data": {
+        "texts": [
+          {
+            "id": 85,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ФАКУЛЬТЕТ МАТЕМАТИКИ",
+      "vx": 0,
+      "vy": 0,
+      "x": 0.7826488216770411,
+      "y": 53.455169265786225
+    },
+    {
+      "id": 86,
+      "data": {
+        "texts": [
+          {
+            "id": 86,
+            "text": "TYPE: PERSON\n\n\n Лицо, которое проводило собеседование с преподавателями математики, используя специфический метод оценки>"
+          }
+        ],
+        "color": "#f7b6d2",
+        "size": 2
+      },
+      "name": "ШЕНЯ",
+      "vx": 0,
+      "vy": 0,
+      "x": -21.372461203161272,
+      "y": 48.03207365537485
+    },
+    {
+      "id": 87,
+      "data": {
+        "texts": [
+          {
+            "id": 87,
+            "text": "TYPE: EVENT\n\n\n Мероприятие, на котором победители олимпиад по математике и программированию приезжают в Яндекс>"
+          }
+        ],
+        "color": "#f7b6d2",
+        "size": 2
+      },
+      "name": "ВСТРЕЧА С ПОБЕДИТЕЛЯМИ ОЛИМПИАД",
+      "vx": 0,
+      "vy": 0,
+      "x": -11.369758543709601,
+      "y": 34.167486288992485
+    },
+    {
+      "id": 88,
+      "data": {
+        "texts": [
+          {
+            "id": 88,
+            "text": "TYPE: ORGANIZATION\n\n\n Факультет компьютерных наук, который развивает Яндекс>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ФАКУЛЬТЕТ КН",
+      "vx": 0,
+      "vy": 0,
+      "x": 52.42076073042,
+      "y": -37.56290539639626
+    },
+    {
+      "id": 89,
+      "data": {
+        "texts": [
+          {
+            "id": 89,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#7f7f7f",
+        "size": 2
+      },
+      "name": "ПРИКЛАДНАЯ МАТЕМАТИКА И ИНФОРМАТИКА",
+      "vx": 0,
+      "vy": 0,
+      "x": -6.056456647612114,
+      "y": -33.04415130608204
+    },
+    {
+      "id": 90,
+      "data": {
+        "texts": [
+          {
+            "id": 90,
+            "text": "TYPE: GEO\n\n\n Место, где недавно был концерт группы Микан>"
+          }
+        ],
+        "color": "#8c564b",
+        "size": 2
+      },
+      "name": "16-ТОН",
+      "vx": 0,
+      "vy": 0,
+      "x": -143.10254832422874,
+      "y": -98.20312201644515
+    },
+    {
+      "id": 91,
+      "data": {
+        "texts": [
+          {
+            "id": 91,
+            "text": "TYPE: ORGANIZATION\n\n\n A store for applications>"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "APP STORE",
+      "vx": 0,
+      "vy": 0,
+      "x": -124.11890750525077,
+      "y": 121.78509924564568
+    },
+    {
+      "id": 92,
+      "data": {
+        "texts": [
+          {
+            "id": 92,
+            "text": "TYPE: ORGANIZATION\n\n\n Swift is a programming language>"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "SWIFT",
+      "vx": 0,
+      "vy": 0,
+      "x": -156.33993445535697,
+      "y": 78.41991268632711
+    },
+    {
+      "id": 93,
+      "data": {
+        "texts": [
+          {
+            "id": 93,
+            "text": "TYPE: ORGANIZATION\n\n\n Kotlin is a programming language>"
+          }
+        ],
+        "color": "#2ca02c",
+        "size": 2
+      },
+      "name": "KOTLIN",
+      "vx": 0,
+      "vy": 0,
+      "x": -172.96561448926906,
+      "y": 135.15222574123823
+    },
+    {
+      "id": 94,
+      "data": {
+        "texts": [
+          {
+            "id": 94,
+            "text": "TYPE: ORGANIZATION\n\n\n Huawei is a company that develops its own solutions and products, including a store with Android applications>"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "HUAWEI",
+      "vx": 0,
+      "vy": 0,
+      "x": 23.50955202037874,
+      "y": 121.99548336685355
+    },
+    {
+      "id": 95,
+      "data": {
+        "texts": [
+          {
+            "id": 95,
+            "text": "TYPE: ORGANIZATION\n\n\n Blackberry is a company whose platforms have been вытеснены Android и iOS>"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "BLACKBERRY",
+      "vx": 0,
+      "vy": 0,
+      "x": 19.146721615838366,
+      "y": 133.80367014289936
+    },
+    {
+      "id": 96,
+      "data": {
+        "texts": [
+          {
+            "id": 96,
+            "text": "TYPE: ORGANIZATION\n\n\n Habr is a platform for technical articles>"
+          }
+        ],
+        "color": "#7f7f7f",
+        "size": 2
+      },
+      "name": "HABR",
+      "vx": 0,
+      "vy": 0,
+      "x": 0.21686533260693253,
+      "y": 125.42901066565068
+    },
+    {
+      "id": 97,
+      "data": {
+        "texts": [
+          {
+            "id": 97,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#7f7f7f",
+        "size": 2
+      },
+      "name": "ДИЗАЙНЕРЫ",
+      "vx": 0,
+      "vy": 0,
+      "x": -87.37449735014621,
+      "y": -40.38765360484629
+    },
+    {
+      "id": 98,
+      "data": {
+        "texts": [
+          {
+            "id": 98,
+            "text": "TYPE: EVENT\n\n\n Создание первой версии голосового ассистента>"
+          }
+        ],
+        "color": "#ff9896",
+        "size": 2
+      },
+      "name": "VOICE ASSISTANT DEVELOPMENT",
+      "vx": 0,
+      "vy": 0,
+      "x": 101.55156106428123,
+      "y": 178.1407690767401
+    },
+    {
+      "id": 99,
+      "data": {
+        "texts": [
+          {
+            "id": 99,
+            "text": "TYPE: ORGANIZATION\n\n\n Специалисты, которые занимаются созданием и поддержкой мобильных приложений>"
+          }
+        ],
+        "color": "#2ca02c",
+        "size": 2
+      },
+      "name": "МОБИЛЬНЫЕ РАЗРАБОТЧИКИ",
+      "vx": 0,
+      "vy": 0,
+      "x": -199.53916545368605,
+      "y": -91.13435940064257
+    },
+    {
+      "id": 100,
+      "data": {
+        "texts": [
+          {
+            "id": 100,
+            "text": "TYPE: PERSON\n\n\n Кэн — это лицо, которое упоминается в контексте обсуждения отказоустойчивости и распределения нагрузок>"
+          }
+        ],
+        "color": "#9467bd",
+        "size": 2
+      },
+      "name": "КЭН",
+      "vx": 0,
+      "vy": 0,
+      "x": -70.95615880331313,
+      "y": 177.93672905993603
+    },
+    {
+      "id": 101,
+      "data": {
+        "texts": [
+          {
+            "id": 101,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#98df8a",
+        "size": 2
+      },
+      "name": "TELEGRAM",
+      "vx": 0,
+      "vy": 0,
+      "x": -69.67454619091538,
+      "y": -185.2634420025522
+    },
+    {
+      "id": 102,
+      "data": {
+        "texts": [
+          {
+            "id": 102,
+            "text": "TYPE: ORGANIZATION\n\n\n Банк, в котором работал рассказчик>"
+          }
+        ],
+        "color": "#98df8a",
+        "size": 2
+      },
+      "name": "МОБИЛЬНЫЙ БАНК",
+      "vx": 0,
+      "vy": 0,
+      "x": -215.296328024717,
+      "y": -6.121165915493787
+    },
+    {
+      "id": 103,
+      "data": {
+        "texts": [
+          {
+            "id": 103,
+            "text": "TYPE: ORGANIZATION\n\n\n Платформа для разработки мобильных приложений>"
+          }
+        ],
+        "color": "#c5b0d5",
+        "size": 2
+      },
+      "name": "АНДРОИД",
+      "vx": 0,
+      "vy": 0,
+      "x": 173.3720481041789,
+      "y": 47.65096342204796
+    },
+    {
+      "id": 104,
+      "data": {
+        "texts": [
+          {
+            "id": 104,
+            "text": "TYPE: ORGANIZATION\n\n\n Банк, в котором Игорь Маслов руководит департаментом, разрабатывающим инфраструктуру>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "ТЕНКОВО",
+      "vx": 0,
+      "vy": 0,
+      "x": 118.07697727442107,
+      "y": -164.8376187778618
+    },
+    {
+      "id": 105,
+      "data": {
+        "texts": [
+          {
+            "id": 105,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, в которой работал Игорь Маслов>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "АБА",
+      "vx": 0,
+      "vy": 0,
+      "x": 133.73234488020978,
+      "y": -177.27900539021243
+    },
+    {
+      "id": 106,
+      "data": {
+        "texts": [
+          {
+            "id": 106,
+            "text": "TYPE: PERSON\n\n\n Программист, который работал в Лаборатории Касперского и изучал различные языки программирования>"
+          }
+        ],
+        "color": "#8c564b",
+        "size": 2
+      },
+      "name": "АВТОР",
+      "vx": 0,
+      "vy": 0,
+      "x": 174.17404822766684,
+      "y": -127.01462284450545
+    },
+    {
+      "id": 107,
+      "data": {
+        "texts": [
+          {
+            "id": 107,
+            "text": "TYPE: PERSON\n\n\n Человек, который писал код в самолёте>"
+          }
+        ],
+        "color": "#98df8a",
+        "size": 2
+      },
+      "name": "ВАНЯ КОКТО",
+      "vx": 0,
+      "vy": 0,
+      "x": 116.98961150552418,
+      "y": -86.16682262489081
+    },
+    {
+      "id": 108,
+      "data": {
+        "texts": [
+          {
+            "id": 108,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "АНТОН",
+      "vx": 0,
+      "vy": 0,
+      "x": 30.995985342215015,
+      "y": 41.09975706915428
+    },
+    {
+      "id": 109,
+      "data": {
+        "texts": [
+          {
+            "id": 109,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#98df8a",
+        "size": 2
+      },
+      "name": "ИНК CLOUD",
+      "vx": 0,
+      "vy": 0,
+      "x": 218.81982636045194,
+      "y": 32.1852726668144
+    },
+    {
+      "id": 110,
+      "data": {
+        "texts": [
+          {
+            "id": 110,
+            "text": "TYPE: ORGANIZATION\n\n\n TypeScript — это язык программирования, упомянутый в контексте его использования вместе с JavaScript>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "TYPESCRIPT",
+      "vx": 0,
+      "vy": 0,
+      "x": 212.68110409763534,
+      "y": -33.11633720343211
+    },
+    {
+      "id": 111,
+      "data": {
+        "texts": [
+          {
+            "id": 111,
+            "text": "TYPE: ORGANIZATION\n\n\n C++ — это язык программирования, который был упомянут в контексте его длительного существования и актуальности>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "C++",
+      "vx": 0,
+      "vy": 0,
+      "x": 209.62818762614728,
+      "y": -74.34581122267835
+    },
+    {
+      "id": 112,
+      "data": {
+        "texts": [
+          {
+            "id": 112,
+            "text": "TYPE: ORGANIZATION\n\n\n NS — это технология или фреймворк, который был упомянут в контексте появления и интереса к нему>"
+          }
+        ],
+        "color": "#ff7f0e",
+        "size": 2
+      },
+      "name": "NS",
+      "vx": 0,
+      "vy": 0,
+      "x": 191.35269131611267,
+      "y": -67.3365870342518
+    },
+    {
+      "id": 113,
+      "data": {
+        "texts": [
+          {
+            "id": 113,
+            "text": "TYPE: ORGANIZATION\n\n\n Нейросети — это модели машинного обучения, которые используются для обработки данных>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "НЕЙРОСЕТИ",
+      "vx": 0,
+      "vy": 0,
+      "x": -36.02168713117926,
+      "y": -177.99660728912895
+    },
+    {
+      "id": 114,
+      "data": {
+        "texts": [
+          {
+            "id": 114,
+            "text": "TYPE: PERSON\n\n\n Ваня поддерживает идею о важности алгоритмов>"
+          }
+        ],
+        "color": "#d62728",
+        "size": 2
+      },
+      "name": "ВАНЯ",
+      "vx": 0,
+      "vy": 0,
+      "x": -86.48877791013264,
+      "y": 70.77742949682728
+    },
+    {
+      "id": 115,
+      "data": {
+        "texts": [
+          {
+            "id": 115,
+            "text": "TYPE: ORGANIZATION\n\n\n Система автоматических аукционов в рекламных технологиях>"
+          }
+        ],
+        "color": "#7f7f7f",
+        "size": 2
+      },
+      "name": "АВТОМАТИЧЕСКИЕ АУКЦИОНЫ",
+      "vx": 0,
+      "vy": 0,
+      "x": -96.19848720089539,
+      "y": 52.4629684477278
+    },
+    {
+      "id": 116,
+      "data": {
+        "texts": [
+          {
+            "id": 116,
+            "text": "TYPE: ORGANIZATION\n\n\n «Вкусная точка» — компания, которая владеет сетью ресторанов по всей России и работает с данными, генерируемыми ресторанами, пользователями, поставщиками и агрегаторами доставки>"
+          }
+        ],
+        "color": "#c7c7c7",
+        "size": 2
+      },
+      "name": "ВОСНАЯ ТОЧКА",
+      "vx": 0,
+      "vy": 0,
+      "x": 110.31477870347459,
+      "y": -122.55161238700194
+    },
+    {
+      "id": 117,
+      "data": {
+        "texts": [
+          {
+            "id": 117,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#2ca02c",
+        "size": 2
+      },
+      "name": "МИНИСТР СВЯЗИ И МАССОВОЙ КОММУНИКАЦИИ",
+      "vx": 0,
+      "vy": 0,
+      "x": 77.97132851256411,
+      "y": -35.01696597652031
+    },
+    {
+      "id": 118,
+      "data": {
+        "texts": [
+          {
+            "id": 118,
+            "text": "TYPE: EVENT\n\n\n Новая магистратура, которую запускает Дарья Касьяненко>"
+          }
+        ],
+        "color": "#9467bd",
+        "size": 2
+      },
+      "name": "МАГИСТРАТУРА ИНЖЕНЕРИЯ ДАННЫХ",
+      "vx": 0,
+      "vy": 0,
+      "x": -191.61846246633695,
+      "y": 97.17442658478745
+    },
+    {
+      "id": 119,
+      "data": {
+        "texts": [
+          {
+            "id": 119,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "ВЛАД БОЯРОВ",
+      "vx": 0,
+      "vy": 0,
+      "x": -194.42392262195494,
+      "y": 38.53509119199337
+    },
+    {
+      "id": 120,
+      "data": {
+        "texts": [
+          {
+            "id": 120,
+            "text": "TYPE: ORGANIZATION\n\n\n Any company that generates and stores data>"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "ORGANIZATION",
+      "vx": 0,
+      "vy": 0,
+      "x": -156.92095049778396,
+      "y": -147.41068434322267
+    },
+    {
+      "id": 121,
+      "data": {
+        "texts": [
+          {
+            "id": 121,
+            "text": "TYPE: ORGANIZATION\n\n\n An IT-team is a group of professionals who work together to develop, maintain, and improve the company's information technology infrastructure>"
+          }
+        ],
+        "color": "#c7c7c7",
+        "size": 2
+      },
+      "name": "IT-TEAM",
+      "vx": 0,
+      "vy": 0,
+      "x": -119.60101287760865,
+      "y": -141.44688221964157
+    },
+    {
+      "id": 122,
+      "data": {
+        "texts": [
+          {
+            "id": 122,
+            "text": "TYPE: ORGANIZATION\n\n\n SQL is not an organization, but a database language>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "SQL",
+      "vx": 0,
+      "vy": 0,
+      "x": 35.65366100209674,
+      "y": 210.87314595104965
+    },
+    {
+      "id": 123,
+      "data": {
+        "texts": [
+          {
+            "id": 123,
+            "text": "TYPE: ORGANIZATION\n\n\n Python is not an organization, but a programming language>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "PYTHON",
+      "vx": 0,
+      "vy": 0,
+      "x": 16.341592691089737,
+      "y": 189.18272151746592
+    },
+    {
+      "id": 124,
+      "data": {
+        "texts": [
+          {
+            "id": 124,
+            "text": "TYPE: ORGANIZATION\n\n\n Scala is not an organization, but a programming language>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "SCALA",
+      "vx": 0,
+      "vy": 0,
+      "x": 18.858169310265662,
+      "y": 205.4316507512056
+    },
+    {
+      "id": 125,
+      "data": {
+        "texts": [
+          {
+            "id": 125,
+            "text": "TYPE: ORGANIZATION\n\n\n Spark is a framework for processing large datasets>"
+          }
+        ],
+        "color": "#bcbd22",
+        "size": 2
+      },
+      "name": "SPARK",
+      "vx": 0,
+      "vy": 0,
+      "x": 71.16091702978235,
+      "y": 197.90177244425195
+    },
+    {
+      "id": 126,
+      "data": {
+        "texts": [
+          {
+            "id": 126,
+            "text": "TYPE: ORGANIZATION\n\n\n Apache Airflow is a popular tool used for orchestration in data engineering)>"
+          }
+        ],
+        "color": "#bcbd22",
+        "size": 2
+      },
+      "name": "APACH AIRFLOW",
+      "vx": 0,
+      "vy": 0,
+      "x": 55.18059131516453,
+      "y": 209.40276900483784
+    },
+    {
+      "id": 127,
+      "data": {
+        "texts": [
+          {
+            "id": 127,
+            "text": "TYPE: ORGANIZATION\n\n\n Организации, генерирующие большое количество данных, испытывают нехватку инженеров данных>"
+          }
+        ],
+        "color": "#8c564b",
+        "size": 2
+      },
+      "name": "МАРКЕТПЛЕЙСЫ",
+      "vx": 0,
+      "vy": 0,
+      "x": -1.4951974253018285,
+      "y": -104.92627932280824
+    },
+    {
+      "id": 128,
+      "data": {
+        "texts": [
+          {
+            "id": 128,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "АРКАДИЙ",
+      "vx": 0,
+      "vy": 0,
+      "x": -12.608495658513785,
+      "y": -94.35983155105274
+    },
+    {
+      "id": 129,
+      "data": {
+        "texts": [
+          {
+            "id": 129,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#bcbd22",
+        "size": 2
+      },
+      "name": "ПЕРВЫЙ НАБОР ФКН",
+      "vx": 0,
+      "vy": 0,
+      "x": 15.121633005886705,
+      "y": -104.76113375009675
+    },
+    {
+      "id": 130,
+      "data": {
+        "texts": [
+          {
+            "id": 130,
+            "text": "TYPE: ORGANIZATION\n\n\n Упоминание о более масштабных системах управления базами данных, на которые также происходит переход>"
+          }
+        ],
+        "color": "#9467bd",
+        "size": 2
+      },
+      "name": "MP-СУБД",
+      "vx": 0,
+      "vy": 0,
+      "x": 176.337247580057,
+      "y": 129.7927666742553
+    },
+    {
+      "id": 131,
+      "data": {
+        "texts": [
+          {
+            "id": 131,
+            "text": "TYPE: PERSON\n\n\n Даша — человек, который упомянул, что интегралы не берут>"
+          }
+        ],
+        "color": "#d62728",
+        "size": 2
+      },
+      "name": "ДАША",
+      "vx": 0,
+      "vy": 0,
+      "x": -99.2806831929815,
+      "y": 152.4239228546274
+    },
+    {
+      "id": 132,
+      "data": {
+        "texts": [
+          {
+            "id": 132,
+            "text": "TYPE: ORGANIZATION\n\n\n IT — сфера, в которой работают специалисты, разбирающиеся в программировании и математике>"
+          }
+        ],
+        "color": "#bcbd22",
+        "size": 2
+      },
+      "name": "IT",
+      "vx": 0,
+      "vy": 0,
+      "x": -109.28918742620505,
+      "y": 184.14931648945867
+    },
+    {
+      "id": 133,
+      "data": {
+        "texts": [
+          {
+            "id": 133,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, которая собирает данные и может продавать их третьим лицам>"
+          }
+        ],
+        "color": "#dbdb8d",
+        "size": 2
+      },
+      "name": "ЮЮБ",
+      "vx": 0,
+      "vy": 0,
+      "x": -133.24118977143763,
+      "y": 164.55690029457216
+    },
+    {
+      "id": 134,
+      "data": {
+        "texts": [
+          {
+            "id": 134,
+            "text": "TYPE: PERSON\n\n\n Декан факультета компьютерных наук Высшей школы экономики"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "ИВАН АРЖАНСОВ",
+      "vx": 0,
+      "vy": 0,
+      "x": 85.74184286730335,
+      "y": -191.07636519170347
+    },
+    {
+      "id": 135,
+      "data": {
+        "texts": [
+          {
+            "id": 135,
+            "text": "TYPE: ORGANIZATION\n\n\n Компания, в которой Михаил Левин занимает должность директора по машинному интеллекту"
+          }
+        ],
+        "color": "#aec7e8",
+        "size": 2
+      },
+      "name": "ЯНДЕКС-МАРКЕТ",
+      "vx": 0,
+      "vy": 0,
+      "x": 39.79326583918816,
+      "y": -182.56419320973123
+    },
+    {
+      "id": 136,
+      "data": {
+        "texts": [
+          {
+            "id": 136,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "АНТОН КАНУН",
+      "vx": 0,
+      "vy": 0,
+      "x": 53.54447823381665,
+      "y": 65.00182007471453
+    },
+    {
+      "id": 137,
+      "data": {
+        "texts": [
+          {
+            "id": 137,
+            "text": "TYPE: ORGANIZATION\n\n\n Орган, решение которого необходимо для официального объявления о старте нового факультета>"
+          }
+        ],
+        "color": "#9edae5",
+        "size": 2
+      },
+      "name": "УЧЕБНЫЙ СОВЕТ",
+      "vx": 0,
+      "vy": 0,
+      "x": 15.534856556441952,
+      "y": -82.64199528203784
+    },
+    {
+      "id": 138,
+      "data": {
+        "texts": [
+          {
+            "id": 138,
+            "text": "TYPE: GEO\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "КОЧНОВСКИЙ",
+      "vx": 0,
+      "vy": 0,
+      "x": 56.97981555491623,
+      "y": 41.206973700267056
+    },
+    {
+      "id": 139,
+      "data": {
+        "texts": [
+          {
+            "id": 139,
+            "text": "TYPE: ORGANIZATION\n\n\n Факультет в вышке>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ФАКУЛЬТЕТ ЭКОНОМИЧЕСКИХ НАУК",
+      "vx": 0,
+      "vy": 0,
+      "x": 109.22385156281145,
+      "y": -48.78871071198332
+    },
+    {
+      "id": 140,
+      "data": {
+        "texts": [
+          {
+            "id": 140,
+            "text": "TYPE: ORGANIZATION\n\n\n Организация, с которой начались переговоры про онлайн-магистратуру>"
+          }
+        ],
+        "color": "#dbdb8d",
+        "size": 2
+      },
+      "name": "КУРС ЭРА",
+      "vx": 0,
+      "vy": 0,
+      "x": 125.96793325142431,
+      "y": -17.558178596227172
+    },
+    {
+      "id": 141,
+      "data": {
+        "texts": [
+          {
+            "id": 141,
+            "text": "TYPE: EVENT\n\n\n Проект, родившийся из уникального сочетания направлений в вышке>"
+          }
+        ],
+        "color": "#c49c94",
+        "size": 2
+      },
+      "name": "DATA CULTURE",
+      "vx": 0,
+      "vy": 0,
+      "x": 113.05506698270477,
+      "y": -33.05086062057211
+    },
+    {
+      "id": 142,
+      "data": {
+        "texts": [
+          {
+            "id": 142,
+            "text": "TYPE: EVENT\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#dbdb8d",
+        "size": 2
+      },
+      "name": "КОЛЛОКВИУМ",
+      "vx": 0,
+      "vy": 0,
+      "x": 127.21465322927541,
+      "y": -34.89685272666886
+    },
+    {
+      "id": 143,
+      "data": {
+        "texts": [
+          {
+            "id": 143,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#d62728",
+        "size": 2
+      },
+      "name": "ЛЕНА БУДИНА",
+      "vx": 0,
+      "vy": 0,
+      "x": 92.4651566510883,
+      "y": 117.95959856264189
+    },
+    {
+      "id": 144,
+      "data": {
+        "texts": [
+          {
+            "id": 144,
+            "text": "TYPE: ORGANIZATION\n\n\n Учёный совет — орган, решение которого необходимо для запуска нового факультета>"
+          }
+        ],
+        "color": "#17becf",
+        "size": 2
+      },
+      "name": "УЧЁНЫЙ СОВЕТ",
+      "vx": 0,
+      "vy": 0,
+      "x": 77.92453538861946,
+      "y": 121.00989336144714
+    },
+    {
+      "id": 145,
+      "data": {
+        "texts": [
+          {
+            "id": 145,
+            "text": "TYPE: ORGANIZATION\n\n\n Одно из отделений, вошедших в факультет компьютерных наук>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ОТДЕЛЕНИЕ ПРИКЛАДНОЙ МАТЕМАТИКИ И ИНФОРМАТИКИ",
+      "vx": 0,
+      "vy": 0,
+      "x": -24.615592973593348,
+      "y": 94.79403524834338
+    },
+    {
+      "id": 146,
+      "data": {
+        "texts": [
+          {
+            "id": 146,
+            "text": "TYPE: ORGANIZATION\n\n\n Второе отделение, вошедшее в факультет компьютерных наук>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ОТДЕЛЕНИЕ ПРОГРАММНОЙ ИНЖЕНЕРИИ",
+      "vx": 0,
+      "vy": 0,
+      "x": -21.67263985776276,
+      "y": 110.20890157007864
+    },
+    {
+      "id": 147,
+      "data": {
+        "texts": [
+          {
+            "id": 147,
+            "text": "TYPE: PERSON\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ИВАН",
+      "vx": 0,
+      "vy": 0,
+      "x": -7.266341715968752,
+      "y": 108.14901860032045
+    },
+    {
+      "id": 148,
+      "data": {
+        "texts": [
+          {
+            "id": 148,
+            "text": "TYPE: ORGANIZATION\n\n\n Новый факультет, который создаёт Яндекс>"
+          }
+        ],
+        "color": "#ffbb78",
+        "size": 2
+      },
+      "name": "ФАКУЛЬТЕТ ЯНДЕКСА",
+      "vx": 0,
+      "vy": 0,
+      "x": -65.22438477631061,
+      "y": -127.29892596840389
+    },
+    {
+      "id": 149,
+      "data": {
+        "texts": [
+          {
+            "id": 149,
+            "text": "TYPE: EVENT\n\n\n Мероприятие, на котором победители олимпиад по математике и программированию приезжают в Яндекс и им рассказывают о компании>"
+          }
+        ],
+        "color": "#9edae5",
+        "size": 2
+      },
+      "name": "ВСТРЕЧА ПОБЕДИТЕЛЕЙ ОЛИМПИАД В ЯНДЕКСЕ",
+      "vx": 0,
+      "vy": 0,
+      "x": -83.18184433114865,
+      "y": -113.01293374147208
+    },
+    {
+      "id": 150,
+      "data": {
+        "texts": [
+          {
+            "id": 150,
+            "text": "TYPE: ORGANIZATION\n\n\n Академия предоставляет преподавателей для второго курса>"
+          }
+        ],
+        "color": "#c7c7c7",
+        "size": 2
+      },
+      "name": "АКАДЕМИЯ",
+      "vx": 0,
+      "vy": 0,
+      "x": 86.77732871190321,
+      "y": 24.541813127610865
+    },
+    {
+      "id": 151,
+      "data": {
+        "texts": [
+          {
+            "id": 151,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#17becf",
+        "size": 2
+      },
+      "name": "РАССКАЗЧИК",
+      "vx": 0,
+      "vy": 0,
+      "x": 81.22497282119642,
+      "y": 43.64996391003868
+    },
+    {
+      "id": 152,
+      "data": {
+        "texts": [
+          {
+            "id": 152,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "1С",
+      "vx": 0,
+      "vy": 0,
+      "x": 146.94226223833962,
+      "y": 55.456969446031
+    },
+    {
+      "id": 153,
+      "data": {
+        "texts": [
+          {
+            "id": 153,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and the list of descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "ИНСТИТУТ СИСТЕМНОГО ПРОГРАММИРОВАНИЯ РАН",
+      "vx": 0,
+      "vy": 0,
+      "x": 141.37908356726706,
+      "y": 40.70823928075663
+    },
+    {
+      "id": 154,
+      "data": {
+        "texts": [
+          {
+            "id": 154,
+            "text": "TYPE: ORGANIZATION\n\n\n To provide a comprehensive summary, please supply the entities and their descriptions."
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "УНИВЕРСИТЕТ МАЙТ КОВИН",
+      "vx": 0,
+      "vy": 0,
+      "x": 134.82821853242828,
+      "y": 66.58102197729826
+    },
+    {
+      "id": 155,
+      "data": {
+        "texts": [
+          {
+            "id": 155,
+            "text": "TYPE: EVENT\n\n\n Направление в образовании и науке, которое активно эволюционирует>"
+          }
+        ],
+        "color": "#17becf",
+        "size": 2
+      },
+      "name": "ПРОГРАММНАЯ ИНЖЕНЕРИЯ",
+      "vx": 0,
+      "vy": 0,
+      "x": 152.64593122539043,
+      "y": 30.955775788381608
+    },
+    {
+      "id": 156,
+      "data": {
+        "texts": [
+          {
+            "id": 156,
+            "text": "TYPE: PERSON\n\n\n Аркадий Волож — человек, который произнёс фразу о том, что «спецназ может готовить только спецназ»>"
+          }
+        ],
+        "color": "#1f77b4",
+        "size": 2
+      },
+      "name": "АРКАДИЙ ВОЛОЖ",
+      "vx": 0,
+      "vy": 0,
+      "x": 143.53168824133667,
+      "y": 17.801876160680116
+    },
+    {
+      "id": 157,
+      "data": {
+        "texts": [
+          {
+            "id": 157,
+            "text": "TYPE: ORGANIZATION\n\n\n MIT — известный университет>"
+          }
+        ],
+        "color": "#c5b0d5",
+        "size": 2
+      },
+      "name": "MIT",
+      "vx": 0,
+      "vy": 0,
+      "x": -46.844077784815795,
+      "y": 199.0823599005925
+    },
+    {
+      "id": 158,
+      "data": {
+        "texts": [
+          {
+            "id": 158,
+            "text": "TYPE: ORGANIZATION\n\n\n Company that initially brought many professionals to teach at the Higher School of Economics>"
+          }
+        ],
+        "color": "#17becf",
+        "size": 2
+      },
+      "name": "YANDEX",
+      "vx": 0,
+      "vy": 0,
+      "x": 2.4827714137454926,
+      "y": -184.88218456661556
+    },
+    {
+      "id": 159,
+      "data": {
+        "texts": [
+          {
+            "id": 159,
+            "text": "TYPE: \n\n\n "
+          }
+        ],
+        "color": "#ff9896",
+        "size": 2
+      },
+      "name": "УКОС",
+      "vx": 0,
+      "vy": 0,
+      "x": -96.95852184876978,
+      "y": -171.0055234059664
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "target": 64,
+      "data": {
+        "id": 0,
+        "explanation": "Даниэл работает Android-разработчиком в ВК-Клипах",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 0,
+      "target": 3,
+      "data": {
+        "id": 1,
+        "explanation": "Даниэл работал в Яндексе",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 0,
+      "target": 65,
+      "data": {
+        "id": 2,
+        "explanation": "Даниэл работал в Яндекс-Такси",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 0,
+      "target": 12,
+      "data": {
+        "id": 3,
+        "explanation": "Даниэл начал заниматься Android-разработкой из-за интереса к языку программирования Java",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 0,
+      "target": 18,
+      "data": {
+        "id": 4,
+        "explanation": "Даниэл обсуждает популярность и преимущества Котлина по сравнению с Джавой",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 1,
+      "target": 2,
+      "data": {
+        "id": 5,
+        "explanation": "Глеб работает руководителем отдела мобильной разработки в Т-Банке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 1,
+      "target": 66,
+      "data": {
+        "id": 6,
+        "explanation": "Глеб учился в ВМК МГУ",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 1,
+      "target": 67,
+      "data": {
+        "id": 7,
+        "explanation": "Глеб работал в Ленко до Т-Банка",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 1,
+      "target": 4,
+      "data": {
+        "id": 8,
+        "explanation": "Глеб руководит группой Микан как хобби",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 1,
+      "target": 68,
+      "data": {
+        "id": 9,
+        "explanation": "Глеб участвует в подкасте Уютный ФКК и задает вопросы",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 2,
+      "target": 69,
+      "data": {
+        "id": 10,
+        "explanation": "Обе компании упоминаются в контексте обсуждения структуры мобильной разработки крупных организаций",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 2,
+      "target": 70,
+      "data": {
+        "id": 11,
+        "explanation": "Глеб работает в Т-банке и отвечает на вопросы, связанные с внедрением искусственного интеллекта",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 2,
+      "target": 71,
+      "data": {
+        "id": 12,
+        "explanation": "Т-банк имеет департамент искусственного интеллекта, который занимается разработкой различных моделей",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 2,
+      "target": 72,
+      "data": {
+        "id": 13,
+        "explanation": "Говорящий использует Telegram как пример хорошо продуманного приложения, что может влиять на подходы к разработке в Т-банке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 11,
+      "data": {
+        "id": 14,
+        "explanation": "Т-Банк и Яндекс являются примерами организаций, которые могут иметь сложные системы и сталкиваться с вопросами безопасности пользовательских данных",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 69,
+      "data": {
+        "id": 15,
+        "explanation": "Яндекс и ВК являются примерами организаций, которые могут иметь сложные системы и сталкиваться с вопросами безопасности пользовательских данных",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 73,
+      "data": {
+        "id": 16,
+        "explanation": "Facebook and Yandex are both mentioned as examples of large organizations that need to synchronize work among a large number of employees",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 25,
+      "data": {
+        "id": 17,
+        "explanation": "Герой работал в Яндексе во внутренней инфраструктуре хранения обработки данных",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 31,
+      "data": {
+        "id": 18,
+        "explanation": "Игорь, возможно, является сотрудником Яндекса или проходил собеседование в Яндексе",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 74,
+      "data": {
+        "id": 19,
+        "explanation": "Говорящий работал в Яндексе и высоко оценивает их продукты с точки зрения интерфейсов",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 47,
+      "data": {
+        "id": 20,
+        "explanation": "To provide a comprehensive summary, please supply the entities and their descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 48,
+      "data": {
+        "id": 21,
+        "explanation": "To provide a comprehensive summary, please supply the entities and their descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 75,
+      "data": {
+        "id": 22,
+        "explanation": "Kuzminov interacted with Yandex regarding the creation of a new faculty",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 76,
+      "data": {
+        "id": 23,
+        "explanation": "Lena Bunina worked with Yandex on educational projects",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 49,
+      "data": {
+        "id": 24,
+        "explanation": "To provide a summary, please supply the entities and the description list.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 42,
+      "data": {
+        "id": 25,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 77,
+      "data": {
+        "id": 26,
+        "explanation": "Центр непрерывного образования сотрудничает с Яндексом, предлагает курсы по питону",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 78,
+      "data": {
+        "id": 27,
+        "explanation": "Яндекс активно участвует в жизни факультета компьютерных наук и привлекает крупных партнёров",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 55,
+      "data": {
+        "id": 28,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 8,
+      "data": {
+        "id": 29,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 79,
+      "data": {
+        "id": 30,
+        "explanation": "Яндекс взаимодействует со студентами вузов и даёт им рекомендации относительно учёбы и работы",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 80,
+      "data": {
+        "id": 31,
+        "explanation": "Михаил в своей лекции упоминал использование математического анализа в Яндексе",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 81,
+      "data": {
+        "id": 32,
+        "explanation": "Яндекс и OpenAI — известные компании, в которых для работы требуются специалисты с глубокими знаниями",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 59,
+      "data": {
+        "id": 33,
+        "explanation": "Яндекс и SpaceX — известные компании, в которых для работы требуются специалисты с глубокими знаниями",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 82,
+      "data": {
+        "id": 34,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 83,
+      "data": {
+        "id": 35,
+        "explanation": "Яндекс проводил конференцию в Берлине",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 22,
+      "data": {
+        "id": 36,
+        "explanation": "Сотрудничество Яндекса с мехматом через образовательные проекты и стажировки",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 84,
+      "data": {
+        "id": 37,
+        "explanation": "Герой работал в Гугле, а затем перешёл в Яндекс",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 85,
+      "data": {
+        "id": 38,
+        "explanation": "Опыт факультета математики служит примером для сотрудничества между Яндексом и высшей школой экономики",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 86,
+      "data": {
+        "id": 39,
+        "explanation": "Шеня проводил собеседования с преподавателями математики для работы в Яндексе",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 58,
+      "data": {
+        "id": 40,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 87,
+      "data": {
+        "id": 41,
+        "explanation": "Яндекс организует встречу с победителями олимпиад",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 88,
+      "data": {
+        "id": 42,
+        "explanation": "Яндекс развивает факультет компьютерных наук и привлекает к нему крупных партнёров",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 3,
+      "target": 89,
+      "data": {
+        "id": 43,
+        "explanation": "Сотрудники Яндекса преподавали на первом курсе по прикладной математике и информатике",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 4,
+      "target": 90,
+      "data": {
+        "id": 44,
+        "explanation": "У группы Микан был концерт в 16-Тон",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 5,
+      "target": 91,
+      "data": {
+        "id": 45,
+        "explanation": "El created an ecosystem with its own application store",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 5,
+      "target": 6,
+      "data": {
+        "id": 46,
+        "explanation": "El is associated with the iOS operating system",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 5,
+      "target": 7,
+      "data": {
+        "id": 47,
+        "explanation": "El competes in the market with Android",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 6,
+      "target": 92,
+      "data": {
+        "id": 48,
+        "explanation": "Swift is recommended for iOS development",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 7,
+      "target": 93,
+      "data": {
+        "id": 49,
+        "explanation": "Kotlin is recommended for Android development",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 8,
+      "target": 10,
+      "data": {
+        "id": 50,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the description list.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 8,
+      "target": 9,
+      "data": {
+        "id": 51,
+        "explanation": "Aura is a new player in the market, competing with Google in the Russian segment",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 8,
+      "target": 94,
+      "data": {
+        "id": 52,
+        "explanation": "Huawei uses Android, an operating system associated with Google, but has its own store for applications",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 8,
+      "target": 95,
+      "data": {
+        "id": 53,
+        "explanation": "Blackberry's platforms were вытеснены by Android, which is associated with Google",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 8,
+      "target": 96,
+      "data": {
+        "id": 54,
+        "explanation": "The text mentions technical articles on Habr as a source of information for developers",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 8,
+      "target": 55,
+      "data": {
+        "id": 55,
+        "explanation": "Миша ранее работал в Google",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 9,
+      "target": 10,
+      "data": {
+        "id": 56,
+        "explanation": "Aura is a new player in the market, competing with Apple in the Russian segment",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 10,
+      "target": 94,
+      "data": {
+        "id": 57,
+        "explanation": "Huawei competes with Apple in the market of mobile devices and operating systems",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 10,
+      "target": 95,
+      "data": {
+        "id": 58,
+        "explanation": "Blackberry's platforms were вытеснены by iOS, which is associated with Apple",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 10,
+      "target": 13,
+      "data": {
+        "id": 59,
+        "explanation": "Изменение поведения элемента интерфейса Apple повлияло на разработку функции «сторис» в банке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 11,
+      "target": 69,
+      "data": {
+        "id": 60,
+        "explanation": "Т-Банк и ВК являются примерами организаций, которые могут иметь сложные системы и сталкиваться с вопросами безопасности пользовательских данных",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 11,
+      "target": 97,
+      "data": {
+        "id": 61,
+        "explanation": "В Т Банке работает команда дизайнеров, которые разрабатывают приложения",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 12,
+      "target": 41,
+      "data": {
+        "id": 62,
+        "explanation": "Java can be used in data engineering, particularly for building data pipelines",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 13,
+      "target": 98,
+      "data": {
+        "id": 63,
+        "explanation": "Оба проекта являются примерами интересных и нестандартных задач в мобильной разработке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 14,
+      "target": 99,
+      "data": {
+        "id": 64,
+        "explanation": "Сеньор разработчики являются частью более широкой группы мобильных разработчиков и специализируются на вопросах безопасности",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 15,
+      "target": 100,
+      "data": {
+        "id": 65,
+        "explanation": "Фулбек и Кэн связаны в контексте обсуждения логики работы приложения и отказоустойчивости",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 16,
+      "target": 101,
+      "data": {
+        "id": 66,
+        "explanation": "BigTech companies might use Telegram bots as a solution for some tasks instead of developing their own applications",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 17,
+      "target": 102,
+      "data": {
+        "id": 67,
+        "explanation": "Данил работал в Мобильном банке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 18,
+      "target": 103,
+      "data": {
+        "id": 68,
+        "explanation": "Котлин становится популярным языком для разработки под Android",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 19,
+      "target": 104,
+      "data": {
+        "id": 69,
+        "explanation": "Игорь Маслов руководит большим департаментом в Тенькове, который разрабатывает различную инфраструктуру",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 19,
+      "target": 105,
+      "data": {
+        "id": 70,
+        "explanation": "Игорь Маслов работал в Абе",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 19,
+      "target": 20,
+      "data": {
+        "id": 71,
+        "explanation": "Игорь Маслов работал в Лаборатории Касперского",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 20,
+      "target": 106,
+      "data": {
+        "id": 72,
+        "explanation": "Автор работал в Лаборатории Касперского и занимался системным программированием",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 21,
+      "target": 25,
+      "data": {
+        "id": 73,
+        "explanation": "Герой рассматривал ВМК как один из вариантов обучения в МГУ",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 21,
+      "target": 107,
+      "data": {
+        "id": 74,
+        "explanation": "Ваня Кокто лучше всех знает тему архитектуры компьютера и операционных систем на ВМК",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 21,
+      "target": 22,
+      "data": {
+        "id": 75,
+        "explanation": "Автор текста выбирал между ВМК и Мехматом, в итоге поступил на ВМК",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 22,
+      "target": 25,
+      "data": {
+        "id": 76,
+        "explanation": "Герой выбрал мехмат для обучения в МГУ",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 22,
+      "target": 55,
+      "data": {
+        "id": 77,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 22,
+      "target": 108,
+      "data": {
+        "id": 78,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 23,
+      "target": 109,
+      "data": {
+        "id": 79,
+        "explanation": "Иван Пузыревский работает в Инк Cloud",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 24,
+      "target": 25,
+      "data": {
+        "id": 80,
+        "explanation": "Герой перешёл в Яндекс Облако в 2021 году",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 25,
+      "target": 26,
+      "data": {
+        "id": 81,
+        "explanation": "Герой изучал программы ВМК и мехмата в МГУ",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 26,
+      "target": 49,
+      "data": {
+        "id": 82,
+        "explanation": "Человек, ставший деканом, работал в МГУ до перехода в Вышку",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 26,
+      "target": 47,
+      "data": {
+        "id": 83,
+        "explanation": "Главный герой перешел работать из МГУ в Высшую школу экономики",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 27,
+      "target": 110,
+      "data": {
+        "id": 84,
+        "explanation": "JavaScript и TypeScript часто используются вместе и имеют схожие области применения",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 27,
+      "target": 111,
+      "data": {
+        "id": 85,
+        "explanation": "JavaScript и C++ — это разные языки программирования, которые могут быть изучены и использованы для решения различных задач",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 27,
+      "target": 112,
+      "data": {
+        "id": 86,
+        "explanation": "NS может быть связан с использованием JavaScript, так как упоминается в контексте интереса к языку программирования",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 28,
+      "target": 107,
+      "data": {
+        "id": 87,
+        "explanation": "Ваня Кокто летел из Сириуса",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 29,
+      "target": 30,
+      "data": {
+        "id": 88,
+        "explanation": "ВШЕ использует инфраструктуру для поддержки своих программ и проектов",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 30,
+      "target": 113,
+      "data": {
+        "id": 89,
+        "explanation": "Инфраструктура обеспечивает поддержку и обслуживание нейросетей",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 31,
+      "target": 114,
+      "data": {
+        "id": 90,
+        "explanation": "Игорь и Ваня обсуждают важность алгоритмов и структур данных",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 31,
+      "target": 115,
+      "data": {
+        "id": 91,
+        "explanation": "Игорь может помочь объяснить, как работают автоматические аукционы",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 32,
+      "target": 33,
+      "data": {
+        "id": 92,
+        "explanation": "EB и российская школа безопасности работают над схожими вопросами безопасности и целостности данных",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 33,
+      "target": 116,
+      "data": {
+        "id": 93,
+        "explanation": "«Вкусная точка» имеет рестораны по всей России",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 33,
+      "target": 117,
+      "data": {
+        "id": 94,
+        "explanation": "Министр связи и массовой коммуникации является государственным деятелем России",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 34,
+      "target": 118,
+      "data": {
+        "id": 95,
+        "explanation": "Дарья Касьяненко запускает новую магистратуру Инженерия данных",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 35,
+      "target": 119,
+      "data": {
+        "id": 96,
+        "explanation": "Влад Бояров работает в компании Вкусная точка",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 36,
+      "target": 119,
+      "data": {
+        "id": 97,
+        "explanation": "Влад Бояров работал в компании Бере",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 37,
+      "target": 119,
+      "data": {
+        "id": 98,
+        "explanation": "Влад Бояров работал в компании Минеральные цифры",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 38,
+      "target": 120,
+      "data": {
+        "id": 99,
+        "explanation": "A data engineer works in an organization, managing and preparing data for use within the company",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 38,
+      "target": 39,
+      "data": {
+        "id": 100,
+        "explanation": "The data engineer prepares data that the data analyst uses to solve tasks",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 38,
+      "target": 40,
+      "data": {
+        "id": 101,
+        "explanation": "The data engineer prepares data that the data scientist uses for machine learning tasks",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 38,
+      "target": 121,
+      "data": {
+        "id": 102,
+        "explanation": "Data engineers are members of IT-teams and play a key role in designing and implementing data solutions within the team",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 39,
+      "target": 120,
+      "data": {
+        "id": 103,
+        "explanation": "A data analyst works in an organization, using data prepared by the data engineer to perform analysis",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 40,
+      "target": 120,
+      "data": {
+        "id": 104,
+        "explanation": "A data scientist works in an organization, often using data prepared by the data engineer to train machine learning models",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 41,
+      "target": 122,
+      "data": {
+        "id": 105,
+        "explanation": "SQL is a fundamental tool used in data engineering",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 41,
+      "target": 123,
+      "data": {
+        "id": 106,
+        "explanation": "Python is commonly used in data engineering for scripting and data analysis",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 41,
+      "target": 124,
+      "data": {
+        "id": 107,
+        "explanation": "Scala is used in data engineering, especially with tools like Spark",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 41,
+      "target": 125,
+      "data": {
+        "id": 108,
+        "explanation": "Spark is a key tool in data engineering for distributed data processing",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 41,
+      "target": 126,
+      "data": {
+        "id": 109,
+        "explanation": "Apache Airflow is used in the field of data engineering for orchestration tasks",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 42,
+      "target": 127,
+      "data": {
+        "id": 110,
+        "explanation": "ФКН готовит специалистов (инженеров данных), которых не хватает в сфере маркетплейсов",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 42,
+      "target": 128,
+      "data": {
+        "id": 111,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 42,
+      "target": 53,
+      "data": {
+        "id": 112,
+        "explanation": "Шень связан с ФКН, так как проводит отбор преподавателей математики для этого факультета",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 42,
+      "target": 55,
+      "data": {
+        "id": 113,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 42,
+      "target": 129,
+      "data": {
+        "id": 114,
+        "explanation": "Первый набор студентов на ФКН показал высокое качество обучения на факультете",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 43,
+      "target": 130,
+      "data": {
+        "id": 115,
+        "explanation": "Пользователи продуктов Oracle переходят на MP-СУБД",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 44,
+      "target": 131,
+      "data": {
+        "id": 116,
+        "explanation": "Влад и Даша обсуждают применение математики в работе дата-инженеров",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 44,
+      "target": 132,
+      "data": {
+        "id": 117,
+        "explanation": "Влад — специалист из сферы IT, разбирается в теме качества данных",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 44,
+      "target": 133,
+      "data": {
+        "id": 118,
+        "explanation": "Влад обсуждает вопросы этики сбора данных, которые актуальны для компаний, собирающих данные, таких как ЮЮБ",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 45,
+      "target": 134,
+      "data": {
+        "id": 119,
+        "explanation": "Иван Аржансов является деканом факультета компьютерных наук Высшей школы экономики",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 45,
+      "target": 46,
+      "data": {
+        "id": 120,
+        "explanation": "Михаил Левин является одним из основателей факультета компьютерных наук Высшей школы экономики",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 46,
+      "target": 135,
+      "data": {
+        "id": 121,
+        "explanation": "Михаил Левин работает в Яндекс-Маркете директором по машинному интеллекту",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 47,
+      "target": 75,
+      "data": {
+        "id": 122,
+        "explanation": "To provide a comprehensive summary, please supply the entities and their descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 47,
+      "target": 76,
+      "data": {
+        "id": 123,
+        "explanation": "Lena Bunina was involved in creating a new faculty at the Higher School of Economics",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 47,
+      "target": 136,
+      "data": {
+        "id": 124,
+        "explanation": "To provide a comprehensive summary, please supply the entities and their descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 47,
+      "target": 50,
+      "data": {
+        "id": 125,
+        "explanation": "Ярослав Иванович представляет высшую школу экономики и участвует в обсуждении создания факультета",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 47,
+      "target": 51,
+      "data": {
+        "id": 126,
+        "explanation": "Высшая школа экономики является университетом, в котором существует факультет компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 47,
+      "target": 117,
+      "data": {
+        "id": 127,
+        "explanation": "Министр связи и массовой коммуникации выступил на мероприятии, организованном Высшей школой экономики",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 48,
+      "target": 76,
+      "data": {
+        "id": 128,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the description list.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 48,
+      "target": 137,
+      "data": {
+        "id": 129,
+        "explanation": "Для официального объявления о старте нового факультета в Шуте необходимо решение учёного совета",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 138,
+      "data": {
+        "id": 130,
+        "explanation": "Факультет разместился на Кочновском в Вышке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 117,
+      "data": {
+        "id": 131,
+        "explanation": "Министр выступил на мероприятии, связанном с приёмной кампанией в Вышке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 55,
+      "data": {
+        "id": 132,
+        "explanation": "To provide a comprehensive summary, please supply the entities and their descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 80,
+      "data": {
+        "id": 133,
+        "explanation": "Михаил является частью команды, которая разрабатывает концепцию образования в Вышке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 139,
+      "data": {
+        "id": 134,
+        "explanation": "Вышка имеет факультет экономических наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 140,
+      "data": {
+        "id": 135,
+        "explanation": "Вышка вела переговоры с Курс Эрой про онлайн-магистратуру",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 141,
+      "data": {
+        "id": 136,
+        "explanation": "Data Culture родился из уникального сочетания направлений в вышке",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 58,
+      "data": {
+        "id": 137,
+        "explanation": "Факультет является частью вышки",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 88,
+      "data": {
+        "id": 138,
+        "explanation": "Высшая школа экономики — авторитетный вуз, с которым сотрудничает факультет компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 49,
+      "target": 142,
+      "data": {
+        "id": 139,
+        "explanation": "Вышка организовала коллоквиум, который продолжается до сих пор",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 50,
+      "target": 51,
+      "data": {
+        "id": 140,
+        "explanation": "Ярослав Иванович принимал решение о создании факультета компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 50,
+      "target": 143,
+      "data": {
+        "id": 141,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 50,
+      "target": 144,
+      "data": {
+        "id": 142,
+        "explanation": "Ярослав Иванович упоминает о необходимости решения учёного совета для старта факультета",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 51,
+      "target": 108,
+      "data": {
+        "id": 143,
+        "explanation": "Антон участвует в дискуссиях о структуре и содержании факультета компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 51,
+      "target": 85,
+      "data": {
+        "id": 144,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 51,
+      "target": 145,
+      "data": {
+        "id": 145,
+        "explanation": "Отделение прикладной математики и информатики является частью факультета компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 51,
+      "target": 146,
+      "data": {
+        "id": 146,
+        "explanation": "Отделение программной инженерии является частью факультета компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 51,
+      "target": 138,
+      "data": {
+        "id": 147,
+        "explanation": "Факультет компьютерных наук разместился на Кочновском",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 51,
+      "target": 147,
+      "data": {
+        "id": 148,
+        "explanation": "Иван участвовал в обсуждении вопросов, связанных с факультетом компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 52,
+      "target": 78,
+      "data": {
+        "id": 149,
+        "explanation": "Высшая школа экономики является авторитетным вузом, который уже существовал на момент создания факультета компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 53,
+      "target": 54,
+      "data": {
+        "id": 150,
+        "explanation": "Шень участвует в процессе отбора талантливых людей для Яндекса",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 54,
+      "target": 148,
+      "data": {
+        "id": 151,
+        "explanation": "Яндекс создаёт новый факультет",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 54,
+      "target": 82,
+      "data": {
+        "id": 152,
+        "explanation": "Яндекс ищет талантливых людей в Москве",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 54,
+      "target": 149,
+      "data": {
+        "id": 153,
+        "explanation": "Яндекс организует встречу победителей олимпиад в своей компании",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 55,
+      "target": 150,
+      "data": {
+        "id": 154,
+        "explanation": "Миша говорил о преподавателях из академии, которые приходят на второй курс",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 55,
+      "target": 58,
+      "data": {
+        "id": 155,
+        "explanation": "Миша и рассказчик обсуждали вопросы, связанные с факультетом",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 55,
+      "target": 151,
+      "data": {
+        "id": 156,
+        "explanation": "Миша и рассказчик обсуждали различные вопросы, связанные с образованием",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 56,
+      "target": 88,
+      "data": {
+        "id": 157,
+        "explanation": "Александр Шин — представитель факультета компьютерных наук",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 57,
+      "target": 58,
+      "data": {
+        "id": 158,
+        "explanation": "To provide a comprehensive summary, please supply the entities and the list of descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 58,
+      "target": 152,
+      "data": {
+        "id": 159,
+        "explanation": "1С стал новым партнёром факультета",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 58,
+      "target": 153,
+      "data": {
+        "id": 160,
+        "explanation": "Институт системного программирования РАН стал новым партнёром факультета",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 58,
+      "target": 154,
+      "data": {
+        "id": 161,
+        "explanation": "To provide a comprehensive summary, please supply the entities and their descriptions.",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 58,
+      "target": 155,
+      "data": {
+        "id": 162,
+        "explanation": "Программная инженерия вошла в состав факультета",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 58,
+      "target": 156,
+      "data": {
+        "id": 163,
+        "explanation": "Аркадий Волож высказывался о принципах работы факультета",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 59,
+      "target": 81,
+      "data": {
+        "id": 164,
+        "explanation": "OpenAI и SpaceX — известные компании, в которых для работы требуются специалисты с глубокими знаниями",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 60,
+      "target": 157,
+      "data": {
+        "id": 165,
+        "explanation": "Упоминание Стэнфорда и MIT в контексте сравнения с другим университетом",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 61,
+      "target": 62,
+      "data": {
+        "id": 166,
+        "explanation": "The Higher School of Economics is recognized by students at Memorial University, New Found",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 62,
+      "target": 158,
+      "data": {
+        "id": 167,
+        "explanation": "Yandex initially brought many professionals to teach at the Higher School of Economics",
+        "color": "#000000"
+      }
+    },
+    {
+      "source": 63,
+      "target": 159,
+      "data": {
+        "id": 168,
+        "explanation": "На Дне стажёра были люди с футболками, связанными с курсом «Укос»",
+        "color": "#000000"
+      }
+    }
+  ]
+}

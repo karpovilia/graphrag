@@ -40,7 +40,7 @@
 
     if (node) {
       selectedLink.value = null;
-      if (event.ctrlKey) {
+      if (event.shiftKey) {
         const nodeIndex = selectedNodes.value.findIndex((nid) => nid === node.id);
 
         if (nodeIndex === -1) {
