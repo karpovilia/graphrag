@@ -1,2 +1,5 @@
 *.ttf filter=lfs diff=lfs merge=lfs -text
 *.ico filter=lfs diff=lfs merge=lfs -text
+backend/data/graphs filter=lfs diff=lfs merge=lfs -text
+backend/data/output_gazeta_threshold filter=lfs diff=lfs merge=lfs -text
+backend/data/yandex5_podcast filter=lfs diff=lfs merge=lfs -text
