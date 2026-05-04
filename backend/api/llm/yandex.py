@@ -9,7 +9,6 @@ from .base import (
     CompletionClient,
     CompletionParams,
     CompletionResult,
-    CompletionUsage,
     EmbeddingClient,
     LLMError,
     Message,
