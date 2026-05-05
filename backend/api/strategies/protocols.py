@@ -32,17 +32,23 @@ class _Strategy(Protocol):
 class BuilderProtocol(_Strategy, Protocol):
     """Top-of-pipeline strategy: raw Documents → first GraphBuildState.
 
-    Builders own LLM extraction, span chunking, and initial entity/edge
-    creation. They MUST set `layer`/`granularity` on every Node and Edge
-    they produce so downstream cleaners and the layered viewer (F7)
-    work correctly. Validated post-call by the orchestrator against
-    `descriptor.produces_layers`.
+    Builders own chunking, entity/relation extraction, and initial
+    edge creation. They MUST set `layer`/`granularity` on every Node and
+    Edge and use the supplied `graph_variant_id` so downstream cleaners,
+    the persistence layer, and the layered viewer (F7) all see a
+    consistent variant identity. The orchestrator validates the produced
+    layers against `descriptor.produces_layers` post-call.
+
+    Documents arrive paired with their text content — the orchestrator
+    is responsible for loading text from blob storage. Builders never
+    touch the persistence layer directly.
     """
 
     async def build(
         self,
+        graph_variant_id: Id,
         corpus_id: Id,
-        documents: list[Document],
+        documents: list[tuple[Document, str]],
         params: dict[str, Any],
     ) -> GraphBuildState: ...
 
