@@ -1,6 +1,6 @@
 [project]
 name = "graphrag-backend"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = [
     "bayanpy>=0.7.7",
@@ -8,7 +8,6 @@ dependencies = [
 
 [tool.uv.workspace]
 members = [
-    "graphrag",
     "api",
 ]
 

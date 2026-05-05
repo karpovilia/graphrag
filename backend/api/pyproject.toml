@@ -6,6 +6,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "faiss-cpu>=1.8.0",
     "fastapi>=0.122.0",
+    "graphrag>=1.0.0",
     "httpx>=0.28.0",
     "loguru>=0.7.3",
     "numpy>=1.26.0",
