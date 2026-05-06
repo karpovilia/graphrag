@@ -18,8 +18,14 @@ from .protocols import (
     ReasonerProtocol,
     ReasonResult,
 )
-from .registry import Registry, all_descriptors, builders, cleaners, clusterers, reasoners
+from .registry import Registry, all_descriptors
 from .state import GraphBuildState
+
+# NOTE: do NOT re-export the per-kind registry singletons here. Their
+# names (builders / cleaners / clusterers / reasoners) collide with the
+# subpackage names under api/strategies/, and importing those
+# subpackages would silently shadow the singletons. Callers reach for
+# them via `from api.strategies.registry import cleaners` instead.
 
 __all__ = [
     "BuilderProtocol",
@@ -32,8 +38,4 @@ __all__ = [
     "Registry",
     "StrategyDescriptor",
     "all_descriptors",
-    "builders",
-    "cleaners",
-    "clusterers",
-    "reasoners",
 ]
