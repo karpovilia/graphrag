@@ -129,3 +129,8 @@ class GraphVariant(DomainModel):
     """If this variant was forked from another (e.g. cleaner re-run), the
     parent is recorded so the journal can be replayed.
     """
+
+    version: int = Field(default=0, ge=0)
+    """Optimistic-lock counter. Incremented on every persisted curation op
+    via the journal. Concurrent edits with stale `expected_version`
+    return 409 from the API."""
