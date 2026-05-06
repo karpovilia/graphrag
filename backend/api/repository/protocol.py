@@ -115,6 +115,18 @@ class RepositoryProtocol(Protocol):
         limit: int | None = None,
     ) -> list[JournalEntry]: ...
 
+    async def revert_last(
+        self,
+        variant_id: Id,
+        expected_version: int,
+    ) -> JournalAppendResult: ...
+    """Pop the last journal entry and recompute state by replaying the
+    remaining journal against the variant's base state. Returns the
+    result with `entry` set to the entry that was removed so the UI can
+    display "undid X". Phase 2.4 limitation: destructive — the popped
+    entry is gone from the journal, audit-preserving undo (compensating
+    op as a fresh entry) is a follow-up."""
+
     # ---- vector outbox ----
 
     async def list_pending_outbox(

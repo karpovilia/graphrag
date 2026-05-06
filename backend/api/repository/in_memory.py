@@ -3,14 +3,14 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict
 
-from api.curation import affected_set, apply_journal_op
+from api.curation import affected_set, apply_journal_op, replay_journal
 from api.domain.corpus import Corpus, Document
 from api.domain.curation import JournalEntry
 from api.domain.graph import GraphVariant, Node
 from api.domain.types import Id
 from api.strategies.state import GraphBuildState
 
-from .errors import ConcurrentEditError, NotFoundError
+from .errors import ConcurrentEditError, NotFoundError, RepositoryError
 from .protocol import (
     JournalAppendResult,
     RepositoryProtocol,
@@ -32,6 +32,10 @@ class InMemoryRepository(RepositoryProtocol):
         self._documents: dict[Id, Document] = {}
         self._variants: dict[Id, GraphVariant] = {}
         self._states: dict[Id, GraphBuildState] = {}
+        self._base_states: dict[Id, GraphBuildState] = {}
+        """Immutable post-build snapshot — used by revert_last to replay
+        a truncated journal without keeping a per-version state cache."""
+
         self._journals: dict[Id, list[JournalEntry]] = defaultdict(list)
         self._outbox: list[VectorOutboxEntry] = []
         self._next_outbox_id = 1
@@ -94,6 +98,7 @@ class InMemoryRepository(RepositoryProtocol):
         )
         self._variants[stored.id] = stored
         self._states[stored.id] = state
+        self._base_states[stored.id] = state
         return stored
 
     async def get_variant(self, variant_id: Id) -> GraphVariant:
@@ -175,6 +180,56 @@ class InMemoryRepository(RepositoryProtocol):
         if limit is not None:
             entries = entries[-limit:]
         return entries
+
+    async def revert_last(
+        self,
+        variant_id: Id,
+        expected_version: int,
+    ) -> JournalAppendResult:
+        async with self._lock_for(variant_id):
+            try:
+                variant = self._variants[variant_id]
+            except KeyError as e:
+                raise NotFoundError(f"variant {variant_id} not found") from e
+
+            if variant.version != expected_version:
+                raise ConcurrentEditError(
+                    expected=expected_version, actual=variant.version
+                )
+
+            journal = self._journals[variant_id]
+            if not journal:
+                raise RepositoryError("nothing to undo: journal is empty")
+
+            # Compute affected_set against the pre-revert state so the
+            # caller knows which embeddings need re-derivation in the
+            # rolled-back direction.
+            pre_state = self._states[variant_id]
+            removed = journal[-1]
+            affected = affected_set(pre_state, removed)
+
+            self._journals[variant_id] = journal[:-1]
+            base = self._base_states[variant_id]
+            new_state = replay_journal(base, self._journals[variant_id])
+            self._states[variant_id] = new_state
+
+            new_variant = variant.model_copy(
+                update={
+                    "version": variant.version + 1,
+                    "node_count": len(new_state.nodes),
+                    "edge_count": len(new_state.edges),
+                    "layers_present": sorted({n.layer for n in new_state.nodes}),
+                }
+            )
+            self._variants[variant_id] = new_variant
+
+            self._enqueue_outbox(variant_id, affected.node_ids, new_state)
+
+            return JournalAppendResult(
+                variant=new_variant,
+                entry=removed,
+                affected=affected_set_to_dict(affected),
+            )
 
     # ---- outbox ----
 

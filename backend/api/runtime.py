@@ -16,6 +16,7 @@ from functools import lru_cache
 
 from api.eda.ner import NatashaNer, NerProtocol
 from api.llm import CompletionClient, get_completion_client
+from api.repository import InMemoryRepository, RepositoryProtocol
 
 
 @lru_cache(maxsize=1)
@@ -35,3 +36,15 @@ def get_llm() -> CompletionClient:
     """
 
     return get_completion_client()
+
+
+@lru_cache(maxsize=1)
+def get_repository() -> RepositoryProtocol:
+    """Process-wide repository singleton.
+
+    Phase 2 ships InMemoryRepository wired here. PostgresRepository takes
+    over once 2.1b lands; the swap is a one-line change because every
+    route reaches for this singleton via FastAPI Depends.
+    """
+
+    return InMemoryRepository()

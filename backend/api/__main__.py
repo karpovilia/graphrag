@@ -17,10 +17,11 @@ from api.config import get_settings
 from api.llm import register_clients
 from api.llm.deepseek import DeepseekClient
 from api.llm.yandex import YandexCompletionClient, YandexEmbeddingClient
-from api.routes import eda_router, graphs_router, strategies_router
+from api.routes import corpora_router, eda_router, graphs_router, strategies_router
 
 app = FastAPI(title="GraphRAG Explorer R2", version="0.2.0")
 app.include_router(strategies_router)
+app.include_router(corpora_router)
 app.include_router(eda_router)
 app.include_router(graphs_router)
 
