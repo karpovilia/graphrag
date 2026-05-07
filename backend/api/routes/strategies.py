@@ -8,6 +8,7 @@ from __future__ import annotations
 
 # Importing the strategies subpackages triggers their @register
 # decorators so the registry is populated before any request hits.
+import api.strategies.aggregators  # noqa: F401
 import api.strategies.builders  # noqa: F401
 import api.strategies.cleaners  # noqa: F401
 import api.strategies.clusterers  # noqa: F401
@@ -16,7 +17,13 @@ from fastapi import APIRouter, HTTPException
 
 from api.strategies import StrategyDescriptor, all_descriptors
 from api.strategies.descriptor import Kind
-from api.strategies.registry import builders, cleaners, clusterers, reasoners
+from api.strategies.registry import (
+    aggregators,
+    builders,
+    cleaners,
+    clusterers,
+    reasoners,
+)
 
 router = APIRouter(prefix="/api", tags=["strategies"])
 
@@ -26,6 +33,7 @@ _REGISTRIES = {
     "cleaner": cleaners,
     "clusterer": clusterers,
     "reasoner": reasoners,
+    "aggregator": aggregators,
 }
 
 
@@ -54,6 +62,11 @@ def list_clusterers() -> list[StrategyDescriptor]:
 @router.get("/reasoners", response_model=list[StrategyDescriptor])
 def list_reasoners() -> list[StrategyDescriptor]:
     return reasoners.list()
+
+
+@router.get("/aggregators", response_model=list[StrategyDescriptor])
+def list_aggregators() -> list[StrategyDescriptor]:
+    return aggregators.list()
 
 
 @router.get(

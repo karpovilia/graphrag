@@ -223,10 +223,18 @@ async def build_variant(
     except NotImplementedError as e:
         raise HTTPException(status_code=501, detail=str(e)) from e
 
+    from datetime import datetime, timezone
+
+    from api.domain.graph import GraphVariantStatus
+
     variant = GraphVariant(
         id=variant_id,
         corpus_id=corpus_id,
         name=body.name,
+        # The pipeline ran synchronously above; if we got here it succeeded,
+        # so the variant is ready by definition. Async pipelines (Phase 1.5.x
+        # SSE wiring) flip this back to BUILDING + a Run row drives status.
+        status=GraphVariantStatus.READY,
         builder=body.builder,
         cleaner_chain=body.cleaner_chain,
         clusterer=body.clusterer,
@@ -236,6 +244,7 @@ async def build_variant(
             "clusterer_params": body.clusterer_params,
         },
         seed=body.seed,
+        completed_at=datetime.now(tz=timezone.utc),
     )
     return await repo.create_variant(variant, state)
 

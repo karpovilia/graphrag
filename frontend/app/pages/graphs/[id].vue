@@ -1,41 +1,65 @@
 <script setup lang="ts">
   import { useAsyncData } from "nuxt/app";
+  import { computed, ref, watch } from "vue";
   import { useRoute } from "vue-router";
-  import { ref } from "vue";
 
   import LayeredGraph from "@/components/organisms/LayeredGraph/LayeredGraph.vue";
+  import NodeDrawer from "@/components/organisms/NodeDrawer/NodeDrawer.vue";
+  import SuggestionsSidebar from "@/components/organisms/SuggestionsSidebar/SuggestionsSidebar.vue";
   import { themeBehaviorSubject } from "@/entities/tech";
   import { useApi } from "@/lib/api-client";
   import { formatNumber } from "@/lib/format";
+  import type { GraphVariant, Node } from "@/entities/api";
 
   const route = useRoute();
   const variantId = String(route.params.id);
   const api = useApi();
   const theme = themeBehaviorSubject.useSubscribe();
 
-  const { data: variant, error: variantError } = await useAsyncData(
-    `variant:${variantId}`,
-    () => api.graphs.get(variantId),
-  );
-  const { data: nodes, error: nodesError } = await useAsyncData(
-    `nodes:${variantId}`,
-    () => api.graphs.listNodes(variantId),
-  );
-  const { data: edges, error: edgesError } = await useAsyncData(
-    `edges:${variantId}`,
-    () => api.graphs.listEdges(variantId),
-  );
+  const { data: variant, error: variantError } =
+    await useAsyncData(`variant:${variantId}`, () => api.graphs.get(variantId));
+  const { data: nodes, refresh: refreshNodes, error: nodesError } =
+    await useAsyncData(`nodes:${variantId}`, () =>
+      api.graphs.listNodes(variantId),
+    );
+  const { data: edges, refresh: refreshEdges, error: edgesError } =
+    await useAsyncData(`edges:${variantId}`, () =>
+      api.graphs.listEdges(variantId),
+    );
 
   const selectedNodes = ref<id[]>([]);
   const selectedLink = ref<id | null>(null);
+  const showSuggestions = ref(false);
+
+  const selectedNode = computed<Node | null>(() => {
+    if (selectedNodes.value.length !== 1) return null;
+    const id = selectedNodes.value[0];
+    return (nodes.value ?? []).find((n) => n.id === id) ?? null;
+  });
 
   const error = variantError.value || nodesError.value || edgesError.value;
+
+  function onVariantChanged(v: GraphVariant) {
+    if (variant.value) variant.value = v;
+    refreshNodes();
+    refreshEdges();
+  }
+
+  // Force-reload graph payloads on every version bump (curation op
+  // applied) so the canvas reflects post-edit state.
+  watch(
+    () => variant.value?.version,
+    () => {
+      refreshNodes();
+      refreshEdges();
+    },
+  );
 </script>
 
 <template>
   <div :class="$style.page">
     <header :class="$style.header" v-if="variant">
-      <div>
+      <div :class="$style.headerMain">
         <NuxtLink to="/corpora" :class="$style.back">← К списку корпусов</NuxtLink>
         <h1 :class="$style.title">{{ variant.name }}</h1>
         <p :class="$style.muted">
@@ -44,6 +68,25 @@
           <code>{{ variant.clusterer ?? "—" }}</code>
         </p>
       </div>
+
+      <div :class="$style.headerActions">
+        <button
+          type="button"
+          :class="[$style.toggle, showSuggestions ? $style.toggle_active : '']"
+          @click="showSuggestions = !showSuggestions"
+        >
+          {{ showSuggestions ? "Скрыть" : "Показать" }} Suggestions
+        </button>
+        <a
+          :href="api.graphs.exportJournalUrl(variant.id, 'json')"
+          target="_blank"
+          rel="noopener"
+          :class="$style.exportBtn"
+        >
+          Экспорт журнала (JSON)
+        </a>
+      </div>
+
       <dl :class="$style.metrics">
         <div>
           <dt>Узлов</dt>
@@ -64,13 +107,28 @@
       Не удалось загрузить вариант: {{ error.message }}
     </div>
 
-    <div v-else-if="nodes && edges" :class="$style.canvas">
-      <LayeredGraph
-        :nodes="nodes"
-        :edges="edges"
-        :theme="theme"
-        v-model:selectedNodes="selectedNodes"
-        v-model:selectedLink="selectedLink"
+    <div v-else-if="variant && nodes && edges" :class="$style.body">
+      <SuggestionsSidebar
+        v-if="showSuggestions"
+        :variant="variant"
+        @variant-changed="onVariantChanged"
+      />
+
+      <div :class="$style.canvas">
+        <LayeredGraph
+          :nodes="nodes"
+          :edges="edges"
+          :theme="theme"
+          v-model:selectedNodes="selectedNodes"
+          v-model:selectedLink="selectedLink"
+        />
+      </div>
+
+      <NodeDrawer
+        v-if="selectedNode"
+        :node="selectedNode"
+        :variant-id="variant.id"
+        @close="selectedNodes = []"
       />
     </div>
   </div>
@@ -85,13 +143,17 @@
   }
 
   .header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     align-items: flex-start;
     gap: var(--gr-space-md);
     padding: var(--gr-space-md) var(--gr-space-xl);
     border-bottom: 1px solid var(--ksd-border-color);
     flex-shrink: 0;
+  }
+
+  .headerMain {
+    min-width: 0;
   }
 
   .back {
@@ -125,6 +187,39 @@
     }
   }
 
+  .headerActions {
+    display: flex;
+    align-items: center;
+    gap: var(--gr-space-xs);
+  }
+
+  .toggle,
+  .exportBtn {
+    padding: var(--gr-space-2xs) var(--gr-space-sm);
+    border: 1px solid var(--ksd-border-color);
+    background: transparent;
+    border-radius: var(--gr-radius-sm);
+    cursor: pointer;
+    color: var(--ksd-text-main-color);
+    font-size: 0.875rem;
+    text-decoration: none;
+
+    &:hover {
+      border-color: var(--ksd-accent-color);
+      color: var(--ksd-accent-color);
+    }
+  }
+
+  .toggle_active {
+    background: var(--ksd-accent-color);
+    color: var(--ksd-bg-color);
+    border-color: var(--ksd-accent-color);
+
+    &:hover {
+      color: var(--ksd-bg-color);
+    }
+  }
+
   .metrics {
     display: flex;
     gap: var(--gr-space-lg);
@@ -144,9 +239,16 @@
     }
   }
 
+  .body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
   .canvas {
     flex: 1;
     overflow: hidden;
+    position: relative;
   }
 
   .error {
