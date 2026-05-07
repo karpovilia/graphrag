@@ -1,5 +1,53 @@
 @import url("../public/fonts/fonts.css");
 
+// Phase 6.1 — R2 design tokens. The @krainovsd/vue-ui theme owns the
+// base palette/typography (--ksd-* vars, set on <html> by VThemeProvider);
+// these supplement it with R2-specific spacing + layer accents the
+// wizard cards / layered viewer / split-view use.
+:root {
+  // Spacing scale — t-shirt sizes, doubling. Used directly in component
+  // padding/gap rules so the wizard, list cards, and side-drawer have
+  // consistent rhythm.
+  --gr-space-2xs: 0.25rem;
+  --gr-space-xs: 0.5rem;
+  --gr-space-sm: 0.75rem;
+  --gr-space-md: 1rem;
+  --gr-space-lg: 1.5rem;
+  --gr-space-xl: 2rem;
+  --gr-space-2xl: 3rem;
+
+  // Radii — match the rounded card aesthetic of afina-ai-first.
+  --gr-radius-sm: 6px;
+  --gr-radius-md: 10px;
+  --gr-radius-lg: 16px;
+
+  // Shadow stack for layered cards.
+  --gr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --gr-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --gr-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+  // Layer accent colors. Keyed by Layer enum value from the backend.
+  // The LayeredGraph wrapper consumes these via JS to encode opacity
+  // into the alpha channel; SCSS exposes them so chips + Layer Map
+  // overlay (Phase 6.6.2) can reuse the palette.
+  --gr-layer-chunk: #94a3b8;
+  --gr-layer-entity: #1f77b4;
+  --gr-layer-community: #2ca02c;
+  --gr-layer-topic: #ff7f0e;
+
+  // NodeType accents for the side-drawer legend; mirrors
+  // backend/api/eda/recommend.py DEFAULT_TYPE_COLORS.
+  --gr-type-person: #ff7f0e;
+  --gr-type-place: #2ca02c;
+  --gr-type-org: #1f77b4;
+
+  // Status chips (running / completed / failed) on Run cards.
+  --gr-status-running: #f59e0b;
+  --gr-status-success: #10b981;
+  --gr-status-failed: #ef4444;
+  --gr-status-pending: #94a3b8;
+}
+
 *,
 *::before,
 *::after {
