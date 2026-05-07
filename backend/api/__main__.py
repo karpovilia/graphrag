@@ -25,6 +25,7 @@ from api.routes import (
     journal_export_router,
     reason_router,
     strategies_router,
+    tools_router,
 )
 
 app = FastAPI(title="GraphRAG Explorer R2", version="0.2.0")
@@ -35,6 +36,7 @@ app.include_router(graphs_router)
 app.include_router(agents_router)
 app.include_router(reason_router)
 app.include_router(journal_export_router)
+app.include_router(tools_router)
 
 
 @app.on_event("startup")

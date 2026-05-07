@@ -7,6 +7,7 @@ from .graphs import router as graphs_router
 from .journal_export import router as journal_export_router
 from .reason import router as reason_router
 from .strategies import router as strategies_router
+from .tools import router as tools_router
 
 __all__ = [
     "agents_router",
@@ -16,4 +17,5 @@ __all__ = [
     "journal_export_router",
     "reason_router",
     "strategies_router",
+    "tools_router",
 ]

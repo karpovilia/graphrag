@@ -13,6 +13,7 @@ from api.domain.curation import (
     SuggestionStatus,
 )
 from api.domain.graph import GraphVariant, Node
+from api.domain.run import ToolInvocation
 from api.domain.types import Id, utcnow
 from api.strategies.state import GraphBuildState
 
@@ -57,6 +58,7 @@ class InMemoryRepository(RepositoryProtocol):
 
         self._journals: dict[Id, list[JournalEntry]] = defaultdict(list)
         self._suggestions: dict[Id, Suggestion] = {}
+        self._tool_invocations: dict[Id, list[ToolInvocation]] = defaultdict(list)
         self._outbox: list[VectorOutboxEntry] = []
         self._next_outbox_id = 1
         self._locks: dict[Id, asyncio.Lock] = {}
@@ -250,6 +252,46 @@ class InMemoryRepository(RepositoryProtocol):
                 entry=removed,
                 affected=affected_set_to_dict(affected),
             )
+
+    # ---- node lookup + tool invocations (Phase 5) ----
+
+    async def find_node(
+        self,
+        graph_variant_id: Id,
+        node_id: Id,
+    ) -> Node:
+        try:
+            state = self._states[graph_variant_id]
+        except KeyError as e:
+            raise NotFoundError(f"variant {graph_variant_id} not found") from e
+        for n in state.nodes:
+            if n.id == node_id:
+                return n
+        raise NotFoundError(
+            f"node {node_id} not found in variant {graph_variant_id}"
+        )
+
+    async def record_tool_invocation(
+        self,
+        invocation: ToolInvocation,
+    ) -> ToolInvocation:
+        self._tool_invocations[invocation.node_id].append(invocation)
+        return invocation
+
+    async def list_tool_invocations(
+        self,
+        node_id: Id,
+        *,
+        tool: str | None = None,
+        limit: int | None = None,
+    ) -> list[ToolInvocation]:
+        out = list(self._tool_invocations.get(node_id, ()))
+        if tool is not None:
+            out = [i for i in out if i.tool == tool]
+        out.sort(key=lambda i: i.created_at, reverse=True)
+        if limit is not None:
+            out = out[:limit]
+        return out
 
     # ---- suggestions ----
 

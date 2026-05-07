@@ -18,6 +18,8 @@ from .protocols import (
     CleanerProtocol,
     ClustererProtocol,
     ExpertResult,
+    NodeToolProtocol,
+    RankerProtocol,
     ReasonerProtocol,
     ReasonResult,
 )
@@ -39,6 +41,8 @@ __all__ = [
     "ExpertResult",
     "GraphBuildState",
     "Kind",
+    "NodeToolProtocol",
+    "RankerProtocol",
     "ReasonResult",
     "ReasonerProtocol",
     "Registry",

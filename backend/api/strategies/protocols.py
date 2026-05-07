@@ -157,6 +157,50 @@ class AgentProtocol(_Strategy, Protocol):
         state: "GraphBuildState",
         params: dict[str, Any],
     ) -> list[Any]: ...
+
+
+@runtime_checkable
+class NodeToolProtocol(_Strategy, Protocol):
+    """A tool runnable on a single Node. The descriptor declares which
+    NodeType values it applies to; an empty `applies_to` tuple means
+    universal (e.g. show_neighbors, summarize_subgraph). The orchestrator
+    filters the menu so PERSON-only tools never show up on a
+    COMMUNITY-layer node.
+
+    Tools return free-form `result` dicts that get persisted as
+    ToolInvocations and surfaced in the node side-drawer. Reasoners
+    can pull recent invocations as supplementary evidence.
+    """
+
+    applies_to: tuple[str, ...]
+    """NodeType.name values this tool accepts. Empty = universal."""
+
+    async def run(
+        self,
+        node: Any,
+        graph_variant_id: Id,
+        params: dict[str, Any],
+        loader: GraphLoader,
+    ) -> dict[str, Any]: ...
+
+
+@runtime_checkable
+class RankerProtocol(_Strategy, Protocol):
+    """Re-ranks a candidate list of nodes by query relevance.
+
+    Phase 5b. Cosine-similarity baseline always works. The GAT-based
+    `gat` ranker (F5) ships as a stub here and gets a real PyTorch
+    impl in 5.x once embeddings are wired in. Reasoners call
+    `rank(query_text, candidates, ...)` with the post-retrieval
+    shortlist; the ranker reorders.
+    """
+
+    async def rank(
+        self,
+        query: str,
+        candidates: list[Any],
+        params: dict[str, Any],
+    ) -> list[Any]: ...
     """Returns Suggestion instances. Avoid the cyclic import with
     api.domain.curation by typing as list[Any] — concrete
     implementations type their return as list[Suggestion]."""

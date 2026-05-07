@@ -8,7 +8,8 @@ from pydantic import Field
 from api.curation.applier import AffectedSet
 from api.domain.corpus import Corpus, Document
 from api.domain.curation import JournalEntry, Suggestion, SuggestionStatus
-from api.domain.graph import GraphVariant
+from api.domain.graph import GraphVariant, Node
+from api.domain.run import ToolInvocation
 from api.domain.types import DomainModel, Id, utcnow
 from api.strategies.state import GraphBuildState
 
@@ -163,6 +164,32 @@ class RepositoryProtocol(Protocol):
         suggestion_id: Id,
         actor: str,
     ) -> Suggestion: ...
+
+    # ---- node lookup (Phase 5 tools / 6 viewer) ----
+
+    async def find_node(
+        self,
+        graph_variant_id: Id,
+        node_id: Id,
+    ) -> Node: ...
+    """Convenience over load_state().nodes — Phase 5 tools and the
+    side-drawer don't want to materialize the whole state for one node.
+    Raises NotFoundError if the node isn't part of the variant."""
+
+    # ---- tool invocations (Phase 5.4) ----
+
+    async def record_tool_invocation(
+        self,
+        invocation: ToolInvocation,
+    ) -> ToolInvocation: ...
+
+    async def list_tool_invocations(
+        self,
+        node_id: Id,
+        *,
+        tool: str | None = None,
+        limit: int | None = None,
+    ) -> list[ToolInvocation]: ...
 
     # ---- vector outbox ----
 

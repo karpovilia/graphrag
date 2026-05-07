@@ -16,6 +16,7 @@ Kind = Literal[
     "agent",
     "tool",
     "aggregator",
+    "ranker",
 ]
 
 
