@@ -89,6 +89,7 @@ cleaners: Registry = Registry("cleaner")
 clusterers: Registry = Registry("clusterer")
 reasoners: Registry = Registry("reasoner")
 agents: Registry = Registry("agent")
+aggregators: Registry = Registry("aggregator")
 
 
 def all_descriptors() -> dict[Kind, list[StrategyDescriptor]]:
@@ -100,4 +101,5 @@ def all_descriptors() -> dict[Kind, list[StrategyDescriptor]]:
         "clusterer": clusterers.list(),
         "reasoner": reasoners.list(),
         "agent": agents.list(),
+        "aggregator": aggregators.list(),
     }

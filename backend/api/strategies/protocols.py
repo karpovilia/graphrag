@@ -24,6 +24,20 @@ class ReasonResult(DomainModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class ExpertResult(DomainModel):
+    """One expert's contribution to a MoE run. Bundles which variant +
+    reasoner produced the result so the aggregator can weight, attribute,
+    or surface them in split-view UIs.
+    """
+
+    variant_id: Id
+    reasoner: str
+    result: ReasonResult
+    error: str | None = None
+    """Set when the expert failed; aggregators decide whether to ignore
+    or surface the failure. Result is empty when error is set."""
+
+
 class _Strategy(Protocol):
     descriptor: StrategyDescriptor
 
@@ -109,6 +123,23 @@ class GraphLoader(Protocol):
 
     async def load_nodes(self, graph_variant_id: Id) -> list[Any]: ...
     async def load_edges(self, graph_variant_id: Id) -> list[Any]: ...
+
+
+@runtime_checkable
+class AggregatorProtocol(_Strategy, Protocol):
+    """Folds N ExpertResults into one ReasonResult.
+
+    Plugins may consume an LLM (judge-style) or stay heuristic
+    (weighted vote, evidence union). The MoE orchestrator passes the
+    same query that drove every expert so judges have full context.
+    """
+
+    async def aggregate(
+        self,
+        query: str,
+        expert_results: list[ExpertResult],
+        params: dict[str, Any],
+    ) -> ReasonResult: ...
 
 
 @runtime_checkable

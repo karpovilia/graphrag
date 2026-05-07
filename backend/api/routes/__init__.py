@@ -5,6 +5,7 @@ from .corpora import router as corpora_router
 from .eda import router as eda_router
 from .graphs import router as graphs_router
 from .journal_export import router as journal_export_router
+from .reason import router as reason_router
 from .strategies import router as strategies_router
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "eda_router",
     "graphs_router",
     "journal_export_router",
+    "reason_router",
     "strategies_router",
 ]

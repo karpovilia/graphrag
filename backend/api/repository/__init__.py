@@ -14,6 +14,7 @@ from .errors import (
     NotFoundError,
     RepositoryError,
 )
+from .graph_loader import RepositoryGraphLoader
 from .in_memory import InMemoryRepository
 from .postgres import PostgresRepository
 from .protocol import RepositoryProtocol, VectorOutboxEntry
@@ -24,6 +25,7 @@ __all__ = [
     "NotFoundError",
     "PostgresRepository",
     "RepositoryError",
+    "RepositoryGraphLoader",
     "RepositoryProtocol",
     "StateDiff",
     "VectorOutboxEntry",

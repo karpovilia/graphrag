@@ -23,6 +23,7 @@ from api.routes import (
     eda_router,
     graphs_router,
     journal_export_router,
+    reason_router,
     strategies_router,
 )
 
@@ -32,6 +33,7 @@ app.include_router(corpora_router)
 app.include_router(eda_router)
 app.include_router(graphs_router)
 app.include_router(agents_router)
+app.include_router(reason_router)
 app.include_router(journal_export_router)
 
 

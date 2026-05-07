@@ -13,9 +13,11 @@ etc., and to materialize a build pipeline from user-chosen names.
 from .descriptor import Kind, StrategyDescriptor
 from .protocols import (
     AgentProtocol,
+    AggregatorProtocol,
     BuilderProtocol,
     CleanerProtocol,
     ClustererProtocol,
+    ExpertResult,
     ReasonerProtocol,
     ReasonResult,
 )
@@ -30,9 +32,11 @@ from .state import GraphBuildState
 
 __all__ = [
     "AgentProtocol",
+    "AggregatorProtocol",
     "BuilderProtocol",
     "CleanerProtocol",
     "ClustererProtocol",
+    "ExpertResult",
     "GraphBuildState",
     "Kind",
     "ReasonResult",
