@@ -109,3 +109,23 @@ class GraphLoader(Protocol):
 
     async def load_nodes(self, graph_variant_id: Id) -> list[Any]: ...
     async def load_edges(self, graph_variant_id: Id) -> list[Any]: ...
+
+
+@runtime_checkable
+class AgentProtocol(_Strategy, Protocol):
+    """Curation agent. Walks a GraphBuildState and proposes Suggestions
+    that the user accepts or rejects. Agents NEVER mutate the graph
+    directly — the orchestrator takes the proposal, the user picks, the
+    repository converts accepted suggestions into JournalEntries via
+    the Phase 2 applier.
+    """
+
+    async def propose(
+        self,
+        graph_variant_id: Id,
+        state: "GraphBuildState",
+        params: dict[str, Any],
+    ) -> list[Any]: ...
+    """Returns Suggestion instances. Avoid the cyclic import with
+    api.domain.curation by typing as list[Any] — concrete
+    implementations type their return as list[Suggestion]."""

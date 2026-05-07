@@ -12,6 +12,7 @@ etc., and to materialize a build pipeline from user-chosen names.
 
 from .descriptor import Kind, StrategyDescriptor
 from .protocols import (
+    AgentProtocol,
     BuilderProtocol,
     CleanerProtocol,
     ClustererProtocol,
@@ -28,6 +29,7 @@ from .state import GraphBuildState
 # them via `from api.strategies.registry import cleaners` instead.
 
 __all__ = [
+    "AgentProtocol",
     "BuilderProtocol",
     "CleanerProtocol",
     "ClustererProtocol",
