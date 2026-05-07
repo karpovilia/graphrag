@@ -15,12 +15,14 @@ from .errors import (
     RepositoryError,
 )
 from .in_memory import InMemoryRepository
+from .postgres import PostgresRepository
 from .protocol import RepositoryProtocol, VectorOutboxEntry
 
 __all__ = [
     "ConcurrentEditError",
     "InMemoryRepository",
     "NotFoundError",
+    "PostgresRepository",
     "RepositoryError",
     "RepositoryProtocol",
     "StateDiff",

@@ -102,6 +102,9 @@ class GraphVariant(Base):
         PG_UUID(as_uuid=True),
         ForeignKey("graph_variants.id", ondelete="SET NULL"),
     )
+    version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     created_at: Mapped[datetime] = mapped_column(
         nullable=False, server_default=func.now()
     )
