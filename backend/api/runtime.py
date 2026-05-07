@@ -14,6 +14,9 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from loguru import logger
+
+from api.config import get_settings
 from api.eda.ner import NatashaNer, NerProtocol
 from api.llm import CompletionClient, get_completion_client
 from api.repository import InMemoryRepository, RepositoryProtocol
@@ -42,9 +45,25 @@ def get_llm() -> CompletionClient:
 def get_repository() -> RepositoryProtocol:
     """Process-wide repository singleton.
 
-    Phase 2 ships InMemoryRepository wired here. PostgresRepository takes
-    over once 2.1b lands; the swap is a one-line change because every
-    route reaches for this singleton via FastAPI Depends.
+    Switches between PostgresRepository and InMemoryRepository based on
+    settings: a non-empty `postgres.password` means production wiring
+    (the docker-compose target). Empty password = in-memory dev/test.
     """
 
+    s = get_settings()
+    if s.postgres.password:
+        # Lazy import: PostgresRepository imports asyncpg+sqlalchemy, all
+        # of which are dev-deps available in the production image.
+        from api.repository.postgres import PostgresRepository
+
+        logger.info(
+            "wiring PostgresRepository against {}@{}:{}/{}",
+            s.postgres.user,
+            s.postgres.host,
+            s.postgres.port,
+            s.postgres.database,
+        )
+        return PostgresRepository(dsn=s.postgres.dsn)
+
+    logger.info("wiring InMemoryRepository (no POSTGRES__PASSWORD set)")
     return InMemoryRepository()

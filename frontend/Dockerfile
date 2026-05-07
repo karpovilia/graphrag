@@ -1,28 +1,30 @@
+# Phase 7 — production image. Static-fixture path is gone (Phase 6
+# legacy cleanup); pages talk to the R2 backend over /api.
+
 FROM node:22.12-slim AS build
 
 WORKDIR /app
-RUN npm i -g pnpm@9.4.0
+RUN npm i -g pnpm@9.15.9
 
-COPY package.json pnpm-lock.yaml  ./
+COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --ignore-scripts --frozen-lockfile
 
-COPY tsconfig.json tsconfig.json
-COPY nuxt.config.ts nuxt.config.ts
-COPY public public
-COPY static static
-COPY import-map.json import-map.json
-COPY server server
-COPY app app
+COPY tsconfig.json tsconfig-build.json nuxt.config.ts ./
+COPY public ./public
+COPY app ./app
+COPY server ./server
+
 RUN pnpm build
 
+FROM node:22.12-slim
 
-FROM gcr/distroless/nodejs22-debian12
-
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    NITRO_PORT=3000 \
+    NITRO_HOST=0.0.0.0
 WORKDIR /app
 
 COPY --from=build /app/.output ./.output
-COPY static static
-COPY import-map.json import-map.json
 
-CMD [".output/server/index.mjs"]
+EXPOSE 3000
+
+CMD ["node", ".output/server/index.mjs"]

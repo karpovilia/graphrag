@@ -1,0 +1,78 @@
+# Phase 7 — one-command local stack. Mirrors `https://graph-rag.apsolutions.ru`
+# layout: PG + backend (uvicorn) + frontend (Nitro). FAISS indexes are
+# kept on a named volume so they survive backend restarts.
+#
+# Required env (compose reads .env at the repo root):
+#   DEEPSEEK__API_KEY=...        # default LLM
+#   POSTGRES__PASSWORD=changeme   # any non-empty value flips the repo
+#                                 # singleton from in-memory to PG
+# Optional:
+#   YANDEX__FOLDER_ID / YANDEX__TOKEN    # if you want Yandex too
+#   NUXT_PUBLIC_API_BASE          # frontend talks to backend (default ok)
+#   NUXT_API_PROXY_TARGET         # dev proxy override
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES__USER:-graphrag}
+      POSTGRES_PASSWORD: ${POSTGRES__PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES__DATABASE:-graphrag}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES__USER:-graphrag} -d ${POSTGRES__DATABASE:-graphrag}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES__HOST: postgres
+      POSTGRES__PORT: "5432"
+      POSTGRES__USER: ${POSTGRES__USER:-graphrag}
+      POSTGRES__PASSWORD: ${POSTGRES__PASSWORD:-changeme}
+      POSTGRES__DATABASE: ${POSTGRES__DATABASE:-graphrag}
+      DEEPSEEK__API_KEY: ${DEEPSEEK__API_KEY:-}
+      DEEPSEEK__MODEL: ${DEEPSEEK__MODEL:-deepseek-chat}
+      YANDEX__FOLDER_ID: ${YANDEX__FOLDER_ID:-}
+      YANDEX__TOKEN: ${YANDEX__TOKEN:-}
+      STORAGE__DATA_DIR: /app/var
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: '["http://localhost:3000"]'
+    volumes:
+      - faiss:/app/var
+      - ./backend/data:/app/data:ro
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    environment:
+      # Frontend SSR runs inside the docker network and needs to talk
+      # to the backend container by service name; the browser hits
+      # localhost:3000 → Nitro → http://backend:8000 via this base.
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://backend:8000}
+      NUXT_API_PROXY_TARGET: ${NUXT_API_PROXY_TARGET:-http://backend:8000}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  faiss:

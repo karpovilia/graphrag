@@ -29,6 +29,18 @@ from api.routes import (
 )
 
 app = FastAPI(title="GraphRAG Explorer R2", version="0.2.0")
+
+# CORS: applied at module load, not in main(), so the container entry
+# point (uvicorn api.__main__:app) honors the configured origins.
+_cors_settings = get_settings()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(strategies_router)
 app.include_router(corpora_router)
 app.include_router(eda_router)
@@ -96,13 +108,6 @@ def main() -> None:
     import uvicorn
 
     s = get_settings()
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=s.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level=s.log_level.lower())
 
 
