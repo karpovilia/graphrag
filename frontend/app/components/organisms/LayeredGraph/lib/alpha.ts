@@ -53,6 +53,22 @@ export function alphaFor(layer: Layer, activeLayer: Layer | null): number {
   return layer === activeLayer ? ACTIVE_ALPHA : INACTIVE_ALPHA;
 }
 
+/** Resolve final alpha for `layer` honoring per-layer overrides from
+ * the LayerMap sliders + sliceMode (hide non-active layers entirely).
+ * Per-layer override always wins when present; sliceMode hides
+ * non-active layers regardless of any override. */
+export function resolveAlpha(
+  layer: Layer,
+  activeLayer: Layer | null,
+  perLayerAlpha: Partial<Record<Layer, number>> = {},
+  sliceMode = false,
+): number {
+  if (sliceMode && activeLayer !== null && layer !== activeLayer) return 0;
+  const override = perLayerAlpha[layer];
+  if (override !== undefined) return Math.max(0, Math.min(1, override));
+  return alphaFor(layer, activeLayer);
+}
+
 /** Color picker for a node — defers to `attributes.color` when the
  * builder set one (e.g. type-driven palette), otherwise falls back to
  * the layer accent.

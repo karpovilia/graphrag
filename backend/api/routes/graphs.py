@@ -25,7 +25,9 @@ from api.curation.ops import (
 )
 from api.domain.corpus import Document
 from api.domain.curation import JournalEntry, JournalOp
+from api.domain.graph import Edge as DomainEdge
 from api.domain.graph import GraphVariant, Layer
+from api.domain.graph import Node as DomainNode
 from api.domain.types import DomainModel, Id, new_id
 from api.eda.ner import NerProtocol
 from api.llm import CompletionClient
@@ -289,6 +291,51 @@ async def get_variant_state(
         nodes_by_layer=dict(Counter(n.layer.value for n in state.nodes)),
         edges_by_type=dict(Counter(e.type.value for e in state.edges)),
     )
+
+
+@router.get("/graphs/{variant_id}/nodes", response_model=list[DomainNode])
+async def get_variant_nodes(
+    variant_id: Id,
+    layer: str | None = None,
+    limit: int | None = None,
+    repo: RepositoryProtocol = Depends(get_repository),
+) -> list[DomainNode]:
+    """Materialize the variant's nodes for the layered viewer.
+
+    Phase 6.6.1 — front-end LayeredGraph wraps these and decorates by
+    `layer`. `?layer=entity` filters server-side; `?limit=N` caps to N
+    so the wizard preview can pull a sample without flooding.
+    """
+
+    try:
+        state = await repo.load_state(variant_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    nodes = state.nodes
+    if layer is not None:
+        nodes = [n for n in nodes if n.layer.value == layer]
+    if limit is not None:
+        nodes = nodes[:limit]
+    return nodes
+
+
+@router.get("/graphs/{variant_id}/edges", response_model=list[DomainEdge])
+async def get_variant_edges(
+    variant_id: Id,
+    type: str | None = None,
+    limit: int | None = None,
+    repo: RepositoryProtocol = Depends(get_repository),
+) -> list[DomainEdge]:
+    try:
+        state = await repo.load_state(variant_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    edges = state.edges
+    if type is not None:
+        edges = [e for e in edges if e.type.value == type]
+    if limit is not None:
+        edges = edges[:limit]
+    return edges
 
 
 # ---- curation ----

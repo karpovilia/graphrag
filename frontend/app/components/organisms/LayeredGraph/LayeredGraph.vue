@@ -7,12 +7,13 @@
   import type { ICityGraphLink, ICityGraphNode } from "@/entities/cities";
   import type { Edge, Layer, Node } from "@/entities/api";
 
+  import LayerMap from "./LayerMap.vue";
   import {
     ACTIVE_ALPHA,
     LAYER_COLORS,
     LAYER_ORDER,
-    alphaFor,
     colorForLayer,
+    resolveAlpha,
     withAlpha,
   } from "./lib/alpha";
 
@@ -30,27 +31,52 @@
   const selectedNodes = defineModel<id[]>("selectedNodes", { default: [] });
   const selectedLink = defineModel<id | null>("selectedLink", { default: null });
 
+  // Layer Map state — surfaced as `defineModel`s so a host page can
+  // sync them across multiple LayeredGraph instances (Phase 6.8 split-view).
+  const visualOrder = defineModel<Layer[]>("visualOrder", {
+    default: () => [...LAYER_ORDER],
+  });
+  const perLayerAlpha = defineModel<Partial<Record<Layer, number>>>(
+    "perLayerAlpha",
+    { default: () => ({}) },
+  );
+  const sliceMode = defineModel<boolean>("sliceMode", { default: false });
+
+  const layerMapOpen = ref(false);
   const hotkeyEnabled = ref(true);
 
   // Map domain Node/Edge → @krainovsd/graph CityGraph shape, with each
-  // node's data.color carrying the alpha-baked layer color. The package
-  // doesn't expose a per-node opacity hook, so this is the cleanest
-  // route until we PR `data.opacity` upstream.
+  // node's data.color carrying the resolved alpha. The package doesn't
+  // expose a per-node opacity hook, so this is the cleanest route until
+  // we PR `data.opacity` upstream.
   const cityGraph = computed<ICityGraph>(() => {
     const layerById = new Map<id, Layer>();
-    for (const n of props.nodes) {
-      layerById.set(n.id, n.layer);
-    }
+    for (const n of props.nodes) layerById.set(n.id, n.layer);
 
-    const cityNodes: ICityGraphNode[] = props.nodes.map((n) => {
+    const orderRank = new Map<Layer, number>();
+    visualOrder.value.forEach((layer, i) => orderRank.set(layer, i));
+    const rankOf = (layer: Layer) => orderRank.get(layer) ?? 99;
+
+    const nodesSorted = [...props.nodes].sort(
+      (a, b) => rankOf(a.layer) - rankOf(b.layer),
+    );
+
+    const cityNodes: ICityGraphNode[] = [];
+    for (const n of nodesSorted) {
+      const alpha = resolveAlpha(
+        n.layer,
+        activeLayer.value,
+        perLayerAlpha.value,
+        sliceMode.value,
+      );
+      if (alpha === 0) continue; // sliceMode hides; don't bother rendering
       const baseColor = colorForLayer(
         n.layer,
         typeof n.attributes?.color === "string"
           ? (n.attributes.color as string)
           : null,
       );
-      const alpha = alphaFor(n.layer, activeLayer.value);
-      return {
+      cityNodes.push({
         id: n.id,
         data: {
           texts: [
@@ -60,30 +86,47 @@
           color: withAlpha(baseColor, alpha),
           size: layerSize(n.layer),
         },
-      } as ICityGraphNode;
-    });
+      } as ICityGraphNode);
+    }
 
-    const cityLinks: ICityGraphLink[] = props.edges.map((e, i) => {
+    const visibleIds = new Set(cityNodes.map((n) => n.id));
+
+    const cityLinks: ICityGraphLink[] = [];
+    for (const [i, e] of props.edges.entries()) {
+      if (!visibleIds.has(e.source_node_id) || !visibleIds.has(e.target_node_id)) {
+        continue;
+      }
       const sourceLayer = layerById.get(e.source_node_id);
       const targetLayer = layerById.get(e.target_node_id);
-      // An edge is "muted" if either endpoint is on a non-active layer.
-      const minAlpha = activeLayer.value
-        ? Math.min(
-            sourceLayer ? alphaFor(sourceLayer, activeLayer.value) : ACTIVE_ALPHA,
-            targetLayer ? alphaFor(targetLayer, activeLayer.value) : ACTIVE_ALPHA,
-          )
-        : ACTIVE_ALPHA;
-      return {
+      const linkAlpha = Math.min(
+        sourceLayer
+          ? resolveAlpha(
+              sourceLayer,
+              activeLayer.value,
+              perLayerAlpha.value,
+              sliceMode.value,
+            )
+          : ACTIVE_ALPHA,
+        targetLayer
+          ? resolveAlpha(
+              targetLayer,
+              activeLayer.value,
+              perLayerAlpha.value,
+              sliceMode.value,
+            )
+          : ACTIVE_ALPHA,
+      );
+      cityLinks.push({
         id: e.id,
         source: e.source_node_id,
         target: e.target_node_id,
         data: {
           id: i,
-          color: withAlpha("#888888", Math.max(minAlpha * 0.6, 0.05)),
+          color: withAlpha("#888888", Math.max(linkAlpha * 0.6, 0.05)),
           explanation: e.explanation ?? e.relation ?? "",
         },
-      } as ICityGraphLink;
-    });
+      } as ICityGraphLink);
+    }
 
     return { nodes: cityNodes, links: cityLinks };
   });
@@ -98,7 +141,7 @@
     return order[layer] ?? 0;
   }
 
-  // ---- hotkeys (1/2/3/4 = focus layer, Tab = cycle, 0/Esc = clear) ----
+  // ---- hotkeys (1/2/3/4 focus, Tab cycle, 0/Esc clear, L overlay) ----
 
   function onKeydown(e: KeyboardEvent) {
     if (!hotkeyEnabled.value) return;
@@ -118,7 +161,14 @@
       activeLayer.value = LAYER_ORDER[nextIdx] ?? null;
       e.preventDefault();
     } else if (e.key === "0" || e.key === "Escape") {
-      activeLayer.value = null;
+      if (layerMapOpen.value) {
+        layerMapOpen.value = false;
+      } else {
+        activeLayer.value = null;
+      }
+      e.preventDefault();
+    } else if (e.key === "l" || e.key === "L") {
+      layerMapOpen.value = !layerMapOpen.value;
       e.preventDefault();
     }
   }
@@ -130,15 +180,17 @@
     window.removeEventListener("keydown", onKeydown);
   });
 
-  // Also watch theme just to enforce a re-render of the inner CityGraph
-  // when the user switches dark/light, since alpha-baked colors look
-  // different on different backgrounds.
+  function resetLayerMap() {
+    visualOrder.value = [...LAYER_ORDER];
+    perLayerAlpha.value = {};
+    sliceMode.value = false;
+  }
+
   watch(
     () => props.theme,
     () => {
-      // Vue's reactivity already triggers re-render via cityGraph's
-      // computed dependency on activeLayer + nodes; this watcher exists
-      // as a hook for theme-specific overrides we'll add in 6.10.
+      // Hook for theme-specific overrides; alpha-baked colors are
+      // recomputed automatically through the cityGraph computed.
     },
   );
 </script>
@@ -146,7 +198,7 @@
 <template>
   <div :class="$style.host">
     <header :class="$style.toolbar" aria-label="Layered Graph controls">
-      <span :class="$style.label">Active layer:</span>
+      <span :class="$style.label">Layer:</span>
       <button
         v-for="(layer, i) in LAYER_ORDER"
         :key="layer"
@@ -168,13 +220,22 @@
       <button
         type="button"
         :class="$style.chip"
-        :class:disabled="activeLayer === null"
         title="hotkey 0/Esc — show all"
         @click="activeLayer = null"
       >
         all
       </button>
-      <span :class="$style.hint">hotkeys: 1/2/3/4 layer · Tab cycle · 0/Esc all</span>
+      <button
+        type="button"
+        :class="[$style.chip, layerMapOpen ? $style.chip_active : '']"
+        title="hotkey L — Layer Map"
+        @click="layerMapOpen = !layerMapOpen"
+      >
+        layer map
+      </button>
+      <span :class="$style.hint">
+        hotkeys: 1/2/3/4 · Tab · L · 0/Esc
+      </span>
     </header>
 
     <div :class="$style.canvas">
@@ -183,6 +244,20 @@
         :theme="props.theme"
         v-model:selectedNodes="selectedNodes"
         v-model:selectedLink="selectedLink"
+      />
+
+      <LayerMap
+        v-if="layerMapOpen"
+        :active-layer="activeLayer"
+        :visual-order="visualOrder"
+        :per-layer-alpha="perLayerAlpha"
+        :slice-mode="sliceMode"
+        @close="layerMapOpen = false"
+        @update:active-layer="activeLayer = $event"
+        @update:visual-order="visualOrder = $event"
+        @update:per-layer-alpha="perLayerAlpha = $event"
+        @update:slice-mode="sliceMode = $event"
+        @reset="resetLayerMap"
       />
     </div>
   </div>
@@ -216,7 +291,7 @@
 
   .chip {
     padding: var(--gr-space-2xs) var(--gr-space-sm);
-    border: 2px solid;
+    border: 2px solid var(--ksd-border-color);
     border-radius: var(--gr-radius-sm);
     background: transparent;
     cursor: pointer;
@@ -224,6 +299,7 @@
     font-weight: 500;
     text-transform: lowercase;
     transition: all 0.15s ease;
+    color: var(--ksd-text-main-color);
   }
 
   .chip_active {
