@@ -7,7 +7,7 @@ from pydantic import Field
 
 from api.curation.applier import AffectedSet
 from api.domain.corpus import Corpus, Document
-from api.domain.curation import JournalEntry
+from api.domain.curation import JournalEntry, Suggestion, SuggestionStatus
 from api.domain.graph import GraphVariant
 from api.domain.types import DomainModel, Id, utcnow
 from api.strategies.state import GraphBuildState
@@ -126,6 +126,43 @@ class RepositoryProtocol(Protocol):
     display "undid X". Phase 2.4 limitation: destructive — the popped
     entry is gone from the journal, audit-preserving undo (compensating
     op as a fresh entry) is a follow-up."""
+
+    # ---- suggestions ----
+
+    async def create_suggestions(
+        self,
+        suggestions: list[Suggestion],
+    ) -> list[Suggestion]: ...
+    """Bulk-insert. Returns the same list back so callers can chain."""
+
+    async def get_suggestion(self, suggestion_id: Id) -> Suggestion: ...
+
+    async def list_suggestions(
+        self,
+        graph_variant_id: Id,
+        *,
+        status: SuggestionStatus | None = None,
+        agent: str | None = None,
+        limit: int | None = None,
+    ) -> list[Suggestion]: ...
+
+    async def accept_suggestion(
+        self,
+        suggestion_id: Id,
+        expected_variant_version: int,
+        actor: str,
+    ) -> "JournalAppendResult": ...
+    """Atomic: load suggestion, map SuggestionAction→JournalOp, append
+    journal entry, flip status to accepted, set
+    resulting_journal_entry_id. Raises ConcurrentEditError on stale
+    version, RepositoryError if the suggestion is already decided or
+    the action has no journal mapping."""
+
+    async def reject_suggestion(
+        self,
+        suggestion_id: Id,
+        actor: str,
+    ) -> Suggestion: ...
 
     # ---- vector outbox ----
 

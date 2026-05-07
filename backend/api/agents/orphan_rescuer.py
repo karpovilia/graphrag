@@ -63,10 +63,7 @@ class OrphanRescuer:
                     agent="orphan_rescuer",
                     action=SuggestionAction.DELETE,
                     target_node_ids=[node.id],
-                    payload={
-                        "edge_id": "",  # no edge to delete; user upgrades to MERGE manually
-                        "note": "orphan — accept to delete, or convert to merge into a neighbor",
-                    },
+                    payload={"node_id": str(node.id)},
                     confidence=0.5,
                     rationale=(
                         f"Entity {node.name!r} has zero ENTITY_RELATION "

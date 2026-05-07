@@ -57,6 +57,12 @@ class DeleteEdgePayload(DomainModel):
     edge_id: Id
 
 
+class DeleteNodePayload(DomainModel):
+    node_id: Id
+    """Removes the node and every edge that referenced it. Used by the
+    OrphanRescuer agent's DELETE Suggestions when the user accepts."""
+
+
 class AddEdgePayload(DomainModel):
     edge: dict[str, Any]
     """Full Edge spec for instantiation."""
@@ -79,6 +85,7 @@ JournalOpPayload = (
     | MoveToCommunityPayload
     | EditEdgePayload
     | DeleteEdgePayload
+    | DeleteNodePayload
     | AddEdgePayload
     | SetSummaryPayload
     | UpdateNodeNamePayload
@@ -92,6 +99,7 @@ _OP_TO_MODEL = {
     JournalOp.MOVE_TO_COMMUNITY: MoveToCommunityPayload,
     JournalOp.EDIT_EDGE: EditEdgePayload,
     JournalOp.DELETE_EDGE: DeleteEdgePayload,
+    JournalOp.DELETE_NODE: DeleteNodePayload,
     JournalOp.ADD_EDGE: AddEdgePayload,
     JournalOp.SET_SUMMARY: SetSummaryPayload,
     JournalOp.UPDATE_NODE_NAME: UpdateNodeNamePayload,

@@ -19,6 +19,7 @@ from api.strategies.state import GraphBuildState
 from .ops import (
     AddEdgePayload,
     DeleteEdgePayload,
+    DeleteNodePayload,
     EditEdgePayload,
     MergeNodesPayload,
     MoveToCommunityPayload,
@@ -91,6 +92,15 @@ def apply_journal_op(
         case JournalOp.DELETE_EDGE:
             assert isinstance(payload, DeleteEdgePayload)
             edges = [e for e in edges if e.id != payload.edge_id]
+        case JournalOp.DELETE_NODE:
+            assert isinstance(payload, DeleteNodePayload)
+            nodes = [n for n in nodes if n.id != payload.node_id]
+            edges = [
+                e
+                for e in edges
+                if e.source_node_id != payload.node_id
+                and e.target_node_id != payload.node_id
+            ]
         case JournalOp.ADD_EDGE:
             assert isinstance(payload, AddEdgePayload)
             edges.append(Edge.model_validate(payload.edge))
@@ -183,6 +193,20 @@ def affected_set(
                 edge_ids=frozenset({edge.id}),
                 node_ids=frozenset({edge.source_node_id, edge.target_node_id}),
                 community_ids=frozenset(communities),
+            )
+        case JournalOp.DELETE_NODE:
+            assert isinstance(payload, DeleteNodePayload)
+            community = _community_of(payload.node_id, state_before)
+            touched_edges = frozenset(
+                e.id
+                for e in state_before.edges
+                if e.source_node_id == payload.node_id
+                or e.target_node_id == payload.node_id
+            )
+            return AffectedSet(
+                node_ids=frozenset({payload.node_id}),
+                edge_ids=touched_edges,
+                community_ids=frozenset({community} if community else ()),
             )
         case JournalOp.ADD_EDGE:
             assert isinstance(payload, AddEdgePayload)

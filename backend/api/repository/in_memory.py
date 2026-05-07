@@ -5,9 +5,15 @@ from collections import defaultdict
 
 from api.curation import affected_set, apply_journal_op, replay_journal
 from api.domain.corpus import Corpus, Document
-from api.domain.curation import JournalEntry
+from api.domain.curation import (
+    JournalEntry,
+    JournalOp,
+    Suggestion,
+    SuggestionAction,
+    SuggestionStatus,
+)
 from api.domain.graph import GraphVariant, Node
-from api.domain.types import Id
+from api.domain.types import Id, utcnow
 from api.strategies.state import GraphBuildState
 
 from .errors import ConcurrentEditError, NotFoundError, RepositoryError
@@ -17,6 +23,19 @@ from .protocol import (
     VectorOutboxEntry,
     affected_set_to_dict,
 )
+
+_SUGGESTION_TO_JOURNAL_OP: dict[SuggestionAction, JournalOp] = {
+    SuggestionAction.MERGE: JournalOp.MERGE_NODES,
+    SuggestionAction.SPLIT: JournalOp.SPLIT_NODE,
+    SuggestionAction.RETYPE: JournalOp.RETYPE_NODE,
+    SuggestionAction.MOVE: JournalOp.MOVE_TO_COMMUNITY,
+    SuggestionAction.EDIT_RELATION: JournalOp.EDIT_EDGE,
+}
+"""SuggestionAction → JournalOp for actions with a 1:1 mapping.
+
+DELETE is special-cased (node vs edge target), and there's no mapping
+for SET_SUMMARY-style actions yet — those land in 3.x once the
+summarizer plugin can fill in the new summary text."""
 
 
 class InMemoryRepository(RepositoryProtocol):
@@ -37,6 +56,7 @@ class InMemoryRepository(RepositoryProtocol):
         a truncated journal without keeping a per-version state cache."""
 
         self._journals: dict[Id, list[JournalEntry]] = defaultdict(list)
+        self._suggestions: dict[Id, Suggestion] = {}
         self._outbox: list[VectorOutboxEntry] = []
         self._next_outbox_id = 1
         self._locks: dict[Id, asyncio.Lock] = {}
@@ -231,6 +251,111 @@ class InMemoryRepository(RepositoryProtocol):
                 affected=affected_set_to_dict(affected),
             )
 
+    # ---- suggestions ----
+
+    async def create_suggestions(
+        self,
+        suggestions: list[Suggestion],
+    ) -> list[Suggestion]:
+        for s in suggestions:
+            if s.graph_variant_id not in self._variants:
+                raise NotFoundError(f"variant {s.graph_variant_id} not found")
+            self._suggestions[s.id] = s
+        return suggestions
+
+    async def get_suggestion(self, suggestion_id: Id) -> Suggestion:
+        try:
+            return self._suggestions[suggestion_id]
+        except KeyError as e:
+            raise NotFoundError(f"suggestion {suggestion_id} not found") from e
+
+    async def list_suggestions(
+        self,
+        graph_variant_id: Id,
+        *,
+        status: SuggestionStatus | None = None,
+        agent: str | None = None,
+        limit: int | None = None,
+    ) -> list[Suggestion]:
+        out = [
+            s
+            for s in self._suggestions.values()
+            if s.graph_variant_id == graph_variant_id
+            and (status is None or s.status == status)
+            and (agent is None or s.agent == agent)
+        ]
+        out.sort(key=lambda s: s.created_at)
+        if limit is not None:
+            out = out[:limit]
+        return out
+
+    async def accept_suggestion(
+        self,
+        suggestion_id: Id,
+        expected_variant_version: int,
+        actor: str,
+    ) -> JournalAppendResult:
+        # No outer lock here — append_journal locks per-variant. We only
+        # touch self._suggestions[s.id] before/after, both with simple
+        # dict ops so cooperative single-writer is enough.
+        try:
+            suggestion = self._suggestions[suggestion_id]
+        except KeyError as e:
+            raise NotFoundError(f"suggestion {suggestion_id} not found") from e
+
+        if suggestion.status != SuggestionStatus.PENDING:
+            raise RepositoryError(
+                f"suggestion {suggestion_id} already {suggestion.status.value}"
+            )
+
+        op, payload = _suggestion_to_journal(suggestion)
+        entry = JournalEntry(
+            graph_variant_id=suggestion.graph_variant_id,
+            op=op,
+            payload=payload,
+            actor=actor,
+        )
+        result = await self.append_journal(
+            suggestion.graph_variant_id,
+            entry,
+            expected_version=expected_variant_version,
+            actor=actor,
+        )
+
+        self._suggestions[suggestion_id] = suggestion.model_copy(
+            update={
+                "status": SuggestionStatus.ACCEPTED,
+                "decided_at": utcnow(),
+                "resulting_journal_entry_id": result.entry.id,
+            }
+        )
+        return result
+
+    async def reject_suggestion(
+        self,
+        suggestion_id: Id,
+        actor: str,
+    ) -> Suggestion:
+        try:
+            suggestion = self._suggestions[suggestion_id]
+        except KeyError as e:
+            raise NotFoundError(f"suggestion {suggestion_id} not found") from e
+
+        if suggestion.status != SuggestionStatus.PENDING:
+            raise RepositoryError(
+                f"suggestion {suggestion_id} already {suggestion.status.value}"
+            )
+
+        del actor  # actor is logged at the route layer; no per-suggestion field
+        updated = suggestion.model_copy(
+            update={
+                "status": SuggestionStatus.REJECTED,
+                "decided_at": utcnow(),
+            }
+        )
+        self._suggestions[suggestion_id] = updated
+        return updated
+
     # ---- outbox ----
 
     async def list_pending_outbox(
@@ -285,3 +410,36 @@ def _models_for(node_ids: frozenset[Id], nodes: list[Node]) -> set[str]:
         if n.id in node_ids and n.embedding is not None:
             out.add(n.embedding.model)
     return out
+
+
+def _suggestion_to_journal(suggestion: Suggestion) -> tuple[JournalOp, dict]:
+    """Map a Suggestion's action + targets to a JournalOp + payload that
+    api.curation.applier can apply. Raises RepositoryError if the
+    suggestion needs a follow-up the orchestrator can't supply yet
+    (e.g. summary refresh — needs the summarizer plugin from Phase 5).
+    """
+
+    if suggestion.action == SuggestionAction.DELETE:
+        if suggestion.target_edge_ids:
+            return JournalOp.DELETE_EDGE, {
+                "edge_id": suggestion.payload.get(
+                    "edge_id", str(suggestion.target_edge_ids[0])
+                )
+            }
+        if suggestion.target_node_ids:
+            return JournalOp.DELETE_NODE, {
+                "node_id": suggestion.payload.get(
+                    "node_id", str(suggestion.target_node_ids[0])
+                )
+            }
+        raise RepositoryError(
+            f"suggestion {suggestion.id} has DELETE action but no target ids"
+        )
+
+    op = _SUGGESTION_TO_JOURNAL_OP.get(suggestion.action)
+    if op is None:
+        raise RepositoryError(
+            f"suggestion {suggestion.id} action {suggestion.action.value} "
+            f"has no journal mapping yet"
+        )
+    return op, dict(suggestion.payload)

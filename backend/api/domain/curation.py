@@ -22,6 +22,7 @@ class JournalOp(StrEnum):
     MOVE_TO_COMMUNITY = "move_to_community"
     EDIT_EDGE = "edit_edge"
     DELETE_EDGE = "delete_edge"
+    DELETE_NODE = "delete_node"
     ADD_EDGE = "add_edge"
     SET_SUMMARY = "set_summary"
     UPDATE_NODE_NAME = "update_node_name"

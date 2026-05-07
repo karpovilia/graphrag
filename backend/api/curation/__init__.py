@@ -15,6 +15,7 @@ from .applier import (
 from .ops import (
     AddEdgePayload,
     DeleteEdgePayload,
+    DeleteNodePayload,
     EditEdgePayload,
     JournalOpPayload,
     MergeNodesPayload,
@@ -30,6 +31,7 @@ __all__ = [
     "AddEdgePayload",
     "AffectedSet",
     "DeleteEdgePayload",
+    "DeleteNodePayload",
     "EditEdgePayload",
     "JournalApplyError",
     "JournalOpPayload",
