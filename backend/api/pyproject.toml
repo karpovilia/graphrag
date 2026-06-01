@@ -5,9 +5,11 @@ requires-python = ">=3.10"
 dependencies = [
     "alembic>=1.14.0",
     "asyncpg>=0.31.0",
+    "bcrypt>=4.2.0",
     "faiss-cpu>=1.8.0",
     "fastapi>=0.122.0",
     "graphrag>=1.0.0",
+    "pyjwt>=2.10.0",
     "httpx>=0.28.0",
     "loguru>=0.7.3",
     "natasha>=1.6.0",
@@ -20,6 +22,7 @@ dependencies = [
     "torch-geometric>=2.5",
     "uvicorn>=0.38.0",
     "yandex-cloud-ml-sdk>=0.17.1",
+    "email-validator>=2.3.0",
 ]
 
 [tool.hatch.build.targets.wheel]

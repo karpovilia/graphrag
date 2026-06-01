@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref } from "vue";
+  import { useI18n } from "vue-i18n";
 
   type Props = {
     /** Free-text label of the current wizard step — surfaced to the
@@ -10,6 +11,7 @@
   };
 
   const props = defineProps<Props>();
+  const { t } = useI18n();
 
   const open = ref(false);
   const question = ref("");
@@ -30,8 +32,8 @@
     messages.value.push({
       role: "assistant",
       text:
-        "(черновик ответа) Чат-помощник пока не подключён к LLM. " +
-        `Контекст шага: ${props.stepContext ?? "—"}.`,
+        t("wizard.assistant.draftAnswer") +
+        `${t("wizard.assistant.stepContextInline")} ${props.stepContext ?? "—"}.`,
     });
   }
 </script>
@@ -44,17 +46,17 @@
       :aria-expanded="open"
       @click="toggle"
     >
-      💬 спросить ассистента
+      {{ t("wizard.assistant.openCta") }}
     </button>
 
-    <aside v-if="open" :class="$style.panel" aria-label="Чат с ассистентом">
+    <aside v-if="open" :class="$style.panel" :aria-label="t('wizard.assistant.panelAriaLabel')">
       <header :class="$style.header">
-        <span>Ассистент</span>
+        <span>{{ t("wizard.assistant.title") }}</span>
         <button type="button" :class="$style.close" @click="open = false">×</button>
       </header>
 
       <p v-if="stepContext" :class="$style.context">
-        Контекст шага: <strong>{{ stepContext }}</strong>
+        {{ t("wizard.assistant.stepContext") }} <strong>{{ stepContext }}</strong>
       </p>
 
       <ul :class="$style.thread">
@@ -66,8 +68,7 @@
           {{ m.text }}
         </li>
         <li v-if="!messages.length" :class="$style.empty">
-          Задайте вопрос про текущий шаг — например, «какой Builder подойдёт
-          для коротких документов?».
+          {{ t("wizard.assistant.promptHint") }}
         </li>
       </ul>
 
@@ -78,11 +79,11 @@
         <input
           v-model="question"
           type="text"
-          placeholder="Ваш вопрос…"
+          :placeholder="t('wizard.assistant.inputPlaceholder')"
           :class="$style.field"
         />
         <button type="submit" :class="$style.send" :disabled="!question.trim()">
-          Send
+          {{ t("common.submit") }}
         </button>
       </form>
     </aside>

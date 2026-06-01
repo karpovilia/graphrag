@@ -6,10 +6,13 @@
   // stays fixed in the data model (memory: project_redesign_r2.md item 8).
 
   import { computed, ref } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import type { Layer } from "@/entities/api";
 
   import { LAYER_COLORS, LAYER_ORDER } from "./lib/alpha";
+
+  const { t } = useI18n();
 
   type Props = {
     activeLayer: Layer | null;
@@ -77,11 +80,7 @@
         </button>
       </header>
 
-      <p :class="$style.hint">
-        Перетащите за <code>⋮⋮</code> чтобы изменить визуальный Z-stacking.
-        Семантическая иерархия chunk → entity → community → topic не
-        меняется — это только порядок отрисовки.
-      </p>
+      <p :class="$style.hint">{{ t("layerMap.hint") }}</p>
 
       <ul :class="$style.list">
         <li
@@ -97,7 +96,7 @@
           @dragover="onDragOver($event, i)"
           @dragend="onDragEnd"
         >
-          <span :class="$style.handle" title="перетащить">⋮⋮</span>
+          <span :class="$style.handle" :title="t('layerMap.drag')">⋮⋮</span>
           <span :class="$style.swatch" :style="{ background: LAYER_COLORS[layer] }" />
           <strong :class="$style.layerName">{{ layer }}</strong>
 
@@ -123,7 +122,7 @@
               :title="`hotkey ${LAYER_ORDER.indexOf(layer) + 1}`"
               @click="emit('update:activeLayer', activeLayer === layer ? null : layer)"
             >
-              {{ activeLayer === layer ? "focused" : "focus" }}
+              {{ activeLayer === layer ? t("layerMap.focused") : t("layerMap.focus") }}
             </button>
           </div>
         </li>
@@ -136,10 +135,10 @@
             :checked="sliceMode"
             @change="(e) => emit('update:sliceMode', (e.target as HTMLInputElement).checked)"
           />
-          Slice — скрыть всё кроме активного слоя
+          {{ t("layerMap.sliceLabel") }}
         </label>
         <button type="button" :class="$style.resetBtn" @click="emit('reset')">
-          Сбросить
+          {{ t("layerMap.reset") }}
         </button>
       </footer>
     </aside>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
   import { useAsyncData } from "nuxt/app";
+  import { useI18n } from "vue-i18n";
 
   import { useAskWizard } from "@/composables/use-ask-wizard";
   import { useApi } from "@/lib/api-client";
 
+  const { t } = useI18n();
   const wizard = useAskWizard();
   const api = useApi();
 
@@ -27,12 +29,8 @@
 
 <template>
   <section :class="$style.step">
-    <h2 :class="$style.title">Стратегия</h2>
-    <p :class="$style.hint">
-      Reasoner работает с каждым вариантом независимо; aggregator
-      используется только в режиме MoE — в Single ответ одного эксперта
-      идёт напрямую.
-    </p>
+    <h2 :class="$style.title">{{ t("wizard.ask.strategyTitle") }}</h2>
+    <p :class="$style.hint">{{ t("wizard.ask.strategyHint") }}</p>
 
     <div :class="$style.section">
       <h3 :class="$style.subhead">Reasoner</h3>

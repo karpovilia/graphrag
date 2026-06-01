@@ -1,10 +1,12 @@
 <script setup lang="ts">
   import { computed, ref, watch } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import { useBuildWizard } from "@/composables/use-build-wizard";
   import { useApi } from "@/lib/api-client";
   import { formatNumber } from "@/lib/format";
 
+  const { t } = useI18n();
   const wizard = useBuildWizard();
   const api = useApi();
 
@@ -17,7 +19,7 @@
     try {
       const docs = wizard.data.value.documents.filter((d) => d.text.trim());
       if (!docs.length) {
-        error.value = "Нет документов с непустым текстом — вернитесь на шаг 2.";
+        error.value = t("wizard.eda.errorEmpty");
         return;
       }
       const report = await api.eda.analyze({
@@ -57,48 +59,46 @@
 
 <template>
   <section :class="$style.step">
-    <h2 :class="$style.title">EDA — рекомендации по корпусу</h2>
-    <p :class="$style.hint">
-      Быстрый анализ загруженного текста: длина документов, плотность сущностей,
-      морфологический разброс. На основе этого подбираем дефолтные builder /
-      cleaner / clusterer и стартовый набор типов узлов.
-    </p>
+    <h2 :class="$style.title">{{ t("wizard.eda.title") }}</h2>
+    <p :class="$style.hint">{{ t("wizard.eda.hint") }}</p>
 
-    <div v-if="loading" :class="$style.loading">Анализирую корпус…</div>
+    <div v-if="loading" :class="$style.loading">{{ t("wizard.eda.loading") }}</div>
 
     <div v-else-if="error" :class="$style.error">
       {{ error }}
-      <button type="button" :class="$style.retry" @click="runEda">Повторить</button>
+      <button type="button" :class="$style.retry" @click="runEda">
+        {{ t("wizard.eda.retry") }}
+      </button>
     </div>
 
     <div v-else-if="report" :class="$style.report">
       <div :class="$style.statsGrid">
         <div :class="$style.stat">
-          <span :class="$style.statLabel">Документов</span>
+          <span :class="$style.statLabel">{{ t("wizard.eda.documentsLabel") }}</span>
           <span :class="$style.statValue">
             {{ formatNumber(report.document_stats.document_count) }}
           </span>
         </div>
         <div :class="$style.stat">
-          <span :class="$style.statLabel">Символов всего</span>
+          <span :class="$style.statLabel">{{ t("wizard.eda.totalCharsLabel") }}</span>
           <span :class="$style.statValue">
             {{ formatNumber(report.document_stats.total_chars) }}
           </span>
         </div>
         <div :class="$style.stat">
-          <span :class="$style.statLabel">Медиана длины</span>
+          <span :class="$style.statLabel">{{ t("wizard.eda.medianCharsLabel") }}</span>
           <span :class="$style.statValue">
             {{ formatNumber(Math.round(report.document_stats.median_chars)) }}
           </span>
         </div>
         <div :class="$style.stat">
-          <span :class="$style.statLabel">NER-плотность / 1k</span>
+          <span :class="$style.statLabel">{{ t("wizard.eda.nerDensityLabel") }}</span>
           <span :class="$style.statValue">
             {{ report.entity_density_per_1k_chars.toFixed(2) }}
           </span>
         </div>
         <div :class="$style.stat">
-          <span :class="$style.statLabel">Морф. разброс</span>
+          <span :class="$style.statLabel">{{ t("wizard.eda.morphDispersionLabel") }}</span>
           <span :class="$style.statValue">
             {{ report.morphological_dispersion.toFixed(2) }}
           </span>
@@ -106,42 +106,42 @@
       </div>
 
       <div :class="$style.recommendation">
-        <h3 :class="$style.subhead">Рекомендация</h3>
+        <h3 :class="$style.subhead">{{ t("wizard.eda.recommendation") }}</h3>
         <p :class="$style.rationale">{{ report.recommendation.rationale }}</p>
 
         <div :class="$style.recRow">
-          <strong>Builder:</strong>
+          <strong>{{ t("wizard.eda.builderLabel") }}</strong>
           <code>{{ report.recommendation.builder }}</code>
         </div>
         <div :class="$style.recRow">
-          <strong>Cleaner-цепочка:</strong>
+          <strong>{{ t("wizard.eda.cleanerLabel") }}</strong>
           <code>{{ report.recommendation.cleaner_chain.join(" → ") || "—" }}</code>
         </div>
         <div :class="$style.recRow">
-          <strong>Clusterer:</strong>
+          <strong>{{ t("wizard.eda.clustererLabel") }}</strong>
           <code>{{ report.recommendation.clusterer }}</code>
         </div>
       </div>
 
       <div v-if="report.recommendation.node_types.length" :class="$style.types">
-        <h3 :class="$style.subhead">Типы узлов</h3>
+        <h3 :class="$style.subhead">{{ t("wizard.eda.nodeTypes") }}</h3>
         <ul :class="$style.typeList">
           <li
-            v-for="t in report.recommendation.node_types"
-            :key="t.name"
+            v-for="nt in report.recommendation.node_types"
+            :key="nt.name"
             :class="$style.typeChip"
-            :style="{ borderColor: t.suggested_color || 'var(--ksd-border-color)' }"
+            :style="{ borderColor: nt.suggested_color || 'var(--ksd-border-color)' }"
           >
-            <strong>{{ t.label }}</strong>
+            <strong>{{ nt.label }}</strong>
             <span :class="$style.typeMuted">
-              {{ t.name }} · {{ t.evidence_count }} упоминаний
+              {{ nt.name }} · {{ nt.evidence_count }} {{ t("wizard.eda.mentionsSuffix") }}
             </span>
           </li>
         </ul>
       </div>
 
       <button type="button" :class="$style.rerun" @click="runEda">
-        Перезапустить анализ
+        {{ t("wizard.eda.rerun") }}
       </button>
     </div>
   </section>

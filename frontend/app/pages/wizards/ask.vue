@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { computed, ref } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import ModeStep from "@/components/organisms/AskWizard/steps/ModeStep.vue";
   import QueryStep from "@/components/organisms/AskWizard/steps/QueryStep.vue";
@@ -9,6 +10,7 @@
   import WizardFrame from "@/components/organisms/Wizard/WizardFrame.vue";
   import { useAskWizard } from "@/composables/use-ask-wizard";
 
+  const { t } = useI18n();
   const wizard = useAskWizard();
   const resultsRef = ref<InstanceType<typeof ResultsStep> | null>(null);
 
@@ -34,12 +36,12 @@
 
 <template>
   <WizardFrame
-    title="Спросить графы"
+    :title="t('wizard.askPage.title')"
     :steps="wizard.steps"
     :statuses="wizard.stepStatuses.value"
     :current-index="wizard.currentIndex.value"
     :can-advance="canAdvance"
-    :advance-label="wizard.currentIndex.value === wizard.steps.length - 1 ? 'Спросить' : 'Далее'"
+    :advance-label="wizard.currentIndex.value === wizard.steps.length - 1 ? t('wizard.askPage.advanceFinal') : t('wizard.askPage.advance')"
     @navigate="(i) => wizard.goTo(i)"
     @back="wizard.back"
     @advance="onAdvance"

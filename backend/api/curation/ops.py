@@ -21,6 +21,14 @@ class MergeNodesPayload(DomainModel):
     survivor_id: Id
     absorbed_ids: list[Id]
     reason: str | None = None
+    new_name: str | None = None
+    """Optional rename of the survivor as part of the merge.
+
+    The demo scenario (docs/redesign/demo_scenario.md §5) treats merge
+    + rename as one user gesture: pick a survivor, rename it to the
+    canonical form. Stored as part of the same JournalEntry so undo
+    rolls back both changes atomically. None = leave survivor's name
+    untouched."""
 
 
 class SplitNodePayload(DomainModel):

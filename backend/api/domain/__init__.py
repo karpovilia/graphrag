@@ -23,15 +23,18 @@ from .graph import (
     NodeType,
 )
 from .run import Run, RunKind, RunStatus, ToolInvocation
+from .schema import CorpusSchema, EntityTypeDef, RelationTypeDef
 from .types import EmbeddingRef, Id, Provenance
 
 __all__ = [
     "Corpus",
+    "CorpusSchema",
     "Document",
     "DocumentSpan",
     "Edge",
     "EdgeType",
     "EmbeddingRef",
+    "EntityTypeDef",
     "GraphVariant",
     "GraphVariantStatus",
     "Id",
@@ -41,6 +44,7 @@ __all__ = [
     "Node",
     "NodeType",
     "Provenance",
+    "RelationTypeDef",
     "Run",
     "RunKind",
     "RunStatus",

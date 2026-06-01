@@ -164,6 +164,7 @@
 - **NF7. Покрытие тестами.** Стратегии (Builder/Cleaner/Reasoner/Agent/Tool) — обязательные unit-тесты с фиктивным LLM (record/replay). Интеграционный smoke на HSE podcast (маленький саб-сэт) в CI. **LLM по умолчанию — Deepseek** (за единый LLM gateway).
 - **NF8. Лицензии.** Зависимости MIT/Apache. Не тащим GPL.
 - **NF9. Деплой.** Локальный single-instance (как `graph-rag.apsolutions.ru` сейчас). Multi-tenant и SaaS — out of scope.
+- **NF10. Прослеживаемость (traceability).** Каждый ответ RAG-пайплайна должен «расследоваться» вниз по цепочке: ответ → reasoning chain (какие experts голосовали, как aggregator скомбинировал) → community → entity-узел → исходный chunk → конкретный документ → абзац (span). Provenance уже хранится на узле (`Node.provenance: list[NodeProvenance]` с `document_id` + `span_start/span_end`); требование — **никогда не разрывать эту цепочку** в новом коде: любой новый узел/ребро/ответ должен ссылаться на предшественников через стабильные id (`canonical_id`, `span_id`), а UI должен уметь раскрутить полную цепь по клику. Зафиксировано пользователем 2026-05-08 как блокирующее свойство для статьи и для ручной валидации.
 
 ---
 

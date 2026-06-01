@@ -44,6 +44,27 @@ class PostgresSettings(BaseModel):
         )
 
 
+class AuthSettings(BaseModel):
+    secret: str = Field(
+        default="dev-insecure-default-change-via-AUTH__SECRET",
+        description=(
+            "JWT signing secret. Must be set via AUTH__SECRET env var in any "
+            "non-throwaway deploy — the default is sentinel-only."
+        ),
+    )
+    cookie_name: str = "auth"
+    cookie_max_age_s: int = 60 * 60 * 24 * 30
+    """30 days. Cookie is httpOnly + SameSite=Lax."""
+
+    cookie_secure: bool = False
+    """Set true behind HTTPS. Default false so dev (http://localhost:3001)
+    still receives the cookie."""
+
+    register_open: bool = True
+    """If false, /api/auth/register returns 403. Toggle off for closed
+    deploys where users come from elsewhere."""
+
+
 class StorageSettings(BaseModel):
     """Local on-disk layout. Single-instance deploy (NF9), no S3 in R2."""
 
@@ -70,6 +91,7 @@ class R2Settings(BaseSettings):
     yandex: YandexSettings = YandexSettings()
     postgres: PostgresSettings = PostgresSettings()
     storage: StorageSettings = StorageSettings()
+    auth: AuthSettings = AuthSettings()
 
     default_completion_provider: str = "deepseek"
     default_embedding_provider: str = "yandex"

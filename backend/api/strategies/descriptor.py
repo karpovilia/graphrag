@@ -12,6 +12,7 @@ Kind = Literal[
     "cleaner",
     "clusterer",
     "summarizer",
+    "projector",
     "reasoner",
     "agent",
     "tool",

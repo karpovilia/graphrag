@@ -1,11 +1,13 @@
 <script setup lang="ts">
   import { useAsyncData } from "nuxt/app";
   import { computed } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import { useAskWizard } from "@/composables/use-ask-wizard";
   import { useApi } from "@/lib/api-client";
   import { formatNumber } from "@/lib/format";
 
+  const { t } = useI18n();
   const wizard = useAskWizard();
   const api = useApi();
 
@@ -33,10 +35,11 @@
 
 <template>
   <section :class="$style.step">
-    <h2 :class="$style.title">Варианты графа</h2>
+    <h2 :class="$style.title">{{ t("wizard.ask.variantsTitle") }}</h2>
     <p :class="$style.hint">
-      Режим: <strong>{{ wizard.data.value.mode }}</strong> ·
-      нужно выбрать минимум {{ requiredCount }}, выбрано
+      {{ t("wizard.ask.variantsModeLabel") }} <strong>{{ wizard.data.value.mode }}</strong> ·
+      {{ t("wizard.ask.variantsRequirePrefix") }} {{ requiredCount }},
+      {{ t("wizard.ask.variantsRequireSelected") }}
       <strong>{{ wizard.data.value.variant_ids.length }}</strong>.
     </p>
 
@@ -59,8 +62,10 @@
         <div :class="$style.body">
           <strong>{{ v.name }}</strong>
           <span :class="$style.muted">
-            {{ v.builder }} · {{ formatNumber(v.node_count) }} узлов ·
-            {{ formatNumber(v.edge_count) }} рёбер · v{{ v.version }}
+            {{ v.builder }} · {{ formatNumber(v.node_count) }}
+            {{ t("corpora.nodesShort") }} ·
+            {{ formatNumber(v.edge_count) }}
+            {{ t("corpora.edgesShort") }} · v{{ v.version }}
           </span>
         </div>
         <span :class="[$style.chip, $style[`chip_${v.status}`] || '']">
@@ -69,8 +74,8 @@
       </li>
     </ul>
     <p v-else :class="$style.empty">
-      Нет ни одного варианта графа — соберите хотя бы один в
-      <NuxtLink to="/wizards/build">визарде сборки</NuxtLink>.
+      {{ t("wizard.ask.variantsEmptyPrefix") }}
+      <NuxtLink to="/wizards/build">{{ t("wizard.ask.variantsEmptyLink") }}</NuxtLink>.
     </p>
   </section>
 </template>

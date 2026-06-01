@@ -13,7 +13,12 @@
 import { useRoute, useRouter, useState } from "nuxt/app";
 import { computed, watch } from "vue";
 
-import type { BuildVariantRequest, EdaReport, Id } from "@/entities/api";
+import type {
+  BuildVariantRequest,
+  CorpusSchema,
+  EdaReport,
+  Id,
+} from "@/entities/api";
 
 export type WizardStepStatus = "pending" | "in_progress" | "completed" | "needs_confirmation";
 
@@ -36,6 +41,11 @@ export type BuildWizardData = {
   language: string;
   documents: DocumentDraft[];
   eda?: EdaReport;
+  /** User-reviewed corpus ontology. SchemaStep populates it from
+   * `POST /api/corpora/{id}/schema/propose` and persists with `PUT`.
+   * Optional — skipping the schema step leaves it unset and the
+   * builder falls back to open-vocab extraction. */
+  schema?: CorpusSchema;
   build_request: BuildVariantRequest;
 };
 
@@ -43,6 +53,7 @@ export const BUILD_WIZARD_STEPS: WizardStepDef[] = [
   { id: "corpus", label: "Корпус", hint: "Имя и описание корпуса" },
   { id: "documents", label: "Документы", hint: "Загрузите текст" },
   { id: "eda", label: "EDA", hint: "Рекомендации по корпусу" },
+  { id: "schema", label: "Схема", hint: "Онтология типов и отношений" },
   { id: "pipeline", label: "Пайплайн", hint: "Builder / cleaner / clusterer" },
   { id: "review", label: "Запуск", hint: "Подтверждение и сборка" },
 ];
@@ -58,6 +69,11 @@ const DEFAULT_DATA: BuildWizardData = {
     builder: "ner_extraction",
     cleaner_chain: [],
     clusterer: null,
+    // Default-on: pre-select the only projector we ship so every new
+    // build gets hub-resistant intra-layer backbone edges (2n-5n per
+    // layer) out of the box. The user can switch it off in the wizard.
+    projector: "intra_layer_backbone",
+    output_language: "ru",
   },
 };
 
@@ -75,6 +91,22 @@ export function useBuildWizard() {
     "build-wizard:status",
     () => BUILD_WIZARD_STEPS.map((_, i) => (i === 0 ? "in_progress" : "pending")),
   );
+
+  // Deep-link from /corpora/{id}: prefill corpus_id and treat
+  // corpus/documents/eda as already done so the user lands directly
+  // on the pipeline step. Idempotent — only fires when the query id
+  // differs from current state.
+  const queryCorpusId = route.query.corpus_id;
+  if (
+    typeof queryCorpusId === "string" &&
+    queryCorpusId &&
+    data.value.corpus_id !== queryCorpusId
+  ) {
+    data.value.corpus_id = queryCorpusId;
+    stepStatuses.value = stepStatuses.value.map((s, i) =>
+      i <= 2 ? "completed" : s,
+    );
+  }
 
   const currentIndex = computed<number>({
     get() {

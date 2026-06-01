@@ -1,10 +1,12 @@
 <script setup lang="ts">
   import { computed, ref } from "vue";
   import { navigateTo } from "nuxt/app";
+  import { useI18n } from "vue-i18n";
 
   import { useBuildWizard } from "@/composables/use-build-wizard";
   import { useApi } from "@/lib/api-client";
 
+  const { t } = useI18n();
   const wizard = useBuildWizard();
   const api = useApi();
 
@@ -13,43 +15,51 @@
   const stage = ref<string>("");
 
   const summary = computed(() => ({
-    name: wizard.data.value.corpus_name || "(без названия)",
+    name: wizard.data.value.corpus_name || t("wizard.review.untitled"),
     documents: wizard.data.value.documents.filter((d) => d.text.trim()).length,
     builder: wizard.data.value.build_request.builder,
     cleaners: wizard.data.value.build_request.cleaner_chain ?? [],
     clusterer: wizard.data.value.build_request.clusterer ?? "(none)",
+    addingToExisting: Boolean(wizard.data.value.corpus_id),
   }));
 
   async function build() {
     error.value = null;
     building.value = true;
     try {
-      stage.value = "Создаю корпус…";
-      const corpus = await api.corpora.create({
-        name: wizard.data.value.corpus_name || "untitled corpus",
-        description: wizard.data.value.corpus_description || null,
-        language: wizard.data.value.language || "ru",
-      });
-      wizard.data.value.corpus_id = corpus.id;
-
-      stage.value = "Загружаю документы…";
-      const docs = wizard.data.value.documents.filter((d) => d.text.trim());
-      for (const d of docs) {
-        await api.corpora.createDocument(corpus.id, {
-          title: d.title || "untitled",
-          text: d.text,
-          language: wizard.data.value.language,
+      // Adding a variant to an existing corpus (deep-link from
+      // /corpora/{id}): skip create + document upload, the corpus is
+      // already there.
+      let corpusId = wizard.data.value.corpus_id;
+      if (!corpusId) {
+        stage.value = t("wizard.review.creatingCorpus");
+        const corpus = await api.corpora.create({
+          name: wizard.data.value.corpus_name || "untitled corpus",
+          description: wizard.data.value.corpus_description || null,
+          language: wizard.data.value.language || "ru",
         });
+        corpusId = corpus.id;
+        wizard.data.value.corpus_id = corpusId;
+
+        stage.value = t("wizard.review.uploadingDocs");
+        const docs = wizard.data.value.documents.filter((d) => d.text.trim());
+        for (const d of docs) {
+          await api.corpora.createDocument(corpusId, {
+            title: d.title || "untitled",
+            text: d.text,
+            language: wizard.data.value.language,
+          });
+        }
       }
 
-      stage.value = "Запускаю сборку графа…";
-      const variant = await api.corpora.buildVariant(corpus.id, {
+      stage.value = t("wizard.review.buildingGraph");
+      const variant = await api.corpora.buildVariant(corpusId, {
         ...wizard.data.value.build_request,
         name: wizard.data.value.build_request.name || "v1",
       });
 
       wizard.markCompleted(4);
-      stage.value = "Готово!";
+      stage.value = t("wizard.review.ready");
       await navigateTo(`/graphs/${variant.id}`);
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e);
@@ -63,33 +73,33 @@
 
 <template>
   <section :class="$style.step">
-    <h2 :class="$style.title">Подтверждение запуска</h2>
-    <p :class="$style.hint">
-      Проверьте параметры. Если всё ок, нажмите «Запустить сборку» — корпус
-      и документы попадут в БД, builder/cleaner/clusterer выполнятся
-      синхронно, и вы окажетесь на странице нового варианта графа.
-    </p>
+    <h2 :class="$style.title">{{ t("wizard.review.title") }}</h2>
+    <p :class="$style.hint">{{ t("wizard.review.hint") }}</p>
 
     <dl :class="$style.summary">
       <div :class="$style.row">
-        <dt>Корпус</dt>
+        <dt>{{ t("wizard.review.fieldCorpus") }}</dt>
         <dd>{{ summary.name }}</dd>
       </div>
       <div :class="$style.row">
-        <dt>Документов</dt>
+        <dt>{{ t("wizard.review.fieldDocuments") }}</dt>
         <dd>{{ summary.documents }}</dd>
       </div>
       <div :class="$style.row">
-        <dt>Builder</dt>
+        <dt>{{ t("wizard.review.fieldBuilder") }}</dt>
         <dd><code>{{ summary.builder }}</code></dd>
       </div>
       <div :class="$style.row">
-        <dt>Cleaner-цепочка</dt>
+        <dt>{{ t("wizard.review.fieldCleaners") }}</dt>
         <dd><code>{{ summary.cleaners.join(" → ") || "—" }}</code></dd>
       </div>
       <div :class="$style.row">
-        <dt>Clusterer</dt>
+        <dt>{{ t("wizard.review.fieldClusterer") }}</dt>
         <dd><code>{{ summary.clusterer }}</code></dd>
+      </div>
+      <div :class="$style.row">
+        <dt>{{ t("common.language") }}</dt>
+        <dd><code>{{ wizard.data.value.build_request.output_language ?? "ru" }}</code></dd>
       </div>
     </dl>
 
@@ -99,17 +109,17 @@
     </div>
 
     <div v-else-if="error" :class="$style.error">
-      Ошибка сборки: {{ error }}
+      {{ t("wizard.review.errorBuilding") }}: {{ error }}
     </div>
 
     <button
       v-else
       type="button"
       :class="$style.cta"
-      :disabled="!summary.documents"
+      :disabled="!summary.addingToExisting && !summary.documents"
       @click="build"
     >
-      Запустить сборку
+      {{ t("wizard.review.submit") }}
     </button>
   </section>
 </template>

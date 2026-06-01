@@ -1,43 +1,43 @@
 <script setup lang="ts">
+  import { useI18n } from "vue-i18n";
+
   import { useBuildWizard } from "@/composables/use-build-wizard";
 
+  const { t } = useI18n();
   const wizard = useBuildWizard();
 </script>
 
 <template>
   <section :class="$style.step">
-    <h2 :class="$style.title">Корпус</h2>
-    <p :class="$style.hint">
-      Назовите корпус и опишите что в нём — это поможет найти его в списке
-      позже.
-    </p>
+    <h2 :class="$style.title">{{ t("wizard.corpus.title") }}</h2>
+    <p :class="$style.hint">{{ t("wizard.corpus.hint") }}</p>
 
     <label :class="$style.field">
-      <span>Название</span>
+      <span>{{ t("wizard.corpus.name") }}</span>
       <input
         v-model="wizard.data.value.corpus_name"
         type="text"
         :class="$style.input"
-        placeholder="Например, HSE podcast — выпуск 12"
+        :placeholder="t('wizard.corpus.namePlaceholder')"
         @input="wizard.invalidateDownstream(0)"
       />
     </label>
 
     <label :class="$style.field">
-      <span>Описание (необязательно)</span>
+      <span>{{ t("wizard.corpus.description") }}</span>
       <textarea
         v-model="wizard.data.value.corpus_description"
         :class="$style.textarea"
         rows="3"
-        placeholder="Что внутри: сколько эпизодов, период, источник…"
+        :placeholder="t('wizard.corpus.descriptionPlaceholder')"
       />
     </label>
 
     <label :class="$style.field">
-      <span>Язык</span>
+      <span>{{ t("wizard.corpus.language") }}</span>
       <select v-model="wizard.data.value.language" :class="$style.input">
-        <option value="ru">русский</option>
-        <option value="en">english</option>
+        <option value="ru">{{ t("profile.languageRu") }}</option>
+        <option value="en">{{ t("profile.languageEn") }}</option>
       </select>
     </label>
   </section>

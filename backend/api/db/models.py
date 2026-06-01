@@ -51,6 +51,12 @@ class Document(Base):
     language: Mapped[str] = mapped_column(String(8), nullable=False, default="ru")
     char_length: Mapped[int] = mapped_column(Integer, nullable=False)
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    text: Mapped[str | None] = mapped_column(Text)
+    """Plain-text body. Phase-7 fix: previously we stashed this in
+    `metadata['raw_text']`, which bloated the JSONB column for the build
+    pipeline. New writes go here; reads from old data still work
+    because the build route falls back to metadata."""
+
     metadata_json: Mapped[dict] = mapped_column(
         "metadata", JSONB, nullable=False, default=dict
     )
@@ -294,6 +300,35 @@ class ToolInvocation(Base):
     __table_args__ = (
         Index("ix_tool_invocations_node_id", "node_id"),
         Index("ix_tool_invocations_tool", "tool"),
+    )
+
+
+class GraphLayout(Base):
+    """Cached force-layout positions per (variant, user). Lets a returning
+    visitor skip the multi-second d3-force convergence. Anonymous writes
+    use user_id IS NULL — that's also the row first-time visitors fall
+    back to when nobody on their account has saved one yet.
+    """
+
+    __tablename__ = "graph_layouts"
+
+    graph_variant_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("graph_variants.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        nullable=True,
+    )
+    positions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(
+        nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("ix_graph_layouts_variant_updated", "graph_variant_id", "updated_at"),
     )
 
 

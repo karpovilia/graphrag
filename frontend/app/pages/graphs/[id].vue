@@ -2,8 +2,10 @@
   import { useAsyncData } from "nuxt/app";
   import { computed, ref, watch } from "vue";
   import { useRoute } from "vue-router";
+  import { useI18n } from "vue-i18n";
 
   import LayeredGraph from "@/components/organisms/LayeredGraph/LayeredGraph.vue";
+  import LayersPanel from "@/components/organisms/LayersPanel/LayersPanel.vue";
   import NodeDrawer from "@/components/organisms/NodeDrawer/NodeDrawer.vue";
   import SuggestionsSidebar from "@/components/organisms/SuggestionsSidebar/SuggestionsSidebar.vue";
   import { themeBehaviorSubject } from "@/entities/tech";
@@ -15,6 +17,7 @@
   const variantId = String(route.params.id);
   const api = useApi();
   const theme = themeBehaviorSubject.useSubscribe();
+  const { t } = useI18n();
 
   const { data: variant, error: variantError } =
     await useAsyncData(`variant:${variantId}`, () => api.graphs.get(variantId));
@@ -30,6 +33,8 @@
   const selectedNodes = ref<id[]>([]);
   const selectedLink = ref<id | null>(null);
   const showSuggestions = ref(false);
+  const showLayers = ref(false);
+  const highlightedNodes = ref<id[]>([]);
 
   const selectedNode = computed<Node | null>(() => {
     if (selectedNodes.value.length !== 1) return null;
@@ -60,7 +65,7 @@
   <div :class="$style.page">
     <header :class="$style.header" v-if="variant">
       <div :class="$style.headerMain">
-        <NuxtLink to="/corpora" :class="$style.back">← К списку корпусов</NuxtLink>
+        <NuxtLink to="/corpora" :class="$style.back">{{ t("graph.backToCorpora") }}</NuxtLink>
         <h1 :class="$style.title">{{ variant.name }}</h1>
         <p :class="$style.muted">
           builder: <code>{{ variant.builder }}</code> · cleaners:
@@ -75,7 +80,14 @@
           :class="[$style.toggle, showSuggestions ? $style.toggle_active : '']"
           @click="showSuggestions = !showSuggestions"
         >
-          {{ showSuggestions ? "Скрыть" : "Показать" }} Suggestions
+          {{ showSuggestions ? t("graph.hideSuggestions") : t("graph.showSuggestions") }}
+        </button>
+        <button
+          type="button"
+          :class="[$style.toggle, showLayers ? $style.toggle_active : '']"
+          @click="showLayers = !showLayers"
+        >
+          {{ t("layersPanel.open") }}
         </button>
         <a
           :href="api.graphs.exportJournalUrl(variant.id, 'json')"
@@ -83,7 +95,7 @@
           rel="noopener"
           :class="$style.exportBtn"
         >
-          Экспорт журнала (JSON)
+          {{ t("graph.exportJournal") }}
         </a>
       </div>
 
@@ -112,6 +124,7 @@
         v-if="showSuggestions"
         :variant="variant"
         @variant-changed="onVariantChanged"
+        @highlight="(ids) => (highlightedNodes = ids)"
       />
 
       <div :class="$style.canvas">
@@ -119,16 +132,26 @@
           :nodes="nodes"
           :edges="edges"
           :theme="theme"
+          :variant-id="variant.id"
+          :highlighted-node-ids="highlightedNodes"
           v-model:selectedNodes="selectedNodes"
           v-model:selectedLink="selectedLink"
+        />
+        <LayersPanel
+          v-if="showLayers"
+          :nodes="nodes"
+          :edges="edges"
+          @close="showLayers = false"
+          @select-node="(id) => (selectedNodes = [id])"
         />
       </div>
 
       <NodeDrawer
         v-if="selectedNode"
         :node="selectedNode"
-        :variant-id="variant.id"
+        :variant="variant"
         @close="selectedNodes = []"
+        @variant-changed="onVariantChanged"
       />
     </div>
   </div>

@@ -1,36 +1,31 @@
 <script setup lang="ts">
+  import { computed } from "vue";
+  import { useI18n } from "vue-i18n";
+
   import { useAskWizard } from "@/composables/use-ask-wizard";
 
+  const { t } = useI18n();
   const wizard = useAskWizard();
 
-  const cards = [
+  const cards = computed(() => [
     {
       mode: "single" as const,
       title: "Single",
-      summary: "Один вариант графа отвечает напрямую — без агрегации.",
-      desc:
-        "Подходит для быстрых проверок и регрессионных тестов: один " +
-        "reasoner, один вариант, минимум LLM-вызовов.",
+      summary: t("wizard.ask.modeSingleSummary"),
+      desc: t("wizard.ask.modeSingleDescription"),
     },
     {
       mode: "moe" as const,
       title: "Mixture of Experts",
-      summary: "Несколько вариантов отвечают параллельно, aggregator сливает.",
-      desc:
-        "Hero-режим SIGIR-демо. Каждый вариант (разный builder/cleaner) " +
-        "становится экспертом; weighted_vote / evidence_union / llm_judge " +
-        "сводят ответы.",
+      summary: t("wizard.ask.modeMoeSummary"),
+      desc: t("wizard.ask.modeMoeDescription"),
     },
-  ];
+  ]);
 </script>
 
 <template>
   <section :class="$style.step">
-    <h2 :class="$style.title">Режим</h2>
-    <p :class="$style.hint">
-      Single — спросить один вариант графа. MoE — спросить несколько и
-      объединить через aggregator.
-    </p>
+    <h2 :class="$style.title">{{ t("wizard.ask.modeTitle") }}</h2>
 
     <ul :class="$style.cards">
       <li

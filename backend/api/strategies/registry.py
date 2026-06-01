@@ -87,6 +87,7 @@ class Registry(Generic[T]):
 builders: Registry = Registry("builder")
 cleaners: Registry = Registry("cleaner")
 clusterers: Registry = Registry("clusterer")
+projectors: Registry = Registry("projector")
 reasoners: Registry = Registry("reasoner")
 agents: Registry = Registry("agent")
 aggregators: Registry = Registry("aggregator")
@@ -101,6 +102,7 @@ def all_descriptors() -> dict[Kind, list[StrategyDescriptor]]:
         "builder": builders.list(),
         "cleaner": cleaners.list(),
         "clusterer": clusterers.list(),
+        "projector": projectors.list(),
         "reasoner": reasoners.list(),
         "agent": agents.list(),
         "aggregator": aggregators.list(),

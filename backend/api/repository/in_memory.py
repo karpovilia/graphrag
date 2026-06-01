@@ -12,9 +12,10 @@ from api.domain.curation import (
     SuggestionAction,
     SuggestionStatus,
 )
-from api.domain.graph import GraphVariant, Node
+from api.domain.graph import GraphLayout, GraphVariant, Node
 from api.domain.run import ToolInvocation
 from api.domain.types import Id, utcnow
+from api.domain.user import Language, User
 from api.strategies.state import GraphBuildState
 
 from .errors import ConcurrentEditError, NotFoundError, RepositoryError
@@ -62,6 +63,12 @@ class InMemoryRepository(RepositoryProtocol):
         self._outbox: list[VectorOutboxEntry] = []
         self._next_outbox_id = 1
         self._locks: dict[Id, asyncio.Lock] = {}
+        self._users: dict[Id, User] = {}
+        self._users_by_email: dict[str, Id] = {}
+        self._layouts: dict[tuple[Id, Id | None], GraphLayout] = {}
+        """Cached force-layout positions keyed by (variant_id, user_id).
+        user_id=None is the shared pool used as fallback for visitors
+        without a personal layout."""
 
     # ---- corpora ----
 
@@ -77,6 +84,12 @@ class InMemoryRepository(RepositoryProtocol):
 
     async def list_corpora(self) -> list[Corpus]:
         return list(self._corpora.values())
+
+    async def update_corpus(self, corpus: Corpus) -> Corpus:
+        if corpus.id not in self._corpora:
+            raise NotFoundError(f"corpus {corpus.id} not found")
+        self._corpora[corpus.id] = corpus
+        return corpus
 
     # ---- documents ----
 
@@ -416,6 +429,68 @@ class InMemoryRepository(RepositoryProtocol):
     async def ack_outbox(self, ids: list[int]) -> None:
         ack = set(ids)
         self._outbox = [o for o in self._outbox if o.id not in ack]
+
+    # ---- graph layouts ----
+
+    async def upsert_layout(self, layout: GraphLayout) -> GraphLayout:
+        if layout.graph_variant_id not in self._variants:
+            raise NotFoundError(f"variant {layout.graph_variant_id} not found")
+        stored = layout.model_copy(update={"updated_at": utcnow()})
+        self._layouts[(stored.graph_variant_id, stored.user_id)] = stored
+        return stored
+
+    async def get_layout(
+        self,
+        graph_variant_id: Id,
+        *,
+        user_id: Id | None,
+    ) -> GraphLayout | None:
+        # Per-user hit beats the fallback pool every time.
+        if user_id is not None:
+            mine = self._layouts.get((graph_variant_id, user_id))
+            if mine is not None:
+                return mine
+        # Otherwise: most-recently-updated layout for this variant from
+        # any user (including anon writes with user_id=None).
+        candidates = [
+            v for k, v in self._layouts.items() if k[0] == graph_variant_id
+        ]
+        if not candidates:
+            return None
+        candidates.sort(key=lambda lay: lay.updated_at, reverse=True)
+        return candidates[0]
+
+    # ---- users ----
+
+    async def create_user(self, user: User) -> User:
+        email_key = user.email.lower()
+        if email_key in self._users_by_email:
+            raise RepositoryError(f"user with email {user.email} already exists")
+        stored = user.model_copy(update={"email": email_key})
+        self._users[stored.id] = stored
+        self._users_by_email[email_key] = stored.id
+        return stored
+
+    async def get_user(self, user_id: Id) -> User:
+        try:
+            return self._users[user_id]
+        except KeyError as e:
+            raise NotFoundError(f"user {user_id} not found") from e
+
+    async def get_user_by_email(self, email: str) -> User:
+        uid = self._users_by_email.get(email.lower())
+        if uid is None:
+            raise NotFoundError(f"user with email {email} not found")
+        return self._users[uid]
+
+    async def update_user_language(self, user_id: Id, language: Language) -> User:
+        try:
+            u = self._users[user_id]
+        except KeyError as e:
+            raise NotFoundError(f"user {user_id} not found") from e
+        updated = u.model_copy(update={"language": language})
+        self._users[user_id] = updated
+        return updated
 
     # ---- internals ----
 

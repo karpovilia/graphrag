@@ -30,6 +30,16 @@ class Document(DomainModel):
     language: str = "ru"
     char_length: int = Field(ge=0)
     sha256: str
+    text: str | None = None
+    """Raw plain-text body of the document.
+
+    Stored on the entity (not in `metadata`) so persistence backends can
+    pick a sensible column type instead of bloating a JSONB blob. None
+    on documents that haven't been hydrated yet (e.g. summaries, or
+    legacy rows pre-Phase 7). The build pipeline reads `text` first and
+    falls back to `metadata['raw_text']` for backwards compatibility.
+    """
+
     created_at: datetime = Field(default_factory=utcnow)
     metadata: dict[str, Any] = Field(default_factory=dict)
 

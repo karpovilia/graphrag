@@ -214,9 +214,11 @@ def test_preview_rejects_unknown_builder(app: FastAPI, client: TestClient) -> No
 def test_preview_passes_through_not_implemented_as_501(
     app: FastAPI, client: TestClient
 ) -> None:
-    """Microsoft/LightRAG/ToG3 builders raise NotImplementedError; the
-    handler should surface this as 501 so the wizard distinguishes
-    'unknown plugin' from 'plugin known but not wired yet'.
+    """ToG3 / FastRAG builders are still stubs that raise
+    NotImplementedError; the handler should surface this as 501 so the
+    wizard distinguishes 'unknown plugin' from 'plugin known but not
+    wired yet'. (LightRAG / Microsoft used to be stubs too — they're now
+    wired and tested in test_builders.py.)
     """
 
     fake_ner = _FakeNer({})
@@ -227,7 +229,7 @@ def test_preview_passes_through_not_implemented_as_501(
         "/api/graphs/preview",
         json={
             "documents": [{"title": "x", "text": "x"}],
-            "builder": "lightrag",
+            "builder": "tog3",
         },
     )
     assert resp.status_code == 501

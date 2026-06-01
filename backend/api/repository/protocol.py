@@ -8,9 +8,10 @@ from pydantic import Field
 from api.curation.applier import AffectedSet
 from api.domain.corpus import Corpus, Document
 from api.domain.curation import JournalEntry, Suggestion, SuggestionStatus
-from api.domain.graph import GraphVariant, Node
+from api.domain.graph import GraphLayout, GraphVariant, Node
 from api.domain.run import ToolInvocation
 from api.domain.types import DomainModel, Id, utcnow
+from api.domain.user import Language, User
 from api.strategies.state import GraphBuildState
 
 
@@ -69,6 +70,10 @@ class RepositoryProtocol(Protocol):
     async def get_corpus(self, corpus_id: Id) -> Corpus: ...
 
     async def list_corpora(self) -> list[Corpus]: ...
+
+    async def update_corpus(self, corpus: Corpus) -> Corpus: ...
+    """Overwrite an existing corpus row (e.g. to attach a schema to
+    metadata). Raises NotFoundError if the id doesn't exist."""
 
     # ---- documents ----
 
@@ -203,3 +208,32 @@ class RepositoryProtocol(Protocol):
     async def ack_outbox(self, ids: list[int]) -> None: ...
     """Mark entries consumed by the rebuild worker. In-memory and
     Postgres both implement this as DELETE BY id IN (...)."""
+
+    # ---- graph layouts (cached force-layout positions) ----
+
+    async def upsert_layout(self, layout: GraphLayout) -> GraphLayout: ...
+    """Insert or replace by (graph_variant_id, user_id). user_id NULL
+    represents the shared global pool that anonymous writes feed and
+    that first-time visitors fall back to."""
+
+    async def get_layout(
+        self,
+        graph_variant_id: Id,
+        *,
+        user_id: Id | None,
+    ) -> GraphLayout | None: ...
+    """Returns the caller's own saved layout if present; otherwise the
+    most-recently-updated layout for the variant from any user (the
+    "fallback" pool). Returns None if no layout has ever been saved."""
+
+    # ---- users ----
+
+    async def create_user(self, user: User) -> User: ...
+
+    async def get_user(self, user_id: Id) -> User: ...
+
+    async def get_user_by_email(self, email: str) -> User: ...
+    """Raise NotFoundError if no row matches. Email lookup is case-
+    insensitive — the stored value should be lowercased on write."""
+
+    async def update_user_language(self, user_id: Id, language: Language) -> User: ...

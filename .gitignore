@@ -31,3 +31,8 @@ logs
 .npmrc
 /storybook-static
 /stats
+
+# Coverage + runtime state snapshots (artifacts, not source)
+.coverage
+backend/api/data/state.json
+backend/data/var/state*.json

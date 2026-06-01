@@ -9,8 +9,10 @@ import { useRuntimeConfig } from "nuxt/app";
 import type {
   BuildVariantRequest,
   Corpus,
+  CorpusSchema,
   Document,
   EdaReport,
+  GraphLayout,
   GraphVariant,
   Id,
   JournalAppendRequest,
@@ -18,6 +20,7 @@ import type {
   JournalEntry,
   Kind,
   MoEResult,
+  ProposeSchemaRequest,
   ReasonRequest,
   StrategyDescriptor,
   Suggestion,
@@ -64,7 +67,13 @@ export function createApiClient(baseUrl = "") {
     if (init.body && !headers.has("content-type")) {
       headers.set("content-type", "application/json");
     }
-    const resp = await fetch(url(path), { ...init, headers });
+    // credentials: "include" so the auth cookie travels with every API
+    // call (httpOnly so JS can't read it; the browser still sends it).
+    const resp = await fetch(url(path), {
+      ...init,
+      headers,
+      credentials: "include",
+    });
     if (!resp.ok) {
       let body: unknown = null;
       try {
@@ -105,6 +114,8 @@ export function createApiClient(baseUrl = "") {
     get: (id: Id) => request<Corpus>(`/api/corpora/${id}`),
     listDocuments: (id: Id) =>
       request<Document[]>(`/api/corpora/${id}/documents`),
+    getDocument: (id: Id, documentId: Id) =>
+      request<Document>(`/api/corpora/${id}/documents/${documentId}`),
     createDocument: (
       id: Id,
       body: {
@@ -121,6 +132,17 @@ export function createApiClient(baseUrl = "") {
     buildVariant: (id: Id, body: BuildVariantRequest) =>
       request<GraphVariant>(`/api/corpora/${id}/graphs`, {
         method: "POST",
+        body: JSON.stringify(body),
+      }),
+    getSchema: (id: Id) => request<CorpusSchema>(`/api/corpora/${id}/schema`),
+    proposeSchema: (id: Id, body: ProposeSchemaRequest = {}) =>
+      request<CorpusSchema>(`/api/corpora/${id}/schema/propose`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    putSchema: (id: Id, body: CorpusSchema) =>
+      request<CorpusSchema>(`/api/corpora/${id}/schema`, {
+        method: "PUT",
         body: JSON.stringify(body),
       }),
   };
@@ -168,6 +190,13 @@ export function createApiClient(baseUrl = "") {
       }),
     exportJournalUrl: (id: Id, format: "json" | "csv" = "json") =>
       url(`/api/graphs/${id}/journal/export?format=${format}`),
+    getLayout: (id: Id) =>
+      request<GraphLayout>(`/api/graphs/${id}/layout`),
+    putLayout: (id: Id, positions: Record<string, [number, number]>) =>
+      request<GraphLayout>(`/api/graphs/${id}/layout`, {
+        method: "PUT",
+        body: JSON.stringify({ positions }),
+      }),
     preview: (body: {
       corpus_id?: Id;
       documents: { title: string; text: string; language?: string }[];
@@ -281,6 +310,36 @@ export function createApiClient(baseUrl = "") {
     },
   };
 
+  // ---- auth ----
+
+  type UserPublic = {
+    id: string;
+    email: string;
+    language: "ru" | "en";
+    created_at: string;
+  };
+
+  const auth = {
+    register: (body: { email: string; password: string; language?: "ru" | "en" }) =>
+      request<UserPublic>(`/api/auth/register`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    login: (body: { email: string; password: string }) =>
+      request<UserPublic>(`/api/auth/login`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    logout: () =>
+      request<void>(`/api/auth/logout`, { method: "POST" }),
+    me: () => request<UserPublic>(`/api/auth/me`),
+    patchMe: (body: { language?: "ru" | "en" }) =>
+      request<UserPublic>(`/api/auth/me`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+  };
+
   return {
     base: baseUrl,
     request,
@@ -291,6 +350,7 @@ export function createApiClient(baseUrl = "") {
     agents,
     reason,
     nodes,
+    auth,
   };
 }
 

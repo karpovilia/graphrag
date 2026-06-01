@@ -11,6 +11,7 @@ from .entity_dedup import EntityDeduplicator
 from .low_confidence_triplet import LowConfidenceTriplet
 from .orphan_rescuer import OrphanRescuer
 from .relation_consistency import RelationConsistencyChecker
+from .similarity_merge_candidates import SimilarityMergeCandidates
 from .topic_report_refresher import TopicReportRefresher
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "LowConfidenceTriplet",
     "OrphanRescuer",
     "RelationConsistencyChecker",
+    "SimilarityMergeCandidates",
     "TopicReportRefresher",
 ]

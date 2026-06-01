@@ -239,6 +239,24 @@ def _apply_merge_nodes(
     if payload.survivor_id in absorbed:
         raise JournalApplyError("survivor cannot be in absorbed list")
 
+    if payload.new_name is not None:
+        # Apply rename to the survivor node before dropping the absorbed
+        # ones. The demo scenario expects merge + rename as one op so
+        # undo reverts both atomically.
+        survivor_seen = False
+        renamed: list[Node] = []
+        for n in nodes:
+            if n.id == payload.survivor_id:
+                survivor_seen = True
+                renamed.append(n.model_copy(update={"name": payload.new_name}))
+            else:
+                renamed.append(n)
+        if not survivor_seen:
+            raise JournalApplyError(
+                f"merge_nodes: survivor {payload.survivor_id} not found"
+            )
+        nodes = renamed
+
     nodes = [n for n in nodes if n.id not in absorbed]
     redirect = {aid: payload.survivor_id for aid in absorbed}
     return nodes, _redirect_edges(edges, redirect)

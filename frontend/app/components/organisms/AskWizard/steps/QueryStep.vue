@@ -1,36 +1,38 @@
 <script setup lang="ts">
+  import { computed } from "vue";
+  import { useI18n } from "vue-i18n";
+
   import { useAskWizard } from "@/composables/use-ask-wizard";
 
+  const { t } = useI18n();
   const wizard = useAskWizard();
 
-  const examples = [
-    "Кто чем занимается в этом подкасте?",
-    "Какие основные темы обсуждались?",
-    "Как связаны главные действующие лица?",
-    "Перечисли организации, упомянутые в тексте.",
-  ];
+  const examples = computed(() => [
+    t("wizard.ask.querySuggestion1"),
+    t("wizard.ask.querySuggestion2"),
+    t("wizard.ask.querySuggestion3"),
+    t("wizard.ask.querySuggestion4"),
+  ]);
 </script>
 
 <template>
   <section :class="$style.step">
-    <h2 :class="$style.title">Вопрос</h2>
+    <h2 :class="$style.title">{{ t("wizard.ask.queryTitle") }}</h2>
     <p :class="$style.hint">
-      Сформулируйте вопрос на естественном языке. Reasoner
-      <strong>{{ wizard.data.value.reasoner }}</strong> вернёт ответ с
-      evidence-узлами; в MoE-режиме каждый вариант ответит независимо, а
-      <strong>{{ wizard.data.value.aggregator }}</strong> сольёт результаты.
+      <strong>{{ wizard.data.value.reasoner }}</strong> ·
+      <strong>{{ wizard.data.value.aggregator }}</strong>
     </p>
 
     <textarea
       v-model="wizard.data.value.query"
       :class="$style.textarea"
       rows="4"
-      placeholder="Например: «Кто такой Иван Иванов?» или «Какие темы пересекаются между эпизодами?»"
+      :placeholder="t('wizard.ask.queryPlaceholder')"
       @input="wizard.invalidateDownstream(3)"
     />
 
     <div :class="$style.examples">
-      <span :class="$style.label">Шпаргалка:</span>
+      <span :class="$style.label">{{ t("wizard.ask.querySuggestionsHint") }}</span>
       <button
         v-for="(ex, i) in examples"
         :key="i"

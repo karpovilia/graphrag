@@ -25,8 +25,40 @@ export type Document = {
   language: string;
   char_length: number;
   sha256: string;
+  text?: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
+};
+
+// ---- corpus schema (api/domain/schema.py) ----
+
+export type EntityTypeDef = {
+  name: string;
+  description: string;
+  examples: string[];
+  suggested_color?: string | null;
+};
+
+export type RelationTypeDef = {
+  name: string;
+  description: string;
+  domain: string[];
+  range: string[];
+  symmetric: boolean;
+  examples: string[];
+};
+
+export type CorpusSchema = {
+  entity_types: EntityTypeDef[];
+  relation_types: RelationTypeDef[];
+  proposed_by?: string | null;
+  version: number;
+};
+
+export type ProposeSchemaRequest = {
+  sample_size?: number;
+  sample_chunk_size?: number;
+  seed?: number;
 };
 
 // ---- graph (api/domain/graph.py) ----
@@ -37,7 +69,8 @@ export type EdgeType =
   | "mentioned_in"
   | "member_of"
   | "summary_of"
-  | "entity_relation";
+  | "entity_relation"
+  | "backbone";
 
 export type GraphVariantStatus =
   | "pending"
@@ -183,6 +216,7 @@ export type Kind =
   | "cleaner"
   | "clusterer"
   | "summarizer"
+  | "projector"
   | "reasoner"
   | "agent"
   | "tool"
@@ -268,6 +302,13 @@ export type ReasonMode = "single" | "moe";
 
 // ---- API request bodies ----
 
+export type LLMOverride = {
+  /** Optional for local OpenAI-compatible servers (Ollama, llama.cpp). */
+  api_key?: string;
+  base_url: string;
+  model: string;
+};
+
 export type BuildVariantRequest = {
   name: string;
   builder: string;
@@ -276,7 +317,17 @@ export type BuildVariantRequest = {
   builder_params?: Record<string, unknown>;
   cleaner_params?: Record<string, Record<string, unknown>>;
   clusterer_params?: Record<string, unknown>;
+  /** Post-clusterer stage that derives intra-layer co-occurrence edges
+   * via PMI + disparity filter. `null` skips this stage. */
+  projector?: string | null;
+  projector_params?: Record<string, unknown>;
   seed?: number | null;
+  /** Language used by the pipeline to normalise entity names and
+   * generate summaries. Backend default is "ru". */
+  output_language?: "ru" | "en";
+  /** Bring-your-own-token: when set, the pipeline uses this endpoint
+   * for LLM calls instead of the server default. Not persisted. */
+  llm_override?: LLMOverride | null;
 };
 
 export type ReasonRequest = {
@@ -300,4 +351,9 @@ export type JournalAppendResult = {
   variant: GraphVariant;
   entry: JournalEntry;
   affected: { node_ids: Id[]; edge_ids: Id[]; community_ids: Id[] };
+};
+
+export type GraphLayout = {
+  positions: Record<string, [number, number]>;
+  owner: "self" | "global";
 };

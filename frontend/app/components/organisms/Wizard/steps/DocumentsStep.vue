@@ -1,16 +1,25 @@
 <script setup lang="ts">
   import { computed } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import { useBuildWizard } from "@/composables/use-build-wizard";
 
+  const { t, locale } = useI18n();
   const wizard = useBuildWizard();
 
   const totalChars = computed(() =>
     wizard.data.value.documents.reduce((s, d) => s + d.text.length, 0),
   );
 
+  function defaultDocTitle(index: number): string {
+    return `${t("wizard.documents.namePrefix")}${index + 1}`;
+  }
+
   function addEmpty() {
-    wizard.data.value.documents.push({ title: `Документ ${wizard.data.value.documents.length + 1}`, text: "" });
+    wizard.data.value.documents.push({
+      title: defaultDocTitle(wizard.data.value.documents.length),
+      text: "",
+    });
     wizard.invalidateDownstream(1);
   }
 
@@ -27,7 +36,9 @@
     const doc = wizard.data.value.documents[index];
     if (!doc) return;
     doc.text = text;
-    if (!doc.title || doc.title.startsWith("Документ ")) {
+    // Replace the default placeholder title (in any locale) with the file
+    // name. Match either the RU "Документ " or the EN "Document " prefix.
+    if (!doc.title || /^(Документ |Document )/.test(doc.title)) {
       doc.title = file.name;
     }
     wizard.invalidateDownstream(1);
@@ -36,15 +47,18 @@
 
 <template>
   <section :class="$style.step">
-    <h2 :class="$style.title">Документы</h2>
-    <p :class="$style.hint">
-      Загрузите файлы или вставьте текст. EDA-шаг анализирует именно их —
-      пустые документы будут отброшены.
-    </p>
+    <h2 :class="$style.title">{{ t("wizard.documents.title") }}</h2>
+    <p :class="$style.hint">{{ t("wizard.documents.hint") }}</p>
 
     <div :class="$style.summary">
-      <span><strong>{{ wizard.data.value.documents.length }}</strong> документов</span>
-      <span><strong>{{ totalChars.toLocaleString("ru-RU") }}</strong> символов всего</span>
+      <span>
+        <strong>{{ wizard.data.value.documents.length }}</strong>
+        {{ t("wizard.documents.countSuffix") }}
+      </span>
+      <span>
+        <strong>{{ totalChars.toLocaleString(locale === "en" ? "en-US" : "ru-RU") }}</strong>
+        {{ t("wizard.documents.charsSuffix") }}
+      </span>
     </div>
 
     <ul :class="$style.list">
@@ -56,18 +70,18 @@
         <input
           v-model="doc.title"
           :class="$style.titleInput"
-          placeholder="Заголовок"
+          :placeholder="t('wizard.documents.titlePlaceholder')"
         />
         <textarea
           v-model="doc.text"
           :class="$style.textarea"
           rows="3"
-          placeholder="Вставьте текст или загрузите файл"
+          :placeholder="t('wizard.documents.textPlaceholder')"
           @input="wizard.invalidateDownstream(1)"
         />
         <div :class="$style.rowActions">
           <label :class="$style.fileBtn">
-            📎 Файл
+            {{ t("wizard.documents.fileLabel") }}
             <input
               type="file"
               accept=".txt,.md"
@@ -76,14 +90,14 @@
             />
           </label>
           <button type="button" :class="$style.removeBtn" @click="remove(index)">
-            Удалить
+            {{ t("wizard.documents.remove") }}
           </button>
         </div>
       </li>
     </ul>
 
     <button type="button" :class="$style.addBtn" @click="addEmpty">
-      + Добавить документ
+      {{ t("wizard.documents.addEmpty") }}
     </button>
   </section>
 </template>

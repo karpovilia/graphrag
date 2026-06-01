@@ -1,9 +1,12 @@
 <script setup lang="ts">
   import { useAsyncData } from "nuxt/app";
   import { computed } from "vue";
+  import { useI18n } from "vue-i18n";
+
   import { useApi } from "@/lib/api-client";
   import { formatNumber, formatRelativeTime } from "@/lib/format";
 
+  const { t } = useI18n();
   const api = useApi();
 
   const { data: corpora, refresh, error: corporaError } = await useAsyncData(
@@ -29,25 +32,25 @@
   <div :class="$style.list">
     <header :class="$style.header">
       <div>
-        <h1 :class="$style.title">Corpora</h1>
-        <p :class="$style.subtitle">
-          Загруженные корпусы и собранные по ним графы. Каждый корпус — один
-          материал; вариантов графа может быть несколько (разные builder/cleaner).
-        </p>
+        <h1 :class="$style.title">{{ t("corpora.heading") }}</h1>
       </div>
-      <NuxtLink to="/wizards/build" :class="$style.cta">+ Новый корпус</NuxtLink>
+      <NuxtLink to="/wizards/build" :class="$style.cta">
+        {{ t("corpora.newCorpus") }}
+      </NuxtLink>
     </header>
 
     <div v-if="corporaError || variantsError" :class="$style.error">
-      Не удалось загрузить корпусы:
+      {{ t("corpora.loadListFailed") }}:
       {{ corporaError?.message ?? variantsError?.message ?? "unknown error" }}
-      <button :class="$style.retry" @click="() => refresh()">Повторить</button>
+      <button :class="$style.retry" @click="() => refresh()">
+        {{ t("common.submit") }}
+      </button>
     </div>
 
     <div v-else-if="!corporaWithVariants.length" :class="$style.empty">
-      <p>Пока нет ни одного корпуса.</p>
+      <p>{{ t("corpora.empty") }}</p>
       <NuxtLink to="/wizards/build" :class="$style.ctaInline">
-        Загрузить первый
+        {{ t("corpora.newCorpus") }}
       </NuxtLink>
     </div>
 
@@ -75,15 +78,15 @@
 
         <dl :class="$style.metrics">
           <div>
-            <dt>Документов</dt>
+            <dt>{{ t("corpora.documentsCount") }}</dt>
             <dd>{{ formatNumber(row.corpus.document_count) }}</dd>
           </div>
           <div>
-            <dt>Вариантов графа</dt>
+            <dt>{{ t("corpora.variantsCount") }}</dt>
             <dd>{{ formatNumber(row.variants.length) }}</dd>
           </div>
           <div>
-            <dt>Язык</dt>
+            <dt>{{ t("common.language") }}</dt>
             <dd>{{ row.corpus.language }}</dd>
           </div>
         </dl>
@@ -101,8 +104,9 @@
               {{ v.status }}
             </span>
             <span :class="$style.muted">
-              {{ v.builder }} · {{ formatNumber(v.node_count) }} узлов ·
-              {{ formatNumber(v.edge_count) }} рёбер
+              {{ v.builder }} · {{ formatNumber(v.node_count) }}
+              {{ t("corpora.nodesShort") }} ·
+              {{ formatNumber(v.edge_count) }} {{ t("corpora.edgesShort") }}
             </span>
           </li>
         </ul>
@@ -206,10 +210,12 @@
     display: flex;
     flex-direction: column;
     gap: var(--gr-space-sm);
-    transition: box-shadow 0.15s ease;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    position: relative;
 
     &:hover {
       box-shadow: var(--gr-shadow-md);
+      border-color: var(--ksd-accent-color);
     }
   }
 
@@ -228,6 +234,16 @@
 
     &:hover {
       color: var(--ksd-accent-color);
+    }
+
+    // Stretched-link: makes the whole .card a click target for the title
+    // link without nesting <a> tags. Inner links (variants) lift above it
+    // via z-index on .variant below.
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
     }
   }
 
@@ -271,6 +287,8 @@
     align-items: center;
     gap: var(--gr-space-sm);
     padding-top: var(--gr-space-2xs);
+    position: relative;
+    z-index: 1;
   }
 
   .variantName {

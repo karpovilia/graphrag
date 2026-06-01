@@ -13,6 +13,7 @@ COPY tsconfig.json tsconfig-build.json nuxt.config.ts ./
 COPY public ./public
 COPY app ./app
 COPY server ./server
+COPY i18n ./i18n
 
 RUN pnpm build
 

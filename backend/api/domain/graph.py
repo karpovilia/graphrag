@@ -43,6 +43,14 @@ class EdgeType(StrEnum):
     MEMBER_OF = "member_of"
     SUMMARY_OF = "summary_of"
     ENTITY_RELATION = "entity_relation"
+    BACKBONE = "backbone"
+    """Intra-layer co-occurrence backbone edge produced by a projector.
+
+    Source and target live on the SAME layer; weight is an NPMI-style
+    aggregate across all channels (direct edges + projections through
+    adjacent layers) that survived the disparity filter. `attributes`
+    carries `layer`, `channels` (per-channel contributions), and
+    `alpha` (the disparity p-value on the keep side) for inspection."""
 
 
 class GraphVariantStatus(StrEnum):
@@ -134,3 +142,23 @@ class GraphVariant(DomainModel):
     """Optimistic-lock counter. Incremented on every persisted curation op
     via the journal. Concurrent edits with stale `expected_version`
     return 409 from the API."""
+
+
+class GraphLayout(DomainModel):
+    """Cached force-layout positions for a variant.
+
+    Re-running d3-force on every page load for a 1.5k-node graph is the
+    main "долго укладывается" UX complaint. We persist `(node_id → (x,y))`
+    per (variant_id, user_id) so a returning visitor sees their last
+    arrangement instantly. user_id is nullable: anonymous writes feed the
+    shared pool that any first-time visitor falls back to.
+    """
+
+    graph_variant_id: Id
+    user_id: Id | None = None
+    positions: dict[str, tuple[float, float]] = Field(default_factory=dict)
+    """Mapping from node id (str-UUID) → (x, y). Nodes missing from the
+    map fall through to the lib's random init at load time; nodes in the
+    map but absent from the graph are silently ignored."""
+
+    updated_at: datetime = Field(default_factory=utcnow)

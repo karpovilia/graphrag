@@ -1,6 +1,7 @@
 """HTTP routes. Each module exposes a `router` for inclusion in __main__."""
 
 from .agents import router as agents_router
+from .auth import router as auth_router
 from .corpora import router as corpora_router
 from .eda import router as eda_router
 from .graphs import router as graphs_router
@@ -11,6 +12,7 @@ from .tools import router as tools_router
 
 __all__ = [
     "agents_router",
+    "auth_router",
     "corpora_router",
     "eda_router",
     "graphs_router",

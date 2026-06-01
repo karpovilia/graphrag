@@ -23,12 +23,14 @@ from api.curation.ops import (
     SplitNodePayload,
     UpdateNodeNamePayload,
 )
+from api.auth.dependency import optional_user
 from api.domain.corpus import Document
 from api.domain.curation import JournalEntry, JournalOp
 from api.domain.graph import Edge as DomainEdge
-from api.domain.graph import GraphVariant, Layer
+from api.domain.graph import GraphLayout, GraphVariant, Layer
 from api.domain.graph import Node as DomainNode
 from api.domain.types import DomainModel, Id, new_id
+from api.domain.user import User
 from api.eda.ner import NerProtocol
 from api.llm import CompletionClient
 from api.orchestrator import PipelineError, run_build_pipeline
@@ -154,6 +156,23 @@ def _layer_order(layer: Layer) -> int:
 # ---- persisted build + variant CRUD ----
 
 
+class LLMOverride(DomainModel):
+    """User-supplied OpenAI-compatible endpoint for this single build.
+
+    Lives only in the request body — never persisted. The route
+    instantiates a one-shot OpenAICompatClient with these values and
+    discards it once the pipeline returns. Works for hosted providers
+    (OpenAI / Deepseek / OpenRouter / …) and local servers exposing the
+    same wire protocol (Ollama, vLLM, llama.cpp, LM Studio)."""
+
+    api_key: str = ""
+    """Optional for local servers that don't authenticate (Ollama,
+    llama.cpp). Hosted providers will 401 on empty."""
+
+    base_url: str = Field(min_length=1, max_length=512)
+    model: str = Field(min_length=1, max_length=128)
+
+
 class BuildVariantRequest(DomainModel):
     name: str = Field(min_length=1, max_length=255)
     builder: str
@@ -162,7 +181,25 @@ class BuildVariantRequest(DomainModel):
     builder_params: dict = Field(default_factory=dict)
     cleaner_params: dict[str, dict] = Field(default_factory=dict)
     clusterer_params: dict = Field(default_factory=dict)
+    projector: str | None = None
+    """Optional post-clusterer stage that derives intra-layer co-occurrence
+    edges (`BACKBONE` type) using cross-layer evidence + a disparity
+    filter. See `/api/projectors` for available strategies."""
+    projector_params: dict = Field(default_factory=dict)
     seed: int | None = None
+    output_language: str = Field(
+        default="ru",
+        description=(
+            "Language used to normalise entity names and generate "
+            "summaries. Falls back to corpus.language if absent. "
+            "Pipelines that don't yet honour this setting can read it "
+            "from builder_params['output_language']."
+        ),
+    )
+    llm_override: LLMOverride | None = None
+    """When present, the pipeline talks to this user-supplied endpoint
+    instead of the server-default LLM. Used by the wizard's
+    bring-your-own-token form (incl. local OpenAI-compatible servers)."""
 
 
 @router.post(
@@ -179,13 +216,14 @@ async def build_variant(
 ) -> GraphVariant:
     """Build + persist a GraphVariant from documents already in the corpus.
 
-    Phase 2.3: synchronous (no SSE yet); reads document text from
-    `metadata['raw_text']` set by POST /corpora/{id}/documents. Phase
-    2.x replaces metadata-stashed text with proper blob storage.
+    Phase 2.3: synchronous (no SSE yet); reads document text from the
+    Document.text field (preferred) and falls back to
+    `metadata['raw_text']` for legacy documents created before that
+    field existed.
     """
 
     try:
-        await repo.get_corpus(corpus_id)
+        corpus = await repo.get_corpus(corpus_id)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
@@ -195,15 +233,43 @@ async def build_variant(
 
     docs_with_text: list[tuple[Document, str]] = []
     for d in docs:
-        text = d.metadata.get("raw_text")
+        text = d.text or d.metadata.get("raw_text")
         if not text:
             raise HTTPException(
                 status_code=409,
-                detail=f"document {d.id} has no raw_text in metadata",
+                detail=f"document {d.id} has no text body",
             )
         docs_with_text.append((d, text))
 
     variant_id = new_id()
+    # Inject output_language into builder_params so strategies that wire
+    # in language-aware NER / summary backends can read it without a new
+    # pipeline-level argument. Caller-supplied builder_params win.
+    builder_params = {
+        "output_language": body.output_language,
+        **body.builder_params,
+    }
+    # Auto-attach the corpus schema (if the user has committed one
+    # via PUT /api/corpora/{id}/schema) so LightRAG/Microsoft builders
+    # extract against the typed ontology. The wizard can override by
+    # passing `schema` (or `entity_types`/`relation_types`) directly
+    # in builder_params.
+    if "schema" not in builder_params and "entity_types" not in builder_params:
+        corpus_schema = corpus.metadata.get("schema")
+        if corpus_schema:
+            builder_params["schema"] = corpus_schema
+    # Optional per-build LLM override — pasted in the wizard, never
+    # persisted. Wins over the server default; falls through when the
+    # field is absent (existing behavior unchanged).
+    effective_llm = llm
+    if body.llm_override is not None:
+        from api.llm.openai_compat import OpenAICompatClient
+
+        effective_llm = OpenAICompatClient(
+            api_key=body.llm_override.api_key,
+            base_url=body.llm_override.base_url,
+            default_model=body.llm_override.model,
+        )
     try:
         _, state = await run_build_pipeline(
             corpus_id=corpus_id,
@@ -211,12 +277,14 @@ async def build_variant(
             builder=body.builder,
             cleaner_chain=body.cleaner_chain,
             clusterer=body.clusterer,
-            builder_params=body.builder_params,
+            builder_params=builder_params,
             cleaner_params=body.cleaner_params,
             clusterer_params=body.clusterer_params,
+            projector=body.projector,
+            projector_params=body.projector_params,
             graph_variant_id=variant_id,
             ner=ner,
-            llm=llm,
+            llm=effective_llm,
         )
     except PipelineError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -242,6 +310,8 @@ async def build_variant(
             "builder_params": body.builder_params,
             "cleaner_params": body.cleaner_params,
             "clusterer_params": body.clusterer_params,
+            "projector": body.projector,
+            "projector_params": body.projector_params,
         },
         seed=body.seed,
         completed_at=datetime.now(tz=timezone.utc),
@@ -299,6 +369,78 @@ async def get_variant_state(
         edge_count=len(state.edges),
         nodes_by_layer=dict(Counter(n.layer.value for n in state.nodes)),
         edges_by_type=dict(Counter(e.type.value for e in state.edges)),
+    )
+
+
+# ---- layout cache (force-directed positions) ----
+
+
+class LayoutResponse(DomainModel):
+    positions: dict[str, tuple[float, float]]
+    owner: str
+    """'self' when the row belongs to the calling user, 'global' when it
+    was served from the shared fallback pool. UI uses this to decide
+    whether to save back immediately (skip self-write of an identical
+    payload) or treat the load as a one-time seed."""
+
+
+class LayoutPutRequest(DomainModel):
+    positions: dict[str, tuple[float, float]] = Field(default_factory=dict)
+
+
+@router.get(
+    "/graphs/{variant_id}/layout",
+    response_model=LayoutResponse,
+)
+async def get_variant_layout(
+    variant_id: Id,
+    user: User | None = Depends(optional_user),
+    repo: RepositoryProtocol = Depends(get_repository),
+) -> LayoutResponse:
+    try:
+        await repo.get_variant(variant_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    layout = await repo.get_layout(
+        variant_id,
+        user_id=user.id if user is not None else None,
+    )
+    if layout is None:
+        # Empty payload signals "no cached layout exists" — the UI will
+        # let d3-force run from scratch and then PUT the result back.
+        return LayoutResponse(positions={}, owner="global")
+    owner = (
+        "self"
+        if user is not None and layout.user_id == user.id
+        else "global"
+    )
+    return LayoutResponse(positions=layout.positions, owner=owner)
+
+
+@router.put(
+    "/graphs/{variant_id}/layout",
+    response_model=LayoutResponse,
+)
+async def put_variant_layout(
+    variant_id: Id,
+    body: LayoutPutRequest,
+    user: User | None = Depends(optional_user),
+    repo: RepositoryProtocol = Depends(get_repository),
+) -> LayoutResponse:
+    try:
+        await repo.get_variant(variant_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    stored = await repo.upsert_layout(
+        GraphLayout(
+            graph_variant_id=variant_id,
+            user_id=user.id if user is not None else None,
+            positions=body.positions,
+        )
+    )
+    return LayoutResponse(
+        positions=stored.positions,
+        owner="self" if user is not None else "global",
     )
 
 

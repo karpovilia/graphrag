@@ -19,6 +19,7 @@ from api.llm.deepseek import DeepseekClient
 from api.llm.yandex import YandexCompletionClient, YandexEmbeddingClient
 from api.routes import (
     agents_router,
+    auth_router,
     corpora_router,
     eda_router,
     graphs_router,
@@ -41,6 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(strategies_router)
 app.include_router(corpora_router)
 app.include_router(eda_router)
@@ -101,7 +103,23 @@ def _wire_llm_clients() -> None:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "version": app.version}
+    """Liveness + which persistence backend the singleton picked.
+
+    `persistence` is one of "postgres" | "snapshot" | "in_memory" — useful
+    for the deploy smoke test (CI flips POSTGRES__PASSWORD and asserts
+    on the field) and for users debugging "did it actually save?".
+    """
+
+    s = get_settings()
+    if s.postgres.password:
+        persistence = "postgres"
+    else:
+        persistence = "snapshot"
+    return {
+        "status": "ok",
+        "version": app.version,
+        "persistence": persistence,
+    }
 
 
 def main() -> None:

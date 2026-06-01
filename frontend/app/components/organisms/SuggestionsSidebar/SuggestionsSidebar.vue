@@ -1,10 +1,13 @@
 <script setup lang="ts">
   import { useAsyncData } from "nuxt/app";
   import { computed, ref } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import type { GraphVariant, StrategyDescriptor, Suggestion } from "@/entities/api";
   import { useApi } from "@/lib/api-client";
   import { formatRelativeTime } from "@/lib/format";
+
+  const { t } = useI18n();
 
   type Props = {
     variant: GraphVariant;
@@ -18,6 +21,9 @@
   const emit = defineEmits<{
     (e: "applied", journal_entry_id: string): void;
     (e: "variant-changed", variant: GraphVariant): void;
+    /** Hover-driven highlight: ids of nodes touched by the hovered
+     * suggestion so the parent page can paint them on the canvas. */
+    (e: "highlight", node_ids: string[]): void;
   }>();
 
   const api = useApi();
@@ -81,6 +87,21 @@
     }
   }
 
+  function onSuggestionHover(s: Suggestion | null) {
+    if (s === null) {
+      emit("highlight", []);
+      return;
+    }
+    const ids = [
+      ...(s.target_node_ids ?? []),
+      ...((s.payload?.survivor_id as string | undefined)
+        ? [s.payload.survivor_id as string]
+        : []),
+      ...((s.payload?.absorbed_ids as string[] | undefined) ?? []),
+    ];
+    emit("highlight", Array.from(new Set(ids.map(String))));
+  }
+
   async function reject(s: Suggestion) {
     decideId.value = s.id;
     error.value = null;
@@ -107,7 +128,7 @@
     </header>
 
     <section :class="$style.runner">
-      <h3 :class="$style.subhead">Запустить агента</h3>
+      <h3 :class="$style.subhead">{{ t("suggestions.runAgent") }}</h3>
       <div :class="$style.agentChips">
         <button
           v-for="a in (agents as StrategyDescriptor[] | null) ?? []"
@@ -127,9 +148,9 @@
     <section v-if="error" :class="$style.error">{{ error }}</section>
 
     <section :class="$style.filterRow" v-if="agentNames.length > 1">
-      <label :class="$style.muted" for="agent-filter">Фильтр:</label>
+      <label :class="$style.muted" for="agent-filter">{{ t("suggestions.filter") }}</label>
       <select id="agent-filter" v-model="filter" :class="$style.select">
-        <option value="">все</option>
+        <option value="">{{ t("suggestions.filterAll") }}</option>
         <option v-for="name in agentNames" :key="name" :value="name">
           {{ name }}
         </option>
@@ -141,6 +162,8 @@
         v-for="s in filtered"
         :key="s.id"
         :class="$style.row"
+        @mouseenter="onSuggestionHover(s)"
+        @mouseleave="onSuggestionHover(null)"
       >
         <header :class="$style.rowHeader">
           <code :class="$style.agentTag">{{ s.agent }}</code>
@@ -173,7 +196,7 @@
     </ul>
 
     <p v-else :class="$style.empty">
-      Pending suggestions нет — запустите агента выше.
+      {{ t("suggestions.empty") }}
     </p>
   </aside>
 </template>

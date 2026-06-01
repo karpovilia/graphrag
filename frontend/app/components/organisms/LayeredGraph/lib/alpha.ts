@@ -77,3 +77,42 @@ export function colorForLayer(layer: Layer, override?: string | null): string {
   if (override) return stripAlpha(override);
   return LAYER_COLORS[layer];
 }
+
+/** Categorical palette for community-map coloring. Tableau10 + 2 extra
+ * okabe-ito colors so we have 12 distinguishable hues; communities map
+ * into it by stable hash. With thousands of communities we can't make
+ * them all distinct — neighbours in the graph layout will sometimes
+ * share a hue. Good enough for the "what's the structure?" question.
+ */
+export const COMMUNITY_PALETTE: readonly string[] = [
+  "#4e79a7",
+  "#f28e2b",
+  "#e15759",
+  "#76b7b2",
+  "#59a14f",
+  "#edc948",
+  "#b07aa1",
+  "#ff9da7",
+  "#9c755f",
+  "#bab0ac",
+  "#0072b2",
+  "#cc79a7",
+];
+
+/** Stable string hash (FNV-1a 32-bit). Pure function — same id always
+ * maps to the same palette index across re-renders and across split-view
+ * panes. */
+function hashString(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/** Pick a palette color for a community id deterministically. */
+export function colorForCommunity(communityId: string | null | undefined): string {
+  if (!communityId) return LAYER_COLORS.community;
+  return COMMUNITY_PALETTE[hashString(communityId) % COMMUNITY_PALETTE.length]!;
+}

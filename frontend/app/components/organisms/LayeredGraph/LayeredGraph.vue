@@ -1,17 +1,27 @@
 <script setup lang="ts">
   import type { ThemeName } from "@krainovsd/vue-ui";
-  import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+  import {
+    computed,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    useTemplateRef,
+    watch,
+  } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import CityGraph from "@/components/organisms/CityGraph/CityGraph.vue";
   import type { ICityGraph } from "@/components/organisms/CityGraph/city-graph.types";
   import type { ICityGraphLink, ICityGraphNode } from "@/entities/cities";
   import type { Edge, Layer, Node } from "@/entities/api";
+  import { useApi } from "@/lib/api-client";
 
   import LayerMap from "./LayerMap.vue";
   import {
     ACTIVE_ALPHA,
     LAYER_COLORS,
     LAYER_ORDER,
+    colorForCommunity,
     colorForLayer,
     resolveAlpha,
     withAlpha,
@@ -21,9 +31,21 @@
     nodes: Node[];
     edges: Edge[];
     theme: ThemeName;
+    /** When set, LayeredGraph fetches a cached force-layout on mount and
+     * persists positions back on simulation-end / drag-end / unmount.
+     * Skipping the prop turns the cache off (e.g. preview screens). */
+    variantId?: id;
+    /** Optional: node ids to render with a highlight halo. Used by the
+     * suggestions sidebar to point the user at the pair under hover. */
+    highlightedNodeIds?: id[];
   };
 
-  const props = defineProps<Props>();
+  const props = withDefaults(defineProps<Props>(), {
+    variantId: undefined,
+    highlightedNodeIds: () => [],
+  });
+  const api = useApi();
+  const { t } = useI18n();
 
   const activeLayer = defineModel<Layer | null>("activeLayer", {
     default: null,
@@ -44,6 +66,113 @@
 
   const layerMapOpen = ref(false);
   const hotkeyEnabled = ref(true);
+  const cityGraphRef = useTemplateRef<{
+    recenter: () => void;
+    collectPositions: () => Record<string, [number, number]> | null;
+  }>("cityGraphRef");
+
+  // ---- cached layout (force-directed positions) ----
+  //
+  // First-time visit: skipping the cache means the d3-force simulation
+  // starts from random positions and takes several seconds to converge
+  // on a 1.5k-node graph. We block CityGraph mount on the GET so the
+  // controller can seed `node.x/y` at construction time — re-mounting
+  // mid-flight would mean an already-jiggling simulation.
+  const initialPositions = ref<Record<string, [number, number]> | null>(null);
+  const layoutReady = ref(props.variantId === undefined);
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastSaved = "";
+  let pendingPositions: Record<string, [number, number]> | null = null;
+
+  async function loadLayout() {
+    if (!props.variantId) return;
+    try {
+      const cached = await api.graphs.getLayout(String(props.variantId));
+      initialPositions.value = cached.positions ?? {};
+    } catch {
+      // Cache fetch is best-effort — surface no UI error, just fall
+      // through to a from-scratch simulation.
+      initialPositions.value = {};
+    } finally {
+      layoutReady.value = true;
+    }
+  }
+
+  function scheduleSave() {
+    if (!props.variantId) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      flushSave();
+    }, 1500);
+  }
+
+  async function flushSave() {
+    if (!props.variantId) return;
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    const positions =
+      pendingPositions ?? cityGraphRef.value?.collectPositions();
+    pendingPositions = null;
+    if (!positions || Object.keys(positions).length === 0) return;
+    const sig = signature(positions);
+    if (sig === lastSaved) return;
+    lastSaved = sig;
+    try {
+      await api.graphs.putLayout(String(props.variantId), positions);
+    } catch {
+      // Best-effort — on next trigger we'll try again.
+      lastSaved = "";
+    }
+  }
+
+  function onLayoutChanged(positions: Record<string, [number, number]>) {
+    pendingPositions = positions;
+    scheduleSave();
+  }
+
+  function signature(positions: Record<string, [number, number]>): string {
+    // Cheap diff: count + rounded centroid. Avoids saving an identical
+    // snapshot twice in a row.
+    let sx = 0;
+    let sy = 0;
+    let n = 0;
+    for (const [x, y] of Object.values(positions)) {
+      sx += x;
+      sy += y;
+      n += 1;
+    }
+    if (n === 0) return "0";
+    return `${n}:${Math.round(sx / n)}:${Math.round(sy / n)}`;
+  }
+
+  function recenterGraph() {
+    cityGraphRef.value?.recenter();
+  }
+
+  // entity_id → its parent community node id, derived once from
+  // MEMBER_OF edges. Used by the community-map color overlay when the
+  // user focuses the community layer: each entity inherits its
+  // community's palette colour so the structure becomes legible.
+  const entityToCommunity = computed<Map<id, id>>(() => {
+    const out = new Map<id, id>();
+    const layerById = new Map<id, Layer>();
+    for (const n of props.nodes) layerById.set(n.id, n.layer);
+    for (const e of props.edges) {
+      if (e.type !== "member_of") continue;
+      // MEMBER_OF orientation: source = entity, target = community.
+      // Skip any edge that doesn't match — guards against ad-hoc data.
+      if (
+        layerById.get(e.source_node_id) === "entity" &&
+        layerById.get(e.target_node_id) === "community"
+      ) {
+        out.set(e.source_node_id, e.target_node_id);
+      }
+    }
+    return out;
+  });
 
   // Map domain Node/Edge → @krainovsd/graph CityGraph shape, with each
   // node's data.color carrying the resolved alpha. The package doesn't
@@ -61,6 +190,12 @@
       (a, b) => rankOf(a.layer) - rankOf(b.layer),
     );
 
+    const highlightSet = new Set(props.highlightedNodeIds.map(String));
+    // Community-map overlay only kicks in while the user has the
+    // community layer focused — outside that, defaults to layer colors.
+    const communityMode = activeLayer.value === "community";
+    const e2c = entityToCommunity.value;
+
     const cityNodes: ICityGraphNode[] = [];
     for (const n of nodesSorted) {
       const alpha = resolveAlpha(
@@ -70,14 +205,31 @@
         sliceMode.value,
       );
       if (alpha === 0) continue; // sliceMode hides; don't bother rendering
-      const baseColor = colorForLayer(
+      let baseColor = colorForLayer(
         n.layer,
         typeof n.attributes?.color === "string"
           ? (n.attributes.color as string)
           : null,
       );
+      if (communityMode) {
+        if (n.layer === "community") {
+          baseColor = colorForCommunity(String(n.id));
+        } else if (n.layer === "entity") {
+          const cid = e2c.get(n.id);
+          if (cid !== undefined) baseColor = colorForCommunity(String(cid));
+        }
+      }
+      const isHighlighted = highlightSet.has(String(n.id));
       cityNodes.push({
         id: n.id,
+        // top-level `name` is what @krainovsd/graph renders as the
+        // canvas label by default; without it the lib falls back to the
+        // UUID `id`. `data.texts` is consumed by custom textDraw hooks
+        // (none wired yet) — keep both so a future hook can show summary too.
+        name: n.name,
+        // The lib draws a halo when `highlight: true`. Sidebar hovers
+        // toggle this via the `highlightedNodeIds` prop.
+        highlight: isHighlighted || undefined,
         data: {
           texts: [
             { id: 0, text: n.name },
@@ -170,14 +322,21 @@
     } else if (e.key === "l" || e.key === "L") {
       layerMapOpen.value = !layerMapOpen.value;
       e.preventDefault();
+    } else if (e.key === "f" || e.key === "F") {
+      recenterGraph();
+      e.preventDefault();
     }
   }
 
   onMounted(() => {
     window.addEventListener("keydown", onKeydown);
+    loadLayout();
   });
   onBeforeUnmount(() => {
     window.removeEventListener("keydown", onKeydown);
+    // Flush any pending debounce + grab one last snapshot of the
+    // current canvas — this is the third save trigger.
+    void flushSave();
   });
 
   function resetLayerMap() {
@@ -198,7 +357,7 @@
 <template>
   <div :class="$style.host">
     <header :class="$style.toolbar" aria-label="Layered Graph controls">
-      <span :class="$style.label">Layer:</span>
+      <span :class="$style.label">{{ t("graph.layerLabel") }}</span>
       <button
         v-for="(layer, i) in LAYER_ORDER"
         :key="layer"
@@ -223,7 +382,7 @@
         title="hotkey 0/Esc — show all"
         @click="activeLayer = null"
       >
-        all
+        {{ t("graph.showAll") }}
       </button>
       <button
         type="button"
@@ -231,19 +390,29 @@
         title="hotkey L — Layer Map"
         @click="layerMapOpen = !layerMapOpen"
       >
-        layer map
+        {{ t("graph.layerMap") }}
       </button>
-      <span :class="$style.hint">
-        hotkeys: 1/2/3/4 · Tab · L · 0/Esc
-      </span>
+      <button
+        type="button"
+        :class="$style.chip"
+        title="hotkey F — recenter graph"
+        @click="recenterGraph"
+      >
+        {{ t("graph.recenter") }}
+      </button>
+      <span :class="$style.hint">{{ t("graph.hotkeyHint") }}</span>
     </header>
 
     <div :class="$style.canvas">
       <CityGraph
+        v-if="layoutReady"
+        ref="cityGraphRef"
         :graph="cityGraph"
         :theme="props.theme"
+        :initial-positions="initialPositions ?? undefined"
         v-model:selectedNodes="selectedNodes"
         v-model:selectedLink="selectedLink"
+        @layout-changed="onLayoutChanged"
       />
 
       <LayerMap

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { useI18n } from "vue-i18n";
+
   import type { WizardStepDef, WizardStepStatus } from "@/composables/use-build-wizard";
 
   type Props = {
@@ -8,7 +10,20 @@
   };
 
   const props = defineProps<Props>();
+  const { t, te } = useI18n();
   const emit = defineEmits<{ (e: "navigate", index: number): void }>();
+
+  // Step labels live in BUILD_WIZARD_STEPS / ASK_WIZARD_STEPS as
+  // hardcoded RU strings. Try a localised key first ("wizard.build.stepXxx"
+  // for build, "wizard.askSteps.xxx" for ask); fall back to the raw
+  // label so wizards we haven't migrated keep rendering.
+  function stepLabel(step: WizardStepDef): string {
+    const buildKey = `wizard.build.step${step.id.charAt(0).toUpperCase()}${step.id.slice(1)}`;
+    if (te(buildKey)) return t(buildKey);
+    const askKey = `wizard.askSteps.${step.id}`;
+    if (te(askKey)) return t(askKey);
+    return step.label;
+  }
 
   function classFor(index: number) {
     const status = props.statuses[index] ?? "pending";
@@ -21,7 +36,7 @@
 </script>
 
 <template>
-  <nav :class="$style.breadcrumbs" aria-label="Шаги визарда">
+  <nav :class="$style.breadcrumbs" :aria-label="t('wizard.frame.stepsAriaLabel')">
     <ol :class="$style.list">
       <li
         v-for="(step, index) in steps"
@@ -38,11 +53,11 @@
           @click="emit('navigate', index)"
         >
           <span :class="$style.idx">{{ index + 1 }}</span>
-          <span :class="$style.label">{{ step.label }}</span>
+          <span :class="$style.label">{{ stepLabel(step) }}</span>
           <span
             v-if="statuses[index] === 'needs_confirmation'"
             :class="$style.confirmTag"
-            title="Состояние шага могло измениться — подтвердите"
+            :title="t('wizard.frame.stepNeedsConfirmTitle')"
           >
             !
           </span>

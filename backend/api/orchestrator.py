@@ -20,8 +20,9 @@ from api.strategies import (
     CleanerProtocol,
     ClustererProtocol,
     GraphBuildState,
+    ProjectorProtocol,
 )
-from api.strategies.registry import builders, cleaners, clusterers
+from api.strategies.registry import builders, cleaners, clusterers, projectors
 
 
 class PipelineError(RuntimeError):
@@ -35,12 +36,20 @@ class PipelineError(RuntimeError):
         self.stage = stage
 
 
-def _instantiate_builder(name: str, *, ner: NerProtocol | None) -> BuilderProtocol:
+def _instantiate_builder(
+    name: str,
+    *,
+    ner: NerProtocol | None,
+    llm: CompletionClient | None,
+) -> BuilderProtocol:
     cls = builders.get(name)
     # Plugins that need DI: NerExtractionBuilder takes a NerProtocol;
-    # LightRAG/Microsoft/ToG3 stubs take nothing (they raise on call).
+    # LightRAG/Microsoft take a CompletionClient; ToG3/FastRAG stubs take
+    # nothing (they raise on call).
     if name == "ner_extraction":
         return cls(ner=ner or get_ner())  # type: ignore[call-arg]
+    if name in {"lightrag", "microsoft"}:
+        return cls(llm=llm or get_llm())  # type: ignore[call-arg]
     return cls()  # type: ignore[call-arg]
 
 
@@ -58,11 +67,17 @@ def _instantiate_clusterer(name: str) -> ClustererProtocol:
     return cls()  # type: ignore[call-arg]
 
 
+def _instantiate_projector(name: str) -> ProjectorProtocol:
+    cls = projectors.get(name)
+    return cls()  # type: ignore[call-arg]
+
+
 def validate_pipeline(
     *,
     builder: str,
     cleaner_chain: list[str],
     clusterer: str | None,
+    projector: str | None = None,
 ) -> None:
     """Cheap pre-flight: every name resolves in the registry. Layer
     compatibility (produces vs requires) is enforced post-build by the
@@ -86,6 +101,11 @@ def validate_pipeline(
             f"unknown clusterer {clusterer!r}. Available: {clusterers.names()}",
             stage="clusterer",
         )
+    if projector and not projectors.has(projector):
+        raise PipelineError(
+            f"unknown projector {projector!r}. Available: {projectors.names()}",
+            stage="projector",
+        )
 
 
 async def run_build_pipeline(
@@ -98,6 +118,8 @@ async def run_build_pipeline(
     builder_params: dict[str, Any] | None = None,
     cleaner_params: dict[str, dict[str, Any]] | None = None,
     clusterer_params: dict[str, Any] | None = None,
+    projector: str | None = None,
+    projector_params: dict[str, Any] | None = None,
     graph_variant_id: Id | None = None,
     ner: NerProtocol | None = None,
     llm: CompletionClient | None = None,
@@ -111,10 +133,15 @@ async def run_build_pipeline(
     in hand. None falls back to the lazy singletons in api.runtime.
     """
 
-    validate_pipeline(builder=builder, cleaner_chain=cleaner_chain, clusterer=clusterer)
+    validate_pipeline(
+        builder=builder,
+        cleaner_chain=cleaner_chain,
+        clusterer=clusterer,
+        projector=projector,
+    )
 
     variant_id = graph_variant_id or new_id()
-    builder_inst = _instantiate_builder(builder, ner=ner)
+    builder_inst = _instantiate_builder(builder, ner=ner, llm=llm)
 
     state = await builder_inst.build(
         graph_variant_id=variant_id,
@@ -131,5 +158,9 @@ async def run_build_pipeline(
     if clusterer:
         clusterer_inst = _instantiate_clusterer(clusterer)
         state = await clusterer_inst.cluster(state, clusterer_params or {})
+
+    if projector:
+        projector_inst = _instantiate_projector(projector)
+        state = await projector_inst.project(state, projector_params or {})
 
     return variant_id, state

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+  import { computed } from "vue";
+  import { useI18n } from "vue-i18n";
+
   import type { WizardStepDef, WizardStepStatus } from "@/composables/use-build-wizard";
   import AskAssistant from "./AskAssistant.vue";
   import WizardBreadcrumbs from "./WizardBreadcrumbs.vue";
@@ -18,8 +21,16 @@
     busy: false,
     canGoBack: true,
     canAdvance: true,
-    advanceLabel: "Далее",
+    advanceLabel: undefined,
   });
+
+  const { t } = useI18n();
+  // Caller-provided label wins; otherwise fall back to the localised
+  // "Next" so consumers don't have to import useI18n just to set it.
+  const advanceLabel = computed(
+    () => props.advanceLabel ?? t("wizard.build.next"),
+  );
+  const backLabel = computed(() => t("wizard.build.back"));
 
   const emit = defineEmits<{
     (e: "navigate", index: number): void;
@@ -53,7 +64,7 @@
         :disabled="!props.canGoBack || props.currentIndex === 0 || props.busy"
         @click="emit('back')"
       >
-        Назад
+        {{ backLabel }}
       </button>
       <button
         type="button"
@@ -61,7 +72,7 @@
         :disabled="!props.canAdvance || props.busy"
         @click="emit('advance')"
       >
-        {{ props.busy ? "…" : props.advanceLabel }}
+        {{ props.busy ? "…" : advanceLabel }}
       </button>
     </footer>
   </div>

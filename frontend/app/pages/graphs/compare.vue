@@ -2,6 +2,7 @@
   import { useAsyncData } from "nuxt/app";
   import { computed, ref } from "vue";
   import { useRoute } from "vue-router";
+  import { useI18n } from "vue-i18n";
 
   import LayeredGraph from "@/components/organisms/LayeredGraph/LayeredGraph.vue";
   import { themeBehaviorSubject } from "@/entities/tech";
@@ -9,6 +10,8 @@
   import type { Layer } from "@/entities/api";
   import { LAYER_ORDER } from "@/components/organisms/LayeredGraph/lib/alpha";
   import { formatNumber } from "@/lib/format";
+
+  const { t } = useI18n();
 
   // Phase 6.8 — split-view MoE comparison. Two LayeredGraphs side by
   // side; activeLayer + visualOrder + perLayerAlpha + sliceMode are
@@ -114,10 +117,10 @@
 <template>
   <div :class="$style.page">
     <header :class="$style.header">
-      <NuxtLink to="/corpora" :class="$style.back">← К списку корпусов</NuxtLink>
-      <h1 :class="$style.title">Сравнение вариантов (MoE split view)</h1>
+      <NuxtLink to="/corpora" :class="$style.back">{{ t("graph.backToCorpora") }}</NuxtLink>
+      <h1 :class="$style.title">{{ t("compare.title") }}</h1>
       <p :class="$style.muted" v-if="ids.length < 2">
-        Передайте 2 варианта через <code>?ids=v1,v2</code>.
+        {{ t("compare.hint") }} <code>?ids=v1,v2</code>.
       </p>
     </header>
 
@@ -139,7 +142,6 @@
           v-model:visual-order="visualOrder"
           v-model:per-layer-alpha="perLayerAlpha"
           v-model:slice-mode="sliceMode"
-          :model-value-selected-nodes="leftSelected"
           v-model:selectedNodes="leftSelected"
           v-model:selectedLink="leftLink"
           @update:selected-nodes="syncFromLeft"

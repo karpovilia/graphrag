@@ -133,7 +133,8 @@ async def _create_corpus_and_document(
         language="ru",
         char_length=len(raw_text),
         sha256="0" * 64,  # parquet bundle didn't carry one; keeping field non-null
-        metadata={"raw_text": raw_text, "legacy_id": str(row["id"])},
+        text=raw_text,
+        metadata={"legacy_id": str(row["id"])},
     )
     document = await repo.create_document(document)
     return corpus, document

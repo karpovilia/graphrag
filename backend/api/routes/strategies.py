@@ -12,6 +12,7 @@ import api.strategies.aggregators  # noqa: F401
 import api.strategies.builders  # noqa: F401
 import api.strategies.cleaners  # noqa: F401
 import api.strategies.clusterers  # noqa: F401
+import api.strategies.projectors  # noqa: F401
 import api.strategies.reasoners  # noqa: F401
 from fastapi import APIRouter, HTTPException
 
@@ -22,6 +23,7 @@ from api.strategies.registry import (
     builders,
     cleaners,
     clusterers,
+    projectors,
     reasoners,
 )
 
@@ -32,6 +34,7 @@ _REGISTRIES = {
     "builder": builders,
     "cleaner": cleaners,
     "clusterer": clusterers,
+    "projector": projectors,
     "reasoner": reasoners,
     "aggregator": aggregators,
 }
@@ -57,6 +60,11 @@ def list_cleaners() -> list[StrategyDescriptor]:
 @router.get("/clusterers", response_model=list[StrategyDescriptor])
 def list_clusterers() -> list[StrategyDescriptor]:
     return clusterers.list()
+
+
+@router.get("/projectors", response_model=list[StrategyDescriptor])
+def list_projectors() -> list[StrategyDescriptor]:
+    return projectors.list()
 
 
 @router.get("/reasoners", response_model=list[StrategyDescriptor])

@@ -19,7 +19,7 @@ from loguru import logger
 from api.config import get_settings
 from api.eda.ner import NatashaNer, NerProtocol
 from api.llm import CompletionClient, get_completion_client
-from api.repository import InMemoryRepository, RepositoryProtocol
+from api.repository import RepositoryProtocol
 
 
 @lru_cache(maxsize=1)
@@ -45,16 +45,34 @@ def get_llm() -> CompletionClient:
 def get_repository() -> RepositoryProtocol:
     """Process-wide repository singleton.
 
-    Switches between PostgresRepository and InMemoryRepository based on
-    settings: a non-empty `postgres.password` means production wiring
-    (the docker-compose target). Empty password = in-memory dev/test.
+    Three modes, picked by configuration:
+
+    * `POSTGRES__PASSWORD` set → `PostgresRepository` (production / docker
+      compose). If wiring fails (asyncpg import, bad DSN) we fail loud
+      rather than silently fall back — losing data on a misconfigured
+      restart was the bug that triggered this fix.
+    * `POSTGRES__PASSWORD` empty → `SnapshotRepository`, which is the
+      in-memory repo plus a JSON snapshot under
+      `<storage.data_dir>/state.json`. Survives restarts; intended for
+      local dev and the demo loop.
+    * Tests can still construct `InMemoryRepository` directly; they don't
+      go through `get_repository()`.
     """
 
     s = get_settings()
     if s.postgres.password:
         # Lazy import: PostgresRepository imports asyncpg+sqlalchemy, all
         # of which are dev-deps available in the production image.
-        from api.repository.postgres import PostgresRepository
+        try:
+            from api.db.engine import get_sessionmaker
+            from api.repository.postgres import PostgresRepository
+        except ImportError as exc:  # pragma: no cover - misconfigured env
+            raise RuntimeError(
+                "POSTGRES__PASSWORD is set but the PG stack failed to "
+                "import (asyncpg / sqlalchemy missing). Either install "
+                "the production extras or unset POSTGRES__PASSWORD to "
+                "fall back to the on-disk snapshot repository."
+            ) from exc
 
         logger.info(
             "wiring PostgresRepository against {}@{}:{}/{}",
@@ -63,7 +81,15 @@ def get_repository() -> RepositoryProtocol:
             s.postgres.port,
             s.postgres.database,
         )
-        return PostgresRepository(dsn=s.postgres.dsn)
+        return PostgresRepository(sessionmaker=get_sessionmaker())
 
-    logger.info("wiring InMemoryRepository (no POSTGRES__PASSWORD set)")
-    return InMemoryRepository()
+    # Default local persistence — JSON snapshot, no extra services.
+    from api.repository.snapshot import SnapshotRepository
+
+    snapshot_path = s.storage.data_dir / "state.json"
+    logger.info(
+        "wiring SnapshotRepository at {} (POSTGRES__PASSWORD empty — "
+        "data persists across restarts via JSON snapshot)",
+        snapshot_path,
+    )
+    return SnapshotRepository(snapshot_path=snapshot_path)

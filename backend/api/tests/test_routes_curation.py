@@ -100,6 +100,36 @@ def test_create_document_unknown_corpus_returns_404(client: TestClient) -> None:
     assert resp.status_code == 404
 
 
+def test_get_document_returns_text_and_enforces_corpus(
+    client: TestClient,
+) -> None:
+    from uuid import uuid4
+
+    corpus = client.post("/api/corpora", json={"name": "c1"}).json()
+    cid = corpus["id"]
+    body = "Иванов работает в ВШЭ."
+    doc = client.post(
+        f"/api/corpora/{cid}/documents",
+        json={"title": "ep1", "text": body},
+    ).json()
+
+    fetched = client.get(f"/api/corpora/{cid}/documents/{doc['id']}")
+    assert fetched.status_code == 200, fetched.text
+    payload = fetched.json()
+    assert payload["id"] == doc["id"]
+    assert payload["text"] == body
+    assert payload["sha256"] == doc["sha256"]
+
+    # Unknown id → 404
+    missing = client.get(f"/api/corpora/{cid}/documents/{uuid4()}")
+    assert missing.status_code == 404
+
+    # Document exists but belongs to another corpus → 404
+    other = client.post("/api/corpora", json={"name": "c2"}).json()
+    cross = client.get(f"/api/corpora/{other['id']}/documents/{doc['id']}")
+    assert cross.status_code == 404
+
+
 # ---- variant build + persist ----
 
 
@@ -136,6 +166,56 @@ def test_build_variant_persists_and_lists(client: TestClient) -> None:
 
     listed = client.get(f"/api/graphs?corpus_id={cid}").json()
     assert any(v["id"] == variant["id"] for v in listed)
+
+
+def test_build_variant_accepts_llm_override(client: TestClient) -> None:
+    # Validates the wizard's bring-your-own-token shape: any
+    # OpenAI-compatible base_url + model + (optional) api_key. We don't
+    # actually call out to it — the `ner_extraction` builder used by the
+    # fixture doesn't invoke an LLM, so the field just has to round-trip
+    # through validation cleanly.
+    cid, _ = _seed_corpus_with_doc(client)
+
+    resp = client.post(
+        f"/api/corpora/{cid}/graphs",
+        json={
+            "name": "byo-token",
+            "builder": "ner_extraction",
+            "llm_override": {
+                "api_key": "sk-doesnt-matter-for-ner",
+                "base_url": "http://localhost:11434/v1",
+                "model": "qwen2.5:7b",
+            },
+        },
+    )
+    assert resp.status_code == 201, resp.text
+
+    # Empty api_key is allowed (local servers don't authenticate).
+    resp2 = client.post(
+        f"/api/corpora/{cid}/graphs",
+        json={
+            "name": "byo-local",
+            "builder": "ner_extraction",
+            "llm_override": {
+                "base_url": "http://localhost:8080/v1",
+                "model": "llama-3.1-8b-instruct",
+            },
+        },
+    )
+    assert resp2.status_code == 201, resp2.text
+
+
+def test_build_variant_rejects_empty_base_url(client: TestClient) -> None:
+    cid, _ = _seed_corpus_with_doc(client)
+    resp = client.post(
+        f"/api/corpora/{cid}/graphs",
+        json={
+            "name": "bad",
+            "builder": "ner_extraction",
+            "llm_override": {"api_key": "x", "base_url": "", "model": "y"},
+        },
+    )
+    assert resp.status_code == 422, resp.text
 
 
 def test_build_variant_unknown_builder_returns_400(client: TestClient) -> None:
@@ -300,6 +380,47 @@ def test_undo_empty_journal_returns_400(client: TestClient) -> None:
         json={"expected_version": 0},
     )
     assert resp.status_code == 400
+
+
+# ---- layout cache ----
+
+
+def test_layout_round_trip_and_global_fallback(client: TestClient) -> None:
+    cid, _ = _seed_corpus_with_doc(client)
+    variant = client.post(
+        f"/api/corpora/{cid}/graphs",
+        json={"name": "v", "builder": "ner_extraction"},
+    ).json()
+    vid = variant["id"]
+
+    # No layout yet → empty positions, marked as "global".
+    empty = client.get(f"/api/graphs/{vid}/layout")
+    assert empty.status_code == 200, empty.text
+    assert empty.json() == {"positions": {}, "owner": "global"}
+
+    # Anonymous PUT — feeds the shared pool.
+    payload = {"positions": {"node-a": [1.0, 2.0], "node-b": [3.5, -7.25]}}
+    put = client.put(f"/api/graphs/{vid}/layout", json=payload)
+    assert put.status_code == 200, put.text
+    assert put.json()["positions"]["node-a"] == [1.0, 2.0]
+
+    # Subsequent anonymous GET reads back the same positions.
+    refetch = client.get(f"/api/graphs/{vid}/layout").json()
+    assert refetch["positions"]["node-b"] == [3.5, -7.25]
+    assert refetch["owner"] == "global"
+
+
+def test_layout_unknown_variant_returns_404(client: TestClient) -> None:
+    from uuid import uuid4
+
+    missing = uuid4()
+    resp_get = client.get(f"/api/graphs/{missing}/layout")
+    assert resp_get.status_code == 404
+    resp_put = client.put(
+        f"/api/graphs/{missing}/layout",
+        json={"positions": {}},
+    )
+    assert resp_put.status_code == 404
 
 
 # ---- helpers ----

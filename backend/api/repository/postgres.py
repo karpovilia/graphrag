@@ -23,12 +23,14 @@ from api.domain.curation import JournalEntry
 from api.domain.graph import (
     Edge,
     EdgeType,
+    GraphLayout,
     GraphVariant,
     GraphVariantStatus,
     Layer,
     Node,
 )
 from api.domain.types import EmbeddingRef, Id, Provenance
+from api.domain.types import utcnow as _utcnow
 from api.strategies.state import GraphBuildState
 
 from .diff import diff_states
@@ -69,6 +71,17 @@ class PostgresRepository(RepositoryProtocol):
         async with self._sm() as session:
             rows = (await session.execute(select(orm.Corpus))).scalars().all()
             return [_row_to_corpus(r) for r in rows]
+
+    async def update_corpus(self, corpus: Corpus) -> Corpus:
+        async with self._sm() as session, session.begin():
+            row = await session.get(orm.Corpus, corpus.id)
+            if row is None:
+                raise NotFoundError(f"corpus {corpus.id} not found")
+            row.name = corpus.name
+            row.description = corpus.description
+            row.language = corpus.language
+            row.metadata = corpus.metadata
+        return corpus
 
     # ---- documents ----
 
@@ -291,6 +304,70 @@ class PostgresRepository(RepositoryProtocol):
                 delete(orm.VectorOutbox).where(orm.VectorOutbox.id.in_(ids))
             )
 
+    # ---- graph layouts ----
+
+    async def upsert_layout(self, layout: GraphLayout) -> GraphLayout:
+        async with self._sm() as session, session.begin():
+            variant_row = await session.get(orm.GraphVariant, layout.graph_variant_id)
+            if variant_row is None:
+                raise NotFoundError(f"variant {layout.graph_variant_id} not found")
+            existing = await session.get(
+                orm.GraphLayout,
+                (layout.graph_variant_id, layout.user_id),
+            )
+            now = _utcnow()
+            if existing is None:
+                session.add(
+                    orm.GraphLayout(
+                        graph_variant_id=layout.graph_variant_id,
+                        user_id=layout.user_id,
+                        positions=_positions_to_json(layout.positions),
+                        updated_at=now,
+                    )
+                )
+            else:
+                existing.positions = _positions_to_json(layout.positions)
+                existing.updated_at = now
+            return layout.model_copy(update={"updated_at": now})
+
+    async def get_layout(
+        self,
+        graph_variant_id: Id,
+        *,
+        user_id: Id | None,
+    ) -> GraphLayout | None:
+        async with self._sm() as session:
+            if user_id is not None:
+                mine = await session.get(
+                    orm.GraphLayout, (graph_variant_id, user_id)
+                )
+                if mine is not None:
+                    return _row_to_layout(mine)
+            stmt = (
+                select(orm.GraphLayout)
+                .where(orm.GraphLayout.graph_variant_id == graph_variant_id)
+                .order_by(orm.GraphLayout.updated_at.desc())
+                .limit(1)
+            )
+            row = (await session.execute(stmt)).scalar_one_or_none()
+            return _row_to_layout(row) if row is not None else None
+
+    # ---- users (TODO: ORM table + queries — Phase 7.x. Until then, the
+    # Postgres backend doesn't support the auth feature; runtime falls
+    # back to SnapshotRepository whenever POSTGRES__PASSWORD is empty.) ----
+
+    async def create_user(self, user):  # type: ignore[override]
+        raise NotImplementedError("PostgresRepository.create_user — Phase 7.x")
+
+    async def get_user(self, user_id):  # type: ignore[override]
+        raise NotImplementedError("PostgresRepository.get_user — Phase 7.x")
+
+    async def get_user_by_email(self, email):  # type: ignore[override]
+        raise NotImplementedError("PostgresRepository.get_user_by_email — Phase 7.x")
+
+    async def update_user_language(self, user_id, language):  # type: ignore[override]
+        raise NotImplementedError("PostgresRepository.update_user_language — Phase 7.x")
+
     # ---- internals ----
 
     async def _lock_variant(
@@ -415,6 +492,7 @@ def _document_to_row(d: Document) -> orm.Document:
         language=d.language,
         char_length=d.char_length,
         sha256=d.sha256,
+        text=d.text,
         metadata_json=d.metadata,
     )
 
@@ -428,6 +506,7 @@ def _row_to_document(r: orm.Document) -> Document:
         language=r.language,
         char_length=r.char_length,
         sha256=r.sha256,
+        text=getattr(r, "text", None),
         metadata=r.metadata_json or {},
         created_at=r.created_at,
     )
@@ -612,4 +691,21 @@ def _row_to_outbox(r: orm.VectorOutbox) -> VectorOutboxEntry:
         embedding_model=r.embedding_model,
         reason=r.reason,
         created_at=r.created_at,
+    )
+
+
+def _positions_to_json(positions: dict[str, tuple[float, float]]) -> dict:
+    # Pydantic stores positions as (x, y) tuples; JSONB needs JSON arrays.
+    return {k: [v[0], v[1]] for k, v in positions.items()}
+
+
+def _row_to_layout(r: orm.GraphLayout) -> GraphLayout:
+    raw = r.positions or {}
+    return GraphLayout(
+        graph_variant_id=r.graph_variant_id,
+        user_id=r.user_id,
+        positions={
+            k: (float(v[0]), float(v[1])) for k, v in raw.items() if len(v) >= 2
+        },
+        updated_at=r.updated_at,
     )

@@ -99,6 +99,24 @@ class ClustererProtocol(_Strategy, Protocol):
 
 
 @runtime_checkable
+class ProjectorProtocol(_Strategy, Protocol):
+    """Post-clustering stage that derives intra-layer co-occurrence
+    edges by projecting cross-layer evidence onto each layer.
+
+    Runs *after* the clusterer so it can use community membership as
+    one of its evidence channels. Output is appended as Edge rows with
+    `type=BACKBONE` plus a single JournalEntry summarizing what was
+    added — existing edges are not mutated.
+    """
+
+    async def project(
+        self,
+        state: GraphBuildState,
+        params: dict[str, Any],
+    ) -> GraphBuildState: ...
+
+
+@runtime_checkable
 class ReasonerProtocol(_Strategy, Protocol):
     """Read-side strategy. Takes a query and one or more graph variants;
     returns text + an evidence subgraph. The variants are loaded by id —

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/ki/repos/graphrag/.claude/hooks/run-proxy-tests.sh",
+            "timeout": 60,
+            "statusMessage": "Running e2e proxy regression…"
+          }
+        ]
+      }
+    ]
+  }
+}

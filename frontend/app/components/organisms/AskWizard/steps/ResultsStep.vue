@@ -1,11 +1,13 @@
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import { useAskWizard } from "@/composables/use-ask-wizard";
   import { useApi } from "@/lib/api-client";
   import type { ExpertResult, MoEResult } from "@/entities/api";
   import { streamSSE, type SSEHandle } from "@/lib/sse";
 
+  const { t } = useI18n();
   const wizard = useAskWizard();
   const api = useApi();
 
@@ -85,7 +87,7 @@
 <template>
   <section :class="$style.step">
     <header :class="$style.header">
-      <h2 :class="$style.title">Ответ</h2>
+      <h2 :class="$style.title">{{ t("wizard.ask.resultsTitle") }}</h2>
       <div :class="$style.controls">
         <button
           v-if="!wizard.streaming.value.running"
@@ -94,7 +96,7 @@
           :disabled="!wizard.data.value.query.trim()"
           @click="ask"
         >
-          {{ wizard.streaming.value.answer ? "Перезапросить" : "Спросить" }}
+          {{ wizard.streaming.value.answer ? t("wizard.ask.askAgain") : t("wizard.ask.ask") }}
         </button>
         <button
           v-else
@@ -102,7 +104,7 @@
           :class="$style.stop"
           @click="stop"
         >
-          Остановить
+          {{ t("wizard.ask.stop") }}
         </button>
       </div>
     </header>
@@ -117,9 +119,9 @@
 
     <div :class="$style.experts">
       <h3 :class="$style.subhead">
-        Эксперты
+        {{ t("wizard.ask.experts") }}
         <span :class="$style.muted" v-if="wizard.streaming.value.running">
-          (поток…)
+          {{ t("wizard.ask.streamingChip") }}
         </span>
       </h3>
       <ul :class="$style.expertCards">
@@ -138,18 +140,19 @@
           <p v-if="e.error" :class="$style.errText">FAILED: {{ e.error }}</p>
           <p v-else :class="$style.expertText">{{ e.result.text }}</p>
           <p :class="$style.muted" v-if="e.result.evidence_node_ids.length">
-            evidence: {{ e.result.evidence_node_ids.length }} узлов
+            evidence: {{ e.result.evidence_node_ids.length }}
+            {{ t("wizard.ask.expertEvidenceSuffix") }}
           </p>
         </li>
       </ul>
       <p v-if="!wizard.streaming.value.experts.length" :class="$style.muted">
-        Нажмите «Спросить», чтобы запустить поток.
+        {{ t("wizard.ask.askToStart") }}
       </p>
     </div>
 
     <div v-if="wizard.streaming.value.answer" :class="$style.answer">
       <h3 :class="$style.subhead">
-        Финальный ответ
+        {{ t("wizard.ask.finalAnswer") }}
         <span :class="$style.muted">
           (aggregator: {{ wizard.streaming.value.answer.aggregator }})
         </span>
@@ -159,11 +162,11 @@
       </p>
       <dl :class="$style.answerMeta">
         <div>
-          <dt>Уверенность</dt>
+          <dt>{{ t("wizard.ask.confidenceLabel") }}</dt>
           <dd>{{ wizard.streaming.value.answer.answer.confidence?.toFixed(2) ?? "—" }}</dd>
         </div>
         <div>
-          <dt>Evidence узлов</dt>
+          <dt>{{ t("wizard.ask.evidenceNodesLabel") }}</dt>
           <dd>{{ wizard.streaming.value.answer.answer.evidence_node_ids.length }}</dd>
         </div>
         <div>
@@ -178,7 +181,7 @@
         :to="`/graphs/compare?ids=${wizard.data.value.variant_ids.join(',')}`"
         :class="$style.compareBtn"
       >
-        Открыть сравнение вариантов →
+        {{ t("wizard.ask.openCompare") }}
       </NuxtLink>
     </div>
   </section>
