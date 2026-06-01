@@ -46,6 +46,8 @@
   --gr-status-success: #10b981;
   --gr-status-failed: #ef4444;
   --gr-status-pending: #94a3b8;
+  // §2.3 latency-badge "mid" tier (50ms ≤ ms < 500ms).
+  --gr-status-warn: #f59e0b;
 }
 
 *,

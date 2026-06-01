@@ -285,7 +285,57 @@
     "runAgent": "Run an agent",
     "filter": "Filter:",
     "filterAll": "all",
-    "empty": "No pending suggestions — run an agent above."
+    "empty": "No pending suggestions — run an agent above.",
+    "title": "Suggestions",
+    "pending": "pending",
+    "accept": "Accept",
+    "reject": "Reject",
+    "retry": "Retry"
+  },
+  "latency": {
+    "badgeAria": "Recompute took {ms} milliseconds",
+    "unit": "ms",
+    "tip": "Wall-clock time to apply the edit and recompute the affected set."
+  },
+  "invalidationPanel": {
+    "title": "Invalidated edges",
+    "reason": "Reason",
+    "when": "when",
+    "auto": "auto",
+    "manual": "manual",
+    "supersededBy": "superseded by",
+    "event": "event",
+    "revert": "Revert",
+    "reverted": "Reverted",
+    "retry": "Retry"
+  },
+  "walkthrough": {
+    "progress": "{i}/{n}",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "done": "Done",
+    "step1Title": "Your corpora",
+    "step1Body": "Every graph is built from a corpus. This is the graph you picked — let's tour what you can do here.",
+    "step2Title": "The layered graph",
+    "step2Body": "Chunks, entities, communities and topics are stacked layers. Use the toolbar (or keys 1–4 / Tab) to focus one layer at a time.",
+    "step3Title": "What changed",
+    "step3Body": "The delta legend keeps one grammar for three sources: time diffs, query evidence, and edit cascades. Watch it light up as you explore.",
+    "step4Title": "Node details",
+    "step4Body": "Click a node to open its drawer: summary, applicable tools, rename, and read-only bitemporal history.",
+    "step5Title": "Agent suggestions",
+    "step5Body": "Open the suggestions sidebar to run agents and accept or reject curation proposals. Every accept ripples across the graph.",
+    "step6Title": "Time travel & ask",
+    "step6Body": "Toggle the timeline to scrub instants or diff two moments, then ask the graphs a question from the wizard."
+  },
+  "temporal": {
+    "title": "Temporal history",
+    "validRange": "Event time (T)",
+    "txRange": "Ingest time (T′)",
+    "stillValid": "still valid",
+    "stillCurrent": "still current",
+    "validFrom": "from",
+    "txFrom": "from"
   },
   "timeline": {
     "toggle": "Time",

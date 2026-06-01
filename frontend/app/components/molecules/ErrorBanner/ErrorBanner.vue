@@ -29,6 +29,13 @@
     return null;
   }
 
+  // Stable status string for e2e assertions — actual HTTP code or
+  // 'generic' when the thrown error carries none.
+  const statusAttr = computed(() => {
+    const err = asApiError(props.error);
+    return err?.status != null ? String(err.status) : "generic";
+  });
+
   const copy = computed(() => {
     const err = asApiError(props.error);
     const status = err?.status;
@@ -52,7 +59,12 @@
 </script>
 
 <template>
-  <div :class="$style.banner" role="alert">
+  <div
+    :class="$style.banner"
+    role="alert"
+    data-testid="error-banner"
+    :data-status="statusAttr"
+  >
     <div :class="$style.text">
       <strong :class="$style.title">{{ copy.title }}</strong>
       <span :class="$style.body">{{ copy.body }}</span>

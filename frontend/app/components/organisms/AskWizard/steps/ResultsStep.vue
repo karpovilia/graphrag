@@ -8,6 +8,7 @@
   import { useApi } from "@/lib/api-client";
   import type { ExpertResult, MoEResult } from "@/entities/api";
   import { streamSSE, type SSEHandle } from "@/lib/sse";
+  import ErrorBanner from "@/components/molecules/ErrorBanner/ErrorBanner.vue";
 
   const { t } = useI18n();
   const wizard = useAskWizard();
@@ -20,13 +21,14 @@
   // not the URL). MoE: fetch a delta per variant so each compare pane has
   // its own evidence.
   const showingDelta = ref(false);
-  const deltaError = ref<string | null>(null);
+  // §2.5 — store the RAW thrown error so ErrorBanner can read .status.
+  const deltaErrorRaw = ref<unknown>(null);
 
   async function showOnGraph() {
     const variantIds = wizard.data.value.variant_ids;
     if (!variantIds.length) return;
     showingDelta.value = true;
-    deltaError.value = null;
+    deltaErrorRaw.value = null;
     // Fresh ask → clear any stale highlight first.
     queryDelta.clear();
     try {
@@ -53,7 +55,7 @@
         await router.push(`/graphs/${resp.variant_id}?queryDelta=1`);
       }
     } catch (e) {
-      deltaError.value = e instanceof Error ? e.message : String(e);
+      deltaErrorRaw.value = e;
     } finally {
       showingDelta.value = false;
     }
@@ -161,9 +163,10 @@
       <strong>Q:</strong> {{ wizard.data.value.query || "—" }}
     </p>
 
-    <div v-if="wizard.streaming.value.error" :class="$style.error">
-      {{ wizard.streaming.value.error }}
-    </div>
+    <ErrorBanner
+      v-if="wizard.streaming.value.error"
+      :error="wizard.streaming.value.error"
+    />
 
     <div :class="$style.experts">
       <h3 :class="$style.subhead">
@@ -233,7 +236,9 @@
       >
         {{ showingDelta ? t("wizard.ask.showingOnGraph") : t("wizard.ask.showOnGraph") }}
       </button>
-      <span v-if="deltaError" :class="$style.errText">{{ deltaError }}</span>
+      <div v-if="deltaErrorRaw" data-testid="results-error">
+        <ErrorBanner :error="deltaErrorRaw" />
+      </div>
     </div>
 
     <div v-if="allDone && wizard.data.value.mode === 'moe'" :class="$style.compareCta">

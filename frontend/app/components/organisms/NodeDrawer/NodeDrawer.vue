@@ -11,11 +11,17 @@
   } from "@/entities/api";
   import { useApi } from "@/lib/api-client";
   import { formatRelativeTime } from "@/lib/format";
+  import ErrorBanner from "@/components/molecules/ErrorBanner/ErrorBanner.vue";
+  import LatencyBadge from "@/components/molecules/LatencyBadge/LatencyBadge.vue";
+  import { useEditCascade, type EditCascade } from "@/composables/use-edit-cascade";
 
   type Props = {
     node: Node;
     variant: GraphVariant;
     actor?: string;
+    /** §2.3 — the page lifts ONE cascade and passes it down so the ripple
+     * paints the shared LayeredGraph. Falls back to an owned instance. */
+    cascade?: EditCascade;
   };
 
   const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +33,8 @@
   }>();
   const { t } = useI18n();
   const api = useApi();
+
+  const cascade = props.cascade ?? useEditCascade(props.variant.id);
 
   const variantId = computed(() => props.variant.id);
 
@@ -49,24 +57,25 @@
       refreshHistory();
       // Reset rename UI when the user picks a different node.
       editing.value = false;
-      renameError.value = null;
+      renameErrorRaw.value = null;
     },
   );
 
   const running = ref<string | null>(null);
   const lastResult = ref<ToolInvocation | null>(null);
-  const lastError = ref<string | null>(null);
+  // §2.5 — store the RAW thrown error so ErrorBanner can read .status.
+  const toolErrorRaw = ref<unknown>(null);
 
   // ---- rename ----
   const editing = ref(false);
   const draftName = ref("");
   const renameSaving = ref(false);
-  const renameError = ref<string | null>(null);
+  const renameErrorRaw = ref<unknown>(null);
   const renameInput = useTemplateRef<HTMLInputElement>("renameInput");
 
   async function startRename() {
     draftName.value = props.node.name;
-    renameError.value = null;
+    renameErrorRaw.value = null;
     editing.value = true;
     await nextTick();
     renameInput.value?.focus();
@@ -75,7 +84,7 @@
 
   function cancelRename() {
     editing.value = false;
-    renameError.value = null;
+    renameErrorRaw.value = null;
   }
 
   async function saveRename() {
@@ -85,9 +94,11 @@
       return;
     }
     renameSaving.value = true;
-    renameError.value = null;
+    renameErrorRaw.value = null;
     try {
-      const result = await api.graphs.appendJournal(variantId.value, {
+      // §2.3 — route through the cascade so the rename gets the ripple +
+      // latency badge, then emit the unchanged variant-changed contract.
+      const result = await cascade.append({
         op: "update_node_name",
         payload: { node_id: props.node.id, name: trimmed },
         expected_version: props.variant.version,
@@ -96,7 +107,7 @@
       emit("variant-changed", result.variant);
       editing.value = false;
     } catch (e) {
-      renameError.value = e instanceof Error ? e.message : String(e);
+      renameErrorRaw.value = e;
     } finally {
       renameSaving.value = false;
     }
@@ -104,7 +115,7 @@
 
   async function run(tool: StrategyDescriptor) {
     running.value = tool.name;
-    lastError.value = null;
+    toolErrorRaw.value = null;
     try {
       const inv = await api.nodes.runTool(
         variantId.value,
@@ -115,10 +126,24 @@
       lastResult.value = inv;
       await refreshHistory();
     } catch (e) {
-      lastError.value = e instanceof Error ? e.message : String(e);
+      toolErrorRaw.value = e;
     } finally {
       running.value = null;
     }
+  }
+
+  // §2.5 read-only temporal-history visibility — node bitemporal stamps.
+  const hasTemporal = computed(
+    () =>
+      props.node.valid_from != null ||
+      props.node.valid_to != null ||
+      props.node.tx_from != null ||
+      props.node.tx_to != null,
+  );
+
+  function fmtStamp(iso: string | null | undefined): string {
+    if (!iso) return "—";
+    return formatRelativeTime(iso);
   }
 
   const sorted = computed(() => {
@@ -133,13 +158,14 @@
 </script>
 
 <template>
-  <aside :class="$style.drawer" aria-label="Node detail panel">
+  <aside :class="$style.drawer" data-testid="node-drawer" aria-label="Node detail panel">
     <header :class="$style.header">
       <div :class="$style.titleRow">
         <template v-if="!editing">
           <strong :class="$style.title">{{ node.name }}</strong>
           <button
             type="button"
+            data-testid="node-rename"
             :class="$style.iconBtn"
             :title="t('node.rename')"
             :aria-label="t('node.rename')"
@@ -164,6 +190,7 @@
           />
           <button
             type="submit"
+            data-testid="node-rename-save"
             :class="$style.renameSave"
             :disabled="renameSaving || !draftName.trim()"
           >
@@ -171,6 +198,7 @@
           </button>
           <button
             type="button"
+            data-testid="node-rename-cancel"
             :class="$style.renameCancel"
             :disabled="renameSaving"
             @click="cancelRename"
@@ -187,9 +215,19 @@
           ×
         </button>
       </div>
-      <p v-if="renameError" :class="$style.error">
-        {{ t("node.renameFailed") }}: {{ renameError }}
-      </p>
+      <LatencyBadge
+        v-if="cascade.lastTiming.value"
+        :ms="cascade.lastTiming.value.recompute_ms"
+        :node-count="cascade.lastTiming.value.node_count_after"
+        :edge-count="cascade.lastTiming.value.edge_count_after"
+      />
+      <ErrorBanner v-if="renameErrorRaw" :error="renameErrorRaw">
+        <template #action>
+          <button type="button" :class="$style.iconBtn" @click="startRename">
+            {{ t("node.rename") }}
+          </button>
+        </template>
+      </ErrorBanner>
       <div :class="$style.meta">
         <span :class="[$style.chip, $style[`chip_${node.layer}`] || '']">
           {{ node.layer }}
@@ -204,6 +242,30 @@
     <section v-if="node.summary" :class="$style.summary">
       <h3 :class="$style.subhead">Summary</h3>
       <p>{{ node.summary }}</p>
+    </section>
+
+    <section
+      v-if="hasTemporal"
+      data-testid="temporal-history"
+      :class="$style.temporal"
+    >
+      <h3 :class="$style.subhead">{{ t("temporal.title") }}</h3>
+      <dl data-testid="temporal-valid" :class="$style.temporalRow">
+        <dt :class="$style.muted">{{ t("temporal.validRange") }}</dt>
+        <dd>
+          {{ t("temporal.validFrom") }}: {{ fmtStamp(node.valid_from) }}
+          →
+          {{ node.valid_to ? fmtStamp(node.valid_to) : t("temporal.stillValid") }}
+        </dd>
+      </dl>
+      <dl data-testid="temporal-tx" :class="$style.temporalRow">
+        <dt :class="$style.muted">{{ t("temporal.txRange") }}</dt>
+        <dd>
+          {{ t("temporal.txFrom") }}: {{ fmtStamp(node.tx_from) }}
+          →
+          {{ node.tx_to ? fmtStamp(node.tx_to) : t("temporal.stillCurrent") }}
+        </dd>
+      </dl>
     </section>
 
     <section :class="$style.tools">
@@ -236,7 +298,7 @@
       <p v-else :class="$style.muted">{{ t("node.noTools") }}</p>
     </section>
 
-    <section v-if="lastError" :class="$style.error">{{ lastError }}</section>
+    <ErrorBanner v-if="toolErrorRaw" :error="toolErrorRaw" />
 
     <section v-if="lastResult" :class="$style.lastResult">
       <h3 :class="$style.subhead">{{ t("node.lastResult") }}</h3>
@@ -415,6 +477,25 @@
     margin: 0;
     white-space: pre-wrap;
     line-height: 1.5;
+  }
+
+  .temporal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gr-space-2xs);
+  }
+
+  .temporalRow {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    dd {
+      margin: 0;
+      font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
+    }
   }
 
   .subhead {

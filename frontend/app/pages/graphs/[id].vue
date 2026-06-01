@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { useAsyncData } from "nuxt/app";
-  import { computed, ref, watch } from "vue";
+  import { computed, onMounted, ref, watch } from "vue";
   import { useRoute } from "vue-router";
   import { useI18n } from "vue-i18n";
 
@@ -11,12 +11,17 @@
   import TimelineScrubber from "@/components/organisms/TimelineScrubber/TimelineScrubber.vue";
   import AxisToggle from "@/components/organisms/TimelineScrubber/AxisToggle.vue";
   import DeltaLegend from "@/components/organisms/DeltaLegend/DeltaLegend.vue";
+  import InvalidationPanel from "@/components/organisms/InvalidationPanel/InvalidationPanel.vue";
+  import GuidedWalkthrough from "@/components/organisms/GuidedWalkthrough/GuidedWalkthrough.vue";
+  import ErrorBanner from "@/components/molecules/ErrorBanner/ErrorBanner.vue";
   import { themeBehaviorSubject } from "@/entities/tech";
   import { useApi } from "@/lib/api-client";
   import { formatNumber } from "@/lib/format";
   import type { Edge, GraphVariant, Node, TimeAxis } from "@/entities/api";
   import { useTemporalWindow } from "@/composables/use-temporal-window";
   import { useQueryDelta } from "@/composables/use-query-delta";
+  import { useEditCascade } from "@/composables/use-edit-cascade";
+  import { useWalkthrough } from "@/composables/use-walkthrough";
   import type { DeltaSource, DeltaState } from "@/components/organisms/LayeredGraph/lib/delta";
 
   const route = useRoute();
@@ -66,14 +71,27 @@
   const queryDelta = useQueryDelta();
   const queryDeltaActive = computed(() => route.query.queryDelta === "1");
 
-  // The delta overlay fed to LayeredGraph. Time diff wins when active;
-  // otherwise the query-delta evidence index (if ?queryDelta=1).
+  // §2.3 — ONE edit cascade lifted to the page, bound to the live edge
+  // set so its BFS ripple traverses the current adjacency. Passed down to
+  // NodeDrawer / SuggestionsSidebar / InvalidationPanel; its transient
+  // deltaIndex paints the shared LayeredGraph with deltaSource='edit'.
+  const cascade = useEditCascade(variantId, () => edges.value ?? []);
+
+  // §2.6 guided walkthrough — page owns the state; the overlay is mounted
+  // at page root (never inside the wizard frame).
+  const walkthrough = useWalkthrough();
+
+  // The delta overlay fed to LayeredGraph. Priority: edit-cascade ripple
+  // (transient, highest) > time diff > query-delta evidence.
   const deltaIndex = computed<Map<string, DeltaState> | null>(() => {
+    if (cascade.rippleActive.value && cascade.deltaIndex.value)
+      return cascade.deltaIndex.value;
     if (tw.mode.value === "diff" && tw.deltaIndex.value) return tw.deltaIndex.value;
     if (queryDeltaActive.value) return queryDelta.buildDeltaIndex(variantId);
     return null;
   });
   const deltaSource = computed<DeltaSource>(() => {
+    if (cascade.rippleActive.value && cascade.deltaIndex.value) return "edit";
     if (tw.mode.value === "diff" && tw.deltaIndex.value) return "time";
     if (queryDeltaActive.value && queryDelta.entryFor(variantId)) return "query";
     return null;
@@ -117,6 +135,14 @@
       refreshTimeline();
     },
   );
+
+  // §2.6 — auto-start the tour on ?walkthrough=1 (explicit) or on a first
+  // visit (localStorage 'gr:walkthrough:seen' unset). Graph page only.
+  onMounted(() => {
+    if (route.query.walkthrough === "1" || !walkthrough.hasSeen()) {
+      walkthrough.start();
+    }
+  });
 </script>
 
 <template>
@@ -150,6 +176,7 @@
         <button
           v-if="timeline && timeline.length"
           type="button"
+          data-testid="timeline-toggle"
           :class="[$style.toggle, showTimeline ? $style.toggle_active : '']"
           @click="showTimeline = !showTimeline"
         >
@@ -182,19 +209,35 @@
     </header>
 
     <div v-if="error" :class="$style.error">
-      Не удалось загрузить вариант: {{ error.message }}
+      <ErrorBanner :error="error" />
     </div>
 
     <div v-else-if="variant && nodes && edges" :class="$style.body">
       <SuggestionsSidebar
         v-if="showSuggestions"
         :variant="variant"
+        :cascade="cascade"
         @variant-changed="onVariantChanged"
         @highlight="(ids) => (highlightedNodes = ids)"
       />
 
       <div :class="$style.canvasWrap">
-        <div :class="$style.canvas">
+        <ErrorBanner
+          v-if="tw.error.value"
+          :error="tw.error.value"
+          :class="$style.temporalError"
+        />
+
+        <div data-testid="graph-canvas" :class="$style.canvas">
+          <!-- §2.3 transient ripple marker — lets e2e detect the ~600ms
+               edit cascade is running and which source painted it. -->
+          <span
+            v-if="cascade.rippleActive.value"
+            data-testid="edit-cascade"
+            data-source="edit"
+            :class="$style.cascadeMarker"
+            aria-hidden="true"
+          />
           <LayeredGraph
             :nodes="visibleNodes"
             :edges="visibleEdges"
@@ -215,8 +258,17 @@
           />
         </div>
 
+        <InvalidationPanel
+          v-if="tw.mode.value === 'diff' && tw.lastDiff.value && tw.lastDiff.value.invalidated.length"
+          :variant="variant"
+          :diff="tw.lastDiff.value"
+          @variant-changed="onVariantChanged"
+          @reverted="() => { refreshTimeline(); }"
+        />
+
         <DeltaLegend
           v-if="deltaSource"
+          data-testid="delta-legend"
           :source="deltaSource"
           :diff="tw.lastDiff.value"
         />
@@ -259,10 +311,13 @@
         v-if="selectedNode"
         :node="selectedNode"
         :variant="variant"
+        :cascade="cascade"
         @close="selectedNodes = []"
         @variant-changed="onVariantChanged"
       />
     </div>
+
+    <GuidedWalkthrough :walkthrough="walkthrough" />
   </div>
 </template>
 
@@ -389,6 +444,20 @@
     flex: 1;
     overflow: hidden;
     position: relative;
+  }
+
+  .cascadeMarker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .temporalError {
+    margin: var(--gr-space-xs) var(--gr-space-md) 0;
   }
 
   .timeline {

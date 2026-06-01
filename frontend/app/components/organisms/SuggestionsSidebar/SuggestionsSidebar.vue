@@ -6,17 +6,25 @@
   import type { GraphVariant, StrategyDescriptor, Suggestion } from "@/entities/api";
   import { useApi } from "@/lib/api-client";
   import { formatRelativeTime } from "@/lib/format";
+  import ErrorBanner from "@/components/molecules/ErrorBanner/ErrorBanner.vue";
+  import LatencyBadge from "@/components/molecules/LatencyBadge/LatencyBadge.vue";
+  import { useEditCascade, type EditCascade } from "@/composables/use-edit-cascade";
 
   const { t } = useI18n();
 
   type Props = {
     variant: GraphVariant;
     actor?: string;
+    /** §2.3 — shared page cascade so accept ripples the canvas. Falls
+     * back to an owned instance when used standalone. */
+    cascade?: EditCascade;
   };
 
   const props = withDefaults(defineProps<Props>(), {
     actor: "user:wizard",
   });
+
+  const cascade = props.cascade ?? useEditCascade(props.variant.id);
 
   const emit = defineEmits<{
     (e: "applied", journal_entry_id: string): void;
@@ -40,7 +48,8 @@
   );
 
   const runningAgent = ref<string | null>(null);
-  const error = ref<string | null>(null);
+  // §2.5 — store the RAW thrown error so ErrorBanner can read .status.
+  const errorRaw = ref<unknown>(null);
   const decideId = ref<string | null>(null);
   const filter = ref<string>("");
 
@@ -58,12 +67,12 @@
 
   async function runAgent(name: string) {
     runningAgent.value = name;
-    error.value = null;
+    errorRaw.value = null;
     try {
       await api.agents.run(props.variant.id, name);
       await refresh();
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e);
+      errorRaw.value = e;
     } finally {
       runningAgent.value = null;
     }
@@ -71,9 +80,11 @@
 
   async function accept(s: Suggestion) {
     decideId.value = s.id;
-    error.value = null;
+    errorRaw.value = null;
     try {
-      const result = await api.agents.accept(s.id, {
+      // §2.3 — route through the cascade (ripple + latency); contract
+      // unchanged: still emit applied + variant-changed.
+      const result = await cascade.accept(s.id, {
         expected_variant_version: props.variant.version,
         actor: props.actor,
       });
@@ -81,7 +92,7 @@
       emit("variant-changed", result.variant);
       await refresh();
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e);
+      errorRaw.value = e;
     } finally {
       decideId.value = null;
     }
@@ -103,13 +114,15 @@
   }
 
   async function reject(s: Suggestion) {
+    // reject() is NOT wrapped in the cascade — no journal write, no
+    // ripple — but its errors still feed errorRaw for the banner.
     decideId.value = s.id;
-    error.value = null;
+    errorRaw.value = null;
     try {
       await api.agents.reject(s.id, { actor: props.actor });
       await refresh();
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e);
+      errorRaw.value = e;
     } finally {
       decideId.value = null;
     }
@@ -117,12 +130,16 @@
 </script>
 
 <template>
-  <aside :class="$style.sidebar" aria-label="Pending suggestions">
+  <aside
+    :class="$style.sidebar"
+    data-testid="suggestions-sidebar"
+    aria-label="Pending suggestions"
+  >
     <header :class="$style.header">
       <h2 :class="$style.title">
-        Suggestions
+        {{ t("suggestions.title") }}
         <span :class="$style.muted">
-          {{ (suggestions ?? []).length }} pending
+          {{ (suggestions ?? []).length }} {{ t("suggestions.pending") }}
         </span>
       </h2>
     </header>
@@ -145,7 +162,13 @@
       </div>
     </section>
 
-    <section v-if="error" :class="$style.error">{{ error }}</section>
+    <ErrorBanner v-if="errorRaw" :error="errorRaw">
+      <template #action>
+        <button type="button" :class="$style.agentChip" @click="() => refresh()">
+          {{ t("suggestions.retry") }}
+        </button>
+      </template>
+    </ErrorBanner>
 
     <section :class="$style.filterRow" v-if="agentNames.length > 1">
       <label :class="$style.muted" for="agent-filter">{{ t("suggestions.filter") }}</label>
@@ -161,6 +184,8 @@
       <li
         v-for="s in filtered"
         :key="s.id"
+        data-testid="suggestion-row"
+        :data-suggestion-id="s.id"
         :class="$style.row"
         @mouseenter="onSuggestionHover(s)"
         @mouseleave="onSuggestionHover(null)"
@@ -174,23 +199,31 @@
         <footer :class="$style.actions">
           <button
             type="button"
+            data-testid="suggestion-accept"
             :class="$style.accept"
             :disabled="decideId !== null"
             @click="accept(s)"
           >
-            Accept
+            {{ t("suggestions.accept") }}
           </button>
           <button
             type="button"
+            data-testid="suggestion-reject"
             :class="$style.reject"
             :disabled="decideId !== null"
             @click="reject(s)"
           >
-            Reject
+            {{ t("suggestions.reject") }}
           </button>
           <span :class="$style.muted">
             {{ formatRelativeTime(s.created_at) }}
           </span>
+          <LatencyBadge
+            v-if="cascade.lastTiming.value"
+            :ms="cascade.lastTiming.value.recompute_ms"
+            :node-count="cascade.lastTiming.value.node_count_after"
+            :edge-count="cascade.lastTiming.value.edge_count_after"
+          />
         </footer>
       </li>
     </ul>

@@ -120,6 +120,14 @@ export type Node = {
   attributes: Record<string, unknown>;
   provenance: Provenance[];
   embedding: { model: string; dim: number; collection: string; vector_id: string } | null;
+  // Bitemporal stamps (api/domain/graph.py:108-117). valid_* = event
+  // time ("when it was true"); tx_* = transaction time ("when we learned
+  // it"). null upper bound = "still valid" / "still current". Read-only
+  // here — surfaced by the §2.5 temporal-history block in NodeDrawer.
+  valid_from: string | null;
+  valid_to: string | null;
+  tx_from: string | null;
+  tx_to: string | null;
 };
 
 export type Edge = {
@@ -133,6 +141,14 @@ export type Edge = {
   explanation: string | null;
   provenance: Provenance[];
   attributes: Record<string, unknown>;
+  // Bitemporal stamps (api/domain/graph.py:136-143), same axes as Node.
+  valid_from: string | null;
+  valid_to: string | null;
+  tx_from: string | null;
+  tx_to: string | null;
+  // §2.4 invalidation provenance: present when this edge was superseded
+  // by a later ingestion. Surfaced in InvalidationPanel (revert target).
+  invalidation?: EdgeInvalidation | null;
 };
 
 export type VariantStateSummary = {
