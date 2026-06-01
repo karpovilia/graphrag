@@ -277,6 +277,9 @@ def test_journal_append_changes_version_and_state(client: TestClient) -> None:
     body = resp.json()
     assert body["variant"]["version"] == state["version"] + 1
     assert body["entry"]["op"] == "update_node_name"
+    # §2.3 latency badge: recompute_ms always present and >= 0.0.
+    assert "recompute_ms" in body
+    assert body["recompute_ms"] >= 0.0
 
     journal = client.get(f"/api/graphs/{variant['id']}/journal").json()
     assert len(journal) == 1
@@ -363,6 +366,8 @@ def test_undo_reverts_state_and_pops_journal(client: TestClient) -> None:
     body = resp.json()
     assert body["entry"]["op"] == "update_node_name"
     assert body["variant"]["version"] == state["version"] + 1
+    assert "recompute_ms" in body
+    assert body["recompute_ms"] >= 0.0
 
     journal_after = client.get(f"/api/graphs/{variant['id']}/journal").json()
     assert journal_after == []

@@ -63,12 +63,19 @@ class EditEdgePayload(DomainModel):
 
 class DeleteEdgePayload(DomainModel):
     edge_id: Id
+    reason: str | None = None
+    """Human-readable cause (parity with MergeNodesPayload.reason). When
+    an auto-invalidation delete supplies one it feeds Edge.invalidation
+    provenance (§1.4)."""
 
 
 class DeleteNodePayload(DomainModel):
     node_id: Id
     """Removes the node and every edge that referenced it. Used by the
     OrphanRescuer agent's DELETE Suggestions when the user accepts."""
+
+    reason: str | None = None
+    """Human-readable cause for the deletion (§1.4)."""
 
 
 class AddEdgePayload(DomainModel):

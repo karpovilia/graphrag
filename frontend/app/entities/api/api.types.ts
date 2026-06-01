@@ -351,6 +351,99 @@ export type JournalAppendResult = {
   variant: GraphVariant;
   entry: JournalEntry;
   affected: { node_ids: Id[]; edge_ids: Id[]; community_ids: Id[] };
+  /** Wall-clock (ms) of apply + affected-set recompute. Always present
+   * and >= 0 so the §2.3 latency badge never reads undefined. */
+  recompute_ms: number;
+};
+
+// ---- temporal (bitemporal timeline + diff, api contract §2.1/§2.4) ----
+
+/** Which time axis the scrubber walks. `tx` = transaction time
+ * (ingested_at, "when did we learn it"); `valid` = valid / event time
+ * (event_time, "when was it true"). ADR-0002 distinction. */
+export type TimeAxis = "tx" | "valid";
+
+export type IngestionEvent = {
+  id: Id;
+  corpus_id: Id;
+  graph_variant_id: Id | null;
+  label: string;
+  /** ISO-8601 UTC Z. */
+  event_time: string;
+  /** ISO-8601 UTC Z. */
+  ingested_at: string;
+  source_uri: string | null;
+  kind: string;
+  metadata: Record<string, unknown>;
+};
+
+/** GET /at — the set of facts live at instant t under the chosen axis. */
+export type AtSnapshot = {
+  variant_id: Id;
+  axis: TimeAxis;
+  t: string;
+  node_ids: Id[];
+  edge_ids: Id[];
+};
+
+export type EdgeInvalidation = {
+  ingestion_event_id: Id;
+  /** ISO-8601 UTC Z. */
+  at: string;
+  reason: string;
+  superseded_by_edge_id: Id | null;
+  auto: boolean;
+};
+
+export type DeltaItemKind = "node" | "edge";
+export type DeltaItemState =
+  | "born"
+  | "dead"
+  | "persisted"
+  | "moved_community"
+  | "invalidated";
+
+export type DeltaItem = {
+  id: Id;
+  kind: DeltaItemKind;
+  state: DeltaItemState;
+  /** Present only for moved_community. */
+  from_community_id?: Id;
+  to_community_id?: Id;
+  /** Present only for invalidated. */
+  invalidation?: EdgeInvalidation;
+};
+
+/** GET /diff — every id maps 1:1 to a §0 grammar color. `dead` =
+ * vanished without provenance; `invalidated` = vanished WITH an
+ * EdgeInvalidation record (§2.4 revert candidates, disjoint from dead). */
+export type TemporalDiff = {
+  variant_id: Id;
+  axis: TimeAxis;
+  t_a: string;
+  t_b: string;
+  born: DeltaItem[];
+  dead: DeltaItem[];
+  persisted: DeltaItem[];
+  moved_community: DeltaItem[];
+  invalidated: DeltaItem[];
+  counts: {
+    born: number;
+    dead: number;
+    persisted: number;
+    moved_community: number;
+    invalidated: number;
+  };
+};
+
+/** POST /api/reason/delta — deterministic evidence highlight (§2.2). */
+export type QueryDeltaResponse = {
+  moe: MoEResult;
+  variant_id: Id;
+  evidence_node_ids: Id[];
+  evidence_edge_ids: Id[];
+  total_node_ids: Id[];
+  total_edge_ids: Id[];
 };
 
 export type GraphLayout = {

@@ -12,16 +12,22 @@ stay backend-agnostic.
 
 from __future__ import annotations
 
+import time
+from datetime import datetime
+
 from sqlalchemy import delete, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.curation import affected_set, apply_journal_op
+from api.curation.temporal_diff import materialize_at
+from api.curation.temporal_diff import temporal_diff as _temporal_diff
 from api.db import models as orm
 from api.domain.corpus import Corpus, Document
 from api.domain.curation import JournalEntry
 from api.domain.graph import (
     Edge,
+    EdgeInvalidation,
     EdgeType,
     GraphLayout,
     GraphVariant,
@@ -29,6 +35,7 @@ from api.domain.graph import (
     Layer,
     Node,
 )
+from api.domain.temporal import IngestionEvent, TemporalDiff
 from api.domain.types import EmbeddingRef, Id, Provenance
 from api.domain.types import utcnow as _utcnow
 from api.strategies.state import GraphBuildState
@@ -212,8 +219,10 @@ class PostgresRepository(RepositoryProtocol):
                     "actor": actor or entry.actor,
                 }
             )
+            _t0 = time.perf_counter()
             affected = affected_set(state, stored_entry)
             new_state = apply_journal_op(state, stored_entry)
+            recompute_ms = (time.perf_counter() - _t0) * 1000.0
             await self._apply_diff(session, variant_id, state, new_state)
 
             session.add(_journal_to_row(stored_entry))
@@ -230,7 +239,61 @@ class PostgresRepository(RepositoryProtocol):
                 variant=_row_to_variant(variant_row),
                 entry=stored_entry,
                 affected=affected_set_to_dict(affected),
+                recompute_ms=recompute_ms,
             )
+
+    # ---- bi-temporal (R2 §2) ----
+
+    async def list_ingestion_events(
+        self,
+        *,
+        corpus_id: Id | None = None,
+        variant_id: Id | None = None,
+    ) -> list[IngestionEvent]:
+        async with self._sm() as session:
+            stmt = select(orm.IngestionEvent)
+            if corpus_id is not None:
+                stmt = stmt.where(orm.IngestionEvent.corpus_id == corpus_id)
+            if variant_id is not None:
+                stmt = stmt.where(
+                    (orm.IngestionEvent.graph_variant_id == variant_id)
+                    | (orm.IngestionEvent.graph_variant_id.is_(None))
+                )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [_row_to_ingestion_event(r) for r in rows]
+
+    async def create_ingestion_event(self, event: IngestionEvent) -> IngestionEvent:
+        async with self._sm() as session, session.begin():
+            session.add(_ingestion_event_to_row(event))
+        return event
+
+    async def materialize_state_at(
+        self,
+        variant_id: Id,
+        t: datetime,
+        axis: str,
+    ) -> GraphBuildState:
+        state = await self.load_state(variant_id)
+        return materialize_at(state, t, axis)  # type: ignore[arg-type]
+
+    async def temporal_diff(
+        self,
+        variant_id: Id,
+        t_a: datetime,
+        t_b: datetime,
+        axis: str,
+    ) -> TemporalDiff:
+        state = await self.load_state(variant_id)
+        state_a = materialize_at(state, t_a, axis)  # type: ignore[arg-type]
+        state_b = materialize_at(state, t_b, axis)  # type: ignore[arg-type]
+        return _temporal_diff(
+            state_a,
+            state_b,
+            axis=axis,  # type: ignore[arg-type]
+            variant_id=variant_id,
+            t_a=t_a,
+            t_b=t_b,
+        )
 
     async def list_journal(
         self,
@@ -572,6 +635,10 @@ def _node_to_row(n: Node) -> orm.Node:
         embedding_model=embedding.model if embedding else None,
         embedding_collection=embedding.collection if embedding else None,
         embedding_vector_id=embedding.vector_id if embedding else None,
+        valid_from=n.valid_from,
+        valid_to=n.valid_to,
+        tx_from=n.tx_from,
+        tx_to=n.tx_to,
     )
 
 
@@ -596,6 +663,10 @@ def _row_to_node(r: orm.Node) -> Node:
         attributes=r.attributes or {},
         provenance=[Provenance.model_validate(p) for p in (r.provenance or [])],
         embedding=embedding,
+        valid_from=r.valid_from,
+        valid_to=r.valid_to,
+        tx_from=r.tx_from,
+        tx_to=r.tx_to,
     )
 
 
@@ -608,6 +679,10 @@ def _update_node_row(row: orm.Node, n: Node) -> None:
     row.summary = n.summary
     row.attributes = n.attributes
     row.provenance = [p.model_dump(mode="json") for p in n.provenance]
+    row.valid_from = n.valid_from
+    row.valid_to = n.valid_to
+    row.tx_from = n.tx_from
+    row.tx_to = n.tx_to
     if n.embedding:
         row.embedding_model = n.embedding.model
         row.embedding_collection = n.embedding.collection
@@ -630,6 +705,13 @@ def _edge_to_row(e: Edge) -> orm.Edge:
         explanation=e.explanation,
         provenance=[p.model_dump(mode="json") for p in e.provenance],
         attributes=e.attributes,
+        valid_from=e.valid_from,
+        valid_to=e.valid_to,
+        tx_from=e.tx_from,
+        tx_to=e.tx_to,
+        invalidation=(
+            e.invalidation.model_dump(mode="json") if e.invalidation else None
+        ),
     )
 
 
@@ -645,6 +727,13 @@ def _row_to_edge(r: orm.Edge) -> Edge:
         explanation=r.explanation,
         provenance=[Provenance.model_validate(p) for p in (r.provenance or [])],
         attributes=r.attributes or {},
+        valid_from=r.valid_from,
+        valid_to=r.valid_to,
+        tx_from=r.tx_from,
+        tx_to=r.tx_to,
+        invalidation=(
+            EdgeInvalidation.model_validate(r.invalidation) if r.invalidation else None
+        ),
     )
 
 
@@ -657,6 +746,39 @@ def _update_edge_row(row: orm.Edge, e: Edge) -> None:
     row.explanation = e.explanation
     row.provenance = [p.model_dump(mode="json") for p in e.provenance]
     row.attributes = e.attributes
+    row.valid_from = e.valid_from
+    row.valid_to = e.valid_to
+    row.tx_from = e.tx_from
+    row.tx_to = e.tx_to
+    row.invalidation = e.invalidation.model_dump(mode="json") if e.invalidation else None
+
+
+def _ingestion_event_to_row(e: IngestionEvent) -> orm.IngestionEvent:
+    return orm.IngestionEvent(
+        id=e.id,
+        corpus_id=e.corpus_id,
+        graph_variant_id=e.graph_variant_id,
+        label=e.label,
+        event_time=e.event_time,
+        ingested_at=e.ingested_at,
+        source_uri=e.source_uri,
+        kind=e.kind,
+        metadata_json=e.metadata,
+    )
+
+
+def _row_to_ingestion_event(r: orm.IngestionEvent) -> IngestionEvent:
+    return IngestionEvent(
+        id=r.id,
+        corpus_id=r.corpus_id,
+        graph_variant_id=r.graph_variant_id,
+        label=r.label,
+        event_time=r.event_time,
+        ingested_at=r.ingested_at,
+        source_uri=r.source_uri,
+        kind=r.kind,
+        metadata=r.metadata_json or {},
+    )
 
 
 def _journal_to_row(j: JournalEntry) -> orm.JournalEntry:

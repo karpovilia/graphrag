@@ -165,6 +165,40 @@ def test_add_and_delete_edge_round_trip() -> None:
     assert after_delete.edges == []
 
 
+def test_delete_edge_with_reason_applies() -> None:
+    """DeleteEdgePayload accepts optional `reason` (§1.4) without breaking
+    the existing apply path."""
+    gv = new_id()
+    a, b = _node("a", gv=gv), _node("b", gv=gv)
+    e = _edge(a.id, b.id, gv=gv)
+    state = GraphBuildState(nodes=[a, b], edges=[e])
+
+    entry = _entry(
+        gv,
+        JournalOp.DELETE_EDGE,
+        {"edge_id": str(e.id), "reason": "superseded by ingest"},
+    )
+    after = apply_journal_op(state, entry)
+    assert after.edges == []
+
+
+def test_delete_node_with_reason_applies() -> None:
+    """DeleteNodePayload accepts optional `reason` without breaking apply."""
+    gv = new_id()
+    a, b = _node("a", gv=gv), _node("b", gv=gv)
+    e = _edge(a.id, b.id, gv=gv)
+    state = GraphBuildState(nodes=[a, b], edges=[e])
+
+    entry = _entry(
+        gv,
+        JournalOp.DELETE_NODE,
+        {"node_id": str(a.id), "reason": "merged elsewhere"},
+    )
+    after = apply_journal_op(state, entry)
+    assert [n.id for n in after.nodes] == [b.id]
+    assert after.edges == []  # edge touching a is dropped
+
+
 def test_edit_edge_rejects_unknown_field() -> None:
     gv = new_id()
     a, b = _node("a", gv=gv), _node("b", gv=gv)

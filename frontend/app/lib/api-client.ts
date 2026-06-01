@@ -7,6 +7,7 @@
 import { useRuntimeConfig } from "nuxt/app";
 
 import type {
+  AtSnapshot,
   BuildVariantRequest,
   Corpus,
   CorpusSchema,
@@ -15,16 +16,20 @@ import type {
   GraphLayout,
   GraphVariant,
   Id,
+  IngestionEvent,
   JournalAppendRequest,
   JournalAppendResult,
   JournalEntry,
   Kind,
   MoEResult,
   ProposeSchemaRequest,
+  QueryDeltaResponse,
   ReasonRequest,
   StrategyDescriptor,
   Suggestion,
   SuggestionStatus,
+  TemporalDiff,
+  TimeAxis,
   ToolInvocation,
   VariantStateSummary,
 } from "@/entities/api";
@@ -190,6 +195,26 @@ export function createApiClient(baseUrl = "") {
       }),
     exportJournalUrl: (id: Id, format: "json" | "csv" = "json") =>
       url(`/api/graphs/${id}/journal/export?format=${format}`),
+    // ---- temporal (§2.1 scrubber / §2.4 revert) ----
+    timeline: (id: Id, axis: TimeAxis = "tx") =>
+      request<IngestionEvent[]>(`/api/graphs/${id}/timeline?axis=${axis}`),
+    at: (id: Id, t: string, axis: TimeAxis = "tx") =>
+      request<AtSnapshot>(
+        `/api/graphs/${id}/at?t=${encodeURIComponent(t)}&axis=${axis}`,
+      ),
+    diff: (id: Id, tA: string, tB: string, axis: TimeAxis = "tx") =>
+      request<TemporalDiff>(
+        `/api/graphs/${id}/diff?t_a=${encodeURIComponent(tA)}&t_b=${encodeURIComponent(tB)}&axis=${axis}`,
+      ),
+    revertInvalidation: (
+      id: Id,
+      edgeId: Id,
+      body: { expected_version: number; actor: string },
+    ) =>
+      request<JournalAppendResult>(
+        `/api/graphs/${id}/invalidations/${edgeId}/revert`,
+        { method: "POST", body: JSON.stringify(body) },
+      ),
     getLayout: (id: Id) =>
       request<GraphLayout>(`/api/graphs/${id}/layout`),
     putLayout: (id: Id, positions: Record<string, [number, number]>) =>
@@ -276,6 +301,13 @@ export function createApiClient(baseUrl = "") {
         body: JSON.stringify(body),
       }),
     streamUrl: () => url(`/api/reason/stream`),
+    // §2.2 deterministic evidence highlight — same body as `run`, but
+    // returns evidence/total id sets for the graph to light + dim.
+    delta: (body: ReasonRequest) =>
+      request<QueryDeltaResponse>(`/api/reason/delta`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
   };
 
   // ---- node tools ----

@@ -256,7 +256,9 @@
       "finalAnswer": "Final answer",
       "confidenceLabel": "Confidence",
       "evidenceNodesLabel": "Evidence nodes",
-      "openCompare": "Open variant comparison →"
+      "openCompare": "Open variant comparison →",
+      "showOnGraph": "Show on graph →",
+      "showingOnGraph": "Preparing graph…"
     },
     "assistant": {
       "openCta": "💬 ask the assistant",
@@ -284,6 +286,41 @@
     "filter": "Filter:",
     "filterAll": "all",
     "empty": "No pending suggestions — run an agent above."
+  },
+  "timeline": {
+    "toggle": "Time",
+    "scrubAria": "Timeline",
+    "axisAria": "Time axis",
+    "axisValid": "T (event)",
+    "axisTx": "T′ (ingest)",
+    "axisValidTip": "Valid time — when the fact was true in the world (event_time).",
+    "axisTxTip": "Transaction time — when we learned the fact (ingested_at). ADR-0002.",
+    "modeInstant": "Instant",
+    "modeDiff": "Diff",
+    "clear": "Clear",
+    "playTip": "Play (space)"
+  },
+  "deltaLegend": {
+    "sourceTime": "Time diff: {a} → {b}",
+    "sourceTimePlain": "Time diff",
+    "sourceQuery": "Query evidence highlight",
+    "sourceEdit": "Edit cascade",
+    "born": "born",
+    "dead": "dead",
+    "persisted": "persisted",
+    "moved_community": "moved community",
+    "evidence": "evidence"
+  },
+  "errorBanner": {
+    "genericTitle": "Error",
+    "409Title": "Graph changed",
+    "409Body": "Someone changed the graph while you were working. Refresh and retry.",
+    "404Title": "Not found",
+    "404Body": "Variant or edge not found — it may have been removed.",
+    "422Title": "Bad time window",
+    "422Body": "Check the t / axis parameters — they must be ISO-8601 UTC (Z).",
+    "400Title": "Invalid range",
+    "400Body": "Window start is after its end (t_a > t_b)."
   },
   "layerMap": {
     "drag": "drag",

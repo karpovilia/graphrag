@@ -10,6 +10,7 @@ from api.domain.corpus import Corpus, Document
 from api.domain.curation import JournalEntry, Suggestion, SuggestionStatus
 from api.domain.graph import GraphLayout, GraphVariant, Node
 from api.domain.run import ToolInvocation
+from api.domain.temporal import IngestionEvent, TemporalDiff
 from api.domain.types import DomainModel, Id, utcnow
 from api.domain.user import Language, User
 from api.strategies.state import GraphBuildState
@@ -44,6 +45,10 @@ class JournalAppendResult(DomainModel):
     repository fills it as
     {'node_ids': [...], 'edge_ids': [...], 'community_ids': [...]}.
     """
+
+    recompute_ms: float = 0.0
+    """Actual apply+affected_set wall time (ms) for the §2.3 latency
+    badge. Always present and >= 0.0 so the badge never reads undefined."""
 
 
 def affected_set_to_dict(affected: AffectedSet) -> dict:
@@ -97,6 +102,38 @@ class RepositoryProtocol(Protocol):
 
     async def load_state(self, variant_id: Id) -> GraphBuildState: ...
     """Hydrate the full nodes + edges + journal for the variant."""
+
+    # ---- bi-temporal (R2 §2) ----
+
+    async def list_ingestion_events(
+        self,
+        *,
+        corpus_id: Id | None = None,
+        variant_id: Id | None = None,
+    ) -> list[IngestionEvent]: ...
+    """Timeline scrubber axis. Filter by corpus or variant; callers sort
+    ascending by ingested_at (axis=tx) or event_time (axis=valid)."""
+
+    async def create_ingestion_event(self, event: IngestionEvent) -> IngestionEvent: ...
+
+    async def materialize_state_at(
+        self,
+        variant_id: Id,
+        t: datetime,
+        axis: str,
+    ) -> GraphBuildState: ...
+    """Facts live at instant `t` under `axis` ('tx' | 'valid'). Default
+    impl loads the full state then filters by the temporal predicate."""
+
+    async def temporal_diff(
+        self,
+        variant_id: Id,
+        t_a: datetime,
+        t_b: datetime,
+        axis: str,
+    ) -> TemporalDiff: ...
+    """Materialize at t_a and t_b, classify the delta into the §0
+    grammar buckets."""
 
     # ---- curation ----
 

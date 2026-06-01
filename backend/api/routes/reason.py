@@ -21,10 +21,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import Field
 
+from api.domain.temporal import QueryDeltaResponse
 from api.domain.types import DomainModel, Id
 from api.llm import CompletionClient
 from api.moe import MoEError, MoEResult, run_moe, stream_moe
-from api.repository import RepositoryGraphLoader, RepositoryProtocol
+from api.repository import NotFoundError, RepositoryGraphLoader, RepositoryProtocol
 from api.routes.graphs import _maybe_llm
 from api.runtime import get_repository
 
@@ -78,6 +79,74 @@ async def reason(
         )
     except MoEError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/reason/delta", response_model=QueryDeltaResponse)
+async def reason_delta(
+    request: ReasonRequest,
+    repo: RepositoryProtocol = Depends(get_repository),
+    llm: CompletionClient | None = Depends(_maybe_llm),
+) -> QueryDeltaResponse:
+    """Run reasoning and return the query-delta (§2.2): which subgraph the
+    answer lit up vs the full variant the frontend dims.
+
+    `evidence_*` is the union over experts of answer evidence; `total_*`
+    is every node/edge id of the involved variants (union). The frontend
+    lights evidence_* (alpha 1.0) and dims the complement (alpha 0.15).
+    """
+
+    _validate_mode(request)
+    loader = RepositoryGraphLoader(repo)
+    try:
+        moe = await run_moe(
+            query=request.query,
+            variant_ids=request.variant_ids,
+            reasoner_name=request.reasoner,
+            aggregator_name=request.aggregator,
+            loader=loader,
+            reasoner_params=request.reasoner_params,
+            aggregator_params=request.aggregator_params,
+            llm=llm,
+        )
+    except MoEError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    # Union evidence over experts (each expert's answer carries its own
+    # evidence; the aggregated answer already unions but per-expert is the
+    # authoritative source for the §2.2 grammar row).
+    evidence_node_ids: list[Id] = []
+    evidence_edge_ids: list[Id] = []
+    seen_nodes: set[Id] = set()
+    seen_edges: set[Id] = set()
+    sources = [e.result for e in moe.experts] + [moe.answer]
+    for r in sources:
+        for nid in r.evidence_node_ids:
+            if nid not in seen_nodes:
+                seen_nodes.add(nid)
+                evidence_node_ids.append(nid)
+        for eid in r.evidence_edge_ids:
+            if eid not in seen_edges:
+                seen_edges.add(eid)
+                evidence_edge_ids.append(eid)
+
+    total_node_ids: list[Id] = []
+    total_edge_ids: list[Id] = []
+    for vid in request.variant_ids:
+        try:
+            state = await repo.load_state(vid)
+        except NotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+        total_node_ids.extend(n.id for n in state.nodes)
+        total_edge_ids.extend(e.id for e in state.edges)
+
+    return QueryDeltaResponse(
+        moe=moe.model_dump(mode="json"),
+        variant_id=request.variant_ids[0],
+        evidence_node_ids=evidence_node_ids,
+        evidence_edge_ids=evidence_edge_ids,
+        total_node_ids=total_node_ids,
+        total_edge_ids=total_edge_ids,
+    )
 
 
 @router.post("/reason/stream")

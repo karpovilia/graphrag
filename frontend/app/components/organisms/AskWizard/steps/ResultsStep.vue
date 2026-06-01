@@ -1,15 +1,63 @@
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref } from "vue";
+  import { useRouter } from "vue-router";
   import { useI18n } from "vue-i18n";
 
   import { useAskWizard } from "@/composables/use-ask-wizard";
+  import { useQueryDelta } from "@/composables/use-query-delta";
   import { useApi } from "@/lib/api-client";
   import type { ExpertResult, MoEResult } from "@/entities/api";
   import { streamSSE, type SSEHandle } from "@/lib/sse";
 
   const { t } = useI18n();
   const wizard = useAskWizard();
+  const queryDelta = useQueryDelta();
+  const router = useRouter();
   const api = useApi();
+
+  // §2.2 — "Show on graph" lights evidence, dims complement. Additive CTA;
+  // back-nav + chat-affordance untouched (evidence rides a useState bridge,
+  // not the URL). MoE: fetch a delta per variant so each compare pane has
+  // its own evidence.
+  const showingDelta = ref(false);
+  const deltaError = ref<string | null>(null);
+
+  async function showOnGraph() {
+    const variantIds = wizard.data.value.variant_ids;
+    if (!variantIds.length) return;
+    showingDelta.value = true;
+    deltaError.value = null;
+    // Fresh ask → clear any stale highlight first.
+    queryDelta.clear();
+    try {
+      const body = {
+        mode: wizard.data.value.mode,
+        query: wizard.data.value.query,
+        variant_ids: variantIds,
+        reasoner: wizard.data.value.reasoner,
+        aggregator: wizard.data.value.aggregator,
+        reasoner_params: wizard.data.value.reasoner_params,
+        aggregator_params: wizard.data.value.aggregator_params,
+      };
+      if (wizard.data.value.mode === "moe") {
+        // One delta call carrying every variant's evidence; the response
+        // is keyed by variant_id so each pane reads its own.
+        const resp = await api.reason.delta(body);
+        queryDelta.setFromResponse(resp);
+        await router.push(
+          `/graphs/compare?ids=${variantIds.join(",")}&queryDelta=1`,
+        );
+      } else {
+        const resp = await api.reason.delta({ ...body, variant_ids: variantIds });
+        queryDelta.setFromResponse(resp);
+        await router.push(`/graphs/${resp.variant_id}?queryDelta=1`);
+      }
+    } catch (e) {
+      deltaError.value = e instanceof Error ? e.message : String(e);
+    } finally {
+      showingDelta.value = false;
+    }
+  }
 
   let handle: SSEHandle | undefined;
   const handleRef = ref<SSEHandle | null>(null);
@@ -174,6 +222,18 @@
           <dd>{{ wizard.streaming.value.answer.answer.cost_tokens || "—" }}</dd>
         </div>
       </dl>
+    </div>
+
+    <div v-if="wizard.streaming.value.answer" :class="$style.graphCta">
+      <button
+        type="button"
+        :class="$style.showGraphBtn"
+        :disabled="showingDelta"
+        @click="showOnGraph"
+      >
+        {{ showingDelta ? t("wizard.ask.showingOnGraph") : t("wizard.ask.showOnGraph") }}
+      </button>
+      <span v-if="deltaError" :class="$style.errText">{{ deltaError }}</span>
     </div>
 
     <div v-if="allDone && wizard.data.value.mode === 'moe'" :class="$style.compareCta">
@@ -344,6 +404,31 @@
     dd {
       margin: 0;
       font-weight: 600;
+    }
+  }
+
+  .graphCta {
+    display: flex;
+    align-items: center;
+    gap: var(--gr-space-sm);
+  }
+
+  .showGraphBtn {
+    padding: var(--gr-space-sm) var(--gr-space-lg);
+    background: var(--ksd-accent-color);
+    color: var(--ksd-bg-color);
+    border: none;
+    border-radius: var(--gr-radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.05);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   }
 

@@ -69,6 +69,16 @@ export function resolveAlpha(
   return alphaFor(layer, activeLayer);
 }
 
+/** Compose a layer-focus alpha with a delta-overlay alpha. We take the
+ * MIN so that whichever lens is more restrictive wins: a node dimmed by
+ * an inactive layer stays dimmed even if it's query evidence, and an
+ * evidence-dimmed complement stays dim even on the active layer. Only
+ * meaningful when a delta overlay is present — without one the delta
+ * alpha is 1.0 and this is a no-op (returns the layer alpha unchanged). */
+export function combineAlpha(layerAlpha: number, deltaAlpha: number): number {
+  return Math.min(layerAlpha, deltaAlpha);
+}
+
 /** Color picker for a node — defers to `attributes.color` when the
  * builder set one (e.g. type-driven palette), otherwise falls back to
  * the layer accent.

@@ -23,9 +23,10 @@
     LAYER_ORDER,
     colorForCommunity,
     colorForLayer,
+    combineAlpha,
     resolveAlpha,
-    withAlpha,
   } from "./lib/alpha";
+  import { resolveDelta, type DeltaSource, type DeltaState } from "./lib/delta";
 
   type Props = {
     nodes: Node[];
@@ -38,11 +39,21 @@
     /** Optional: node ids to render with a highlight halo. Used by the
      * suggestions sidebar to point the user at the pair under hover. */
     highlightedNodeIds?: id[];
+    /** §0 delta overlay: id (node OR edge) → DeltaState. When present the
+     * compositor folds the §0 grammar (color / alpha / strike / glow /
+     * lift) on top of the layer-focus result. Owned by the host page so
+     * split-view panes can sync. */
+    deltaIndex?: Map<string, DeltaState> | null;
+    /** Legend label only — which axis produced `deltaIndex`. The grammar
+     * itself does not branch on this. */
+    deltaSource?: DeltaSource;
   };
 
   const props = withDefaults(defineProps<Props>(), {
     variantId: undefined,
     highlightedNodeIds: () => [],
+    deltaIndex: null,
+    deltaSource: null,
   });
   const api = useApi();
   const { t } = useI18n();
@@ -196,15 +207,17 @@
     const communityMode = activeLayer.value === "community";
     const e2c = entityToCommunity.value;
 
+    const deltaIndex = props.deltaIndex;
+
     const cityNodes: ICityGraphNode[] = [];
     for (const n of nodesSorted) {
-      const alpha = resolveAlpha(
+      const layerAlpha = resolveAlpha(
         n.layer,
         activeLayer.value,
         perLayerAlpha.value,
         sliceMode.value,
       );
-      if (alpha === 0) continue; // sliceMode hides; don't bother rendering
+      if (layerAlpha === 0) continue; // sliceMode hides; don't bother rendering
       let baseColor = colorForLayer(
         n.layer,
         typeof n.attributes?.color === "string"
@@ -219,6 +232,13 @@
           if (cid !== undefined) baseColor = colorForCommunity(String(cid));
         }
       }
+
+      // §0 delta fold — overrides come AFTER layer color/alpha so the two
+      // lenses compose (combineAlpha = min).
+      const delta = resolveDelta(String(n.id), deltaIndex);
+      const color = delta.color ?? baseColor;
+      const alpha = combineAlpha(layerAlpha, delta.alpha);
+
       const isHighlighted = highlightSet.has(String(n.id));
       cityNodes.push({
         id: n.id,
@@ -235,8 +255,15 @@
             { id: 0, text: n.name },
             ...(n.summary ? [{ id: 1, text: n.summary }] : []),
           ],
-          color: withAlpha(baseColor, alpha),
+          // Native per-node alpha (sec0 migration) — color stays 6-digit
+          // so the delta tint is animatable and the wrapper no longer
+          // bakes alpha into an 8-digit hex.
+          color: baseColorOrDelta(color),
+          alpha,
           size: layerSize(n.layer),
+          strike: delta.strike || undefined,
+          glow: delta.glow || undefined,
+          deltaState: delta.state,
         },
       } as ICityGraphNode);
     }
@@ -268,13 +295,23 @@
             )
           : ACTIVE_ALPHA,
       );
+      const delta = resolveDelta(String(e.id), deltaIndex);
+      // Edge fill follows delta when set (evidence keeps base grey at full
+      // alpha; dead/invalidated grey + strike), else the neutral edge grey.
+      const baseLinkAlpha = Math.max(linkAlpha * 0.6, 0.05);
+      const alpha =
+        delta.state === null
+          ? baseLinkAlpha
+          : combineAlpha(baseLinkAlpha, delta.alpha);
       cityLinks.push({
         id: e.id,
         source: e.source_node_id,
         target: e.target_node_id,
         data: {
           id: i,
-          color: withAlpha("#888888", Math.max(linkAlpha * 0.6, 0.05)),
+          color: delta.color ?? "#888888",
+          alpha,
+          strike: delta.strike || undefined,
           explanation: e.explanation ?? e.relation ?? "",
         },
       } as ICityGraphLink);
@@ -282,6 +319,12 @@
 
     return { nodes: cityNodes, links: cityLinks };
   });
+
+  // Pass-through: kept as a named helper so the node loop reads cleanly
+  // and a future theme-aware tint can hook here.
+  function baseColorOrDelta(color: string): string {
+    return color;
+  }
 
   function layerSize(layer: Layer): number {
     const order: Record<Layer, number> = {

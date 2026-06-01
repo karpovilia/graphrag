@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections import defaultdict
+from datetime import datetime
 
 from api.curation import affected_set, apply_journal_op, replay_journal
+from api.curation.temporal_diff import materialize_at, temporal_diff
 from api.domain.corpus import Corpus, Document
 from api.domain.curation import (
     JournalEntry,
@@ -14,6 +17,7 @@ from api.domain.curation import (
 )
 from api.domain.graph import GraphLayout, GraphVariant, Node
 from api.domain.run import ToolInvocation
+from api.domain.temporal import IngestionEvent, TemporalDiff
 from api.domain.types import Id, utcnow
 from api.domain.user import Language, User
 from api.strategies.state import GraphBuildState
@@ -69,6 +73,9 @@ class InMemoryRepository(RepositoryProtocol):
         """Cached force-layout positions keyed by (variant_id, user_id).
         user_id=None is the shared pool used as fallback for visitors
         without a personal layout."""
+
+        self._ingestion_events: dict[Id, IngestionEvent] = {}
+        """Bi-temporal timeline units (§2.1) keyed by event id."""
 
     # ---- corpora ----
 
@@ -179,8 +186,10 @@ class InMemoryRepository(RepositoryProtocol):
                 }
             )
 
+            _t0 = time.perf_counter()
             affected = affected_set(state, stored_entry)
             new_state = apply_journal_op(state, stored_entry)
+            recompute_ms = (time.perf_counter() - _t0) * 1000.0
 
             self._states[variant_id] = new_state
             self._journals[variant_id].append(stored_entry)
@@ -201,6 +210,7 @@ class InMemoryRepository(RepositoryProtocol):
                 variant=new_variant,
                 entry=stored_entry,
                 affected=affected_set_to_dict(affected),
+                recompute_ms=recompute_ms,
             )
 
     async def list_journal(
@@ -241,11 +251,13 @@ class InMemoryRepository(RepositoryProtocol):
             # rolled-back direction.
             pre_state = self._states[variant_id]
             removed = journal[-1]
-            affected = affected_set(pre_state, removed)
 
+            _t0 = time.perf_counter()
+            affected = affected_set(pre_state, removed)
             self._journals[variant_id] = journal[:-1]
             base = self._base_states[variant_id]
             new_state = replay_journal(base, self._journals[variant_id])
+            recompute_ms = (time.perf_counter() - _t0) * 1000.0
             self._states[variant_id] = new_state
 
             new_variant = variant.model_copy(
@@ -264,7 +276,65 @@ class InMemoryRepository(RepositoryProtocol):
                 variant=new_variant,
                 entry=removed,
                 affected=affected_set_to_dict(affected),
+                recompute_ms=recompute_ms,
             )
+
+    # ---- bi-temporal (R2 §2) ----
+
+    async def list_ingestion_events(
+        self,
+        *,
+        corpus_id: Id | None = None,
+        variant_id: Id | None = None,
+    ) -> list[IngestionEvent]:
+        out = list(self._ingestion_events.values())
+        if corpus_id is not None:
+            out = [e for e in out if e.corpus_id == corpus_id]
+        if variant_id is not None:
+            out = [
+                e
+                for e in out
+                if e.graph_variant_id is None or e.graph_variant_id == variant_id
+            ]
+        return out
+
+    async def create_ingestion_event(self, event: IngestionEvent) -> IngestionEvent:
+        self._ingestion_events[event.id] = event
+        return event
+
+    async def materialize_state_at(
+        self,
+        variant_id: Id,
+        t: datetime,
+        axis: str,
+    ) -> GraphBuildState:
+        try:
+            state = self._states[variant_id]
+        except KeyError as e:
+            raise NotFoundError(f"variant state {variant_id} not found") from e
+        return materialize_at(state, t, axis)  # type: ignore[arg-type]
+
+    async def temporal_diff(
+        self,
+        variant_id: Id,
+        t_a: datetime,
+        t_b: datetime,
+        axis: str,
+    ) -> TemporalDiff:
+        try:
+            state = self._states[variant_id]
+        except KeyError as e:
+            raise NotFoundError(f"variant state {variant_id} not found") from e
+        state_a = materialize_at(state, t_a, axis)  # type: ignore[arg-type]
+        state_b = materialize_at(state, t_b, axis)  # type: ignore[arg-type]
+        return temporal_diff(
+            state_a,
+            state_b,
+            axis=axis,  # type: ignore[arg-type]
+            variant_id=variant_id,
+            t_a=t_a,
+            t_b=t_b,
+        )
 
     # ---- node lookup + tool invocations (Phase 5) ----
 

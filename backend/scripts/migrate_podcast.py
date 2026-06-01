@@ -31,7 +31,6 @@ import io
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
-from uuid import uuid4
 
 import pandas as pd
 from loguru import logger
@@ -81,7 +80,26 @@ async def main() -> None:
         document_id=document.id,
         variant_name=args.variant_name,
     )
+    # Stamp every fact with a transaction-time anchor (T') equal to the
+    # variant's build time so the bi-temporal scrubber (R2 §2.1) has a
+    # real axis. event_time (T) is the episode date when available.
+    _stamp_temporal(state, tx_from=variant.created_at)
     persisted = await repo.create_variant(variant, state)
+
+    # Emit one IngestionEvent for this episode so the timeline scrubber
+    # renders a point on the axis for the SIGIR demo (R2 §2.1, §migration).
+    from api.domain.temporal import IngestionEvent
+
+    await repo.create_ingestion_event(
+        IngestionEvent(
+            corpus_id=corpus.id,
+            graph_variant_id=persisted.id,
+            label=document.title,
+            event_time=variant.created_at,
+            ingested_at=variant.created_at,
+            kind="episode",
+        )
+    )
 
     logger.info(
         "migrated: corpus={} variant={} nodes={} edges={}",
@@ -138,6 +156,18 @@ async def _create_corpus_and_document(
     )
     document = await repo.create_document(document)
     return corpus, document
+
+
+def _stamp_temporal(state: GraphBuildState, *, tx_from) -> None:
+    """In-place: give every node/edge a transaction-time anchor (T') so it
+    is visible on the tx scrubber axis at any t >= tx_from. valid_* is
+    left None (event-time per fact is unknown for the bundled parquet)."""
+    for n in state.nodes:
+        if n.tx_from is None:
+            n.tx_from = tx_from
+    for e in state.edges:
+        if e.tx_from is None:
+            e.tx_from = tx_from
 
 
 def _build_variant(

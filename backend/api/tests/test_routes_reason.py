@@ -202,6 +202,56 @@ def test_reason_unknown_reasoner_returns_400(client: TestClient) -> None:
     assert resp.status_code == 400
 
 
+# ---- query-delta (§2.2) ----
+
+
+def test_reason_delta_single_evidence_subset_of_total(client: TestClient) -> None:
+    _, v1, _ = _seed_two_variants(client)
+    resp = client.post(
+        "/api/reason/delta",
+        json={
+            "mode": "single",
+            "query": "Иванов",
+            "variant_ids": [v1],
+            "reasoner": "keyword_search",
+            "aggregator": "evidence_union",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["variant_id"] == v1
+    assert "moe" in body
+    ev_nodes = set(body["evidence_node_ids"])
+    total_nodes = set(body["total_node_ids"])
+    assert ev_nodes  # the query matched at least one node
+    assert ev_nodes.issubset(total_nodes)  # lit ⊆ full graph (§2.2 dim-vs-lit)
+
+
+def test_reason_delta_moe_unions_over_experts(client: TestClient) -> None:
+    _, v1, v2 = _seed_two_variants(client)
+    resp = client.post(
+        "/api/reason/delta",
+        json={
+            "mode": "moe",
+            "query": "Иванов",
+            "variant_ids": [v1, v2],
+            "reasoner": "keyword_search",
+            "aggregator": "evidence_union",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    # total spans both variants
+    total_nodes = set(body["total_node_ids"])
+    ev_nodes = set(body["evidence_node_ids"])
+    assert ev_nodes.issubset(total_nodes)
+    # union over experts: each expert's evidence is included
+    experts = body["moe"]["experts"]
+    for ex in experts:
+        for nid in ex["result"]["evidence_node_ids"]:
+            assert nid in ev_nodes
+
+
 # ---- SSE stream ----
 
 

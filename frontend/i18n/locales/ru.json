@@ -256,7 +256,9 @@
       "finalAnswer": "Финальный ответ",
       "confidenceLabel": "Уверенность",
       "evidenceNodesLabel": "Evidence узлов",
-      "openCompare": "Открыть сравнение вариантов →"
+      "openCompare": "Открыть сравнение вариантов →",
+      "showOnGraph": "Показать на графе →",
+      "showingOnGraph": "Готовлю граф…"
     },
     "assistant": {
       "openCta": "💬 спросить ассистента",
@@ -284,6 +286,41 @@
     "filter": "Фильтр:",
     "filterAll": "все",
     "empty": "Pending suggestions нет — запустите агента выше."
+  },
+  "timeline": {
+    "toggle": "Время",
+    "scrubAria": "Шкала времени",
+    "axisAria": "Ось времени",
+    "axisValid": "T (событие)",
+    "axisTx": "T′ (загрузка)",
+    "axisValidTip": "Valid time — когда факт был истинен в мире (event_time).",
+    "axisTxTip": "Transaction time — когда мы узнали о факте (ingested_at). ADR-0002.",
+    "modeInstant": "Срез",
+    "modeDiff": "Диф",
+    "clear": "Сбросить",
+    "playTip": "Проигрывание (пробел)"
+  },
+  "deltaLegend": {
+    "sourceTime": "Дифф по времени: {a} → {b}",
+    "sourceTimePlain": "Дифф по времени",
+    "sourceQuery": "Query-evidence: подсветка ответа",
+    "sourceEdit": "Каскад правки",
+    "born": "появилось",
+    "dead": "исчезло",
+    "persisted": "без изменений",
+    "moved_community": "сменило сообщество",
+    "evidence": "evidence"
+  },
+  "errorBanner": {
+    "genericTitle": "Ошибка",
+    "409Title": "Граф изменился",
+    "409Body": "Кто-то изменил граф, пока вы работали. Обновите и повторите.",
+    "404Title": "Не найдено",
+    "404Body": "Вариант или ребро не найдены — возможно, они были удалены.",
+    "422Title": "Некорректное временное окно",
+    "422Body": "Проверьте параметры t / ось — формат должен быть ISO-8601 UTC (Z).",
+    "400Title": "Неверный диапазон",
+    "400Body": "Начало окна позже конца (t_a > t_b)."
   },
   "layerMap": {
     "drag": "перетащить",

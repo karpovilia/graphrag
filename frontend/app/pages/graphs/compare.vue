@@ -9,6 +9,8 @@
   import { useApi } from "@/lib/api-client";
   import type { Layer } from "@/entities/api";
   import { LAYER_ORDER } from "@/components/organisms/LayeredGraph/lib/alpha";
+  import { useQueryDelta } from "@/composables/use-query-delta";
+  import type { DeltaSource } from "@/components/organisms/LayeredGraph/lib/delta";
   import { formatNumber } from "@/lib/format";
 
   const { t } = useI18n();
@@ -35,6 +37,28 @@
 
   const left = computed(() => ids.value[0]);
   const right = computed(() => ids.value[1]);
+
+  // §2.2 — MoE query-delta: each pane reads its OWN evidence subgraph,
+  // keyed by variant_id, from the use-query-delta bridge (set by the ask
+  // wizard). Activated by ?queryDelta=1; no URL serialization of evidence.
+  const queryDelta = useQueryDelta();
+  const queryDeltaActive = computed(() => route.query.queryDelta === "1");
+  const leftDelta = computed(() =>
+    queryDeltaActive.value && left.value
+      ? queryDelta.buildDeltaIndex(left.value)
+      : null,
+  );
+  const rightDelta = computed(() =>
+    queryDeltaActive.value && right.value
+      ? queryDelta.buildDeltaIndex(right.value)
+      : null,
+  );
+  const leftDeltaSource = computed<DeltaSource>(() =>
+    leftDelta.value ? "query" : null,
+  );
+  const rightDeltaSource = computed<DeltaSource>(() =>
+    rightDelta.value ? "query" : null,
+  );
 
   const { data: leftVariant } = await useAsyncData(
     () => `variant-cmp:${left.value}`,
@@ -138,6 +162,8 @@
           :nodes="leftNodes"
           :edges="leftEdges"
           :theme="theme"
+          :delta-index="leftDelta"
+          :delta-source="leftDeltaSource"
           v-model:active-layer="activeLayer"
           v-model:visual-order="visualOrder"
           v-model:per-layer-alpha="perLayerAlpha"
@@ -161,6 +187,8 @@
           :nodes="rightNodes"
           :edges="rightEdges"
           :theme="theme"
+          :delta-index="rightDelta"
+          :delta-source="rightDeltaSource"
           v-model:active-layer="activeLayer"
           v-model:visual-order="visualOrder"
           v-model:per-layer-alpha="perLayerAlpha"

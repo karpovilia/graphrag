@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     BigInteger,
+    DateTime,
     Float,
     ForeignKey,
     Index,
@@ -142,12 +143,18 @@ class Node(Base):
     embedding_model: Mapped[str | None] = mapped_column(String(64))
     embedding_collection: Mapped[str | None] = mapped_column(String(255))
     embedding_vector_id: Mapped[str | None] = mapped_column(String(64))
+    # ---- bi-temporal stamps (R2 §0/§1) ----
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    tx_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    tx_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         Index("ix_nodes_graph_variant_id", "graph_variant_id"),
         Index("ix_nodes_canonical_id", "canonical_id"),
         Index("ix_nodes_layer", "graph_variant_id", "layer"),
         Index("ix_nodes_type", "graph_variant_id", "type"),
+        Index("ix_nodes_tx", "graph_variant_id", "tx_from", "tx_to"),
     )
 
 
@@ -176,11 +183,18 @@ class Edge(Base):
     explanation: Mapped[str | None] = mapped_column(Text)
     provenance: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     attributes: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    # ---- bi-temporal stamps + invalidation provenance (R2 §0/§1.4) ----
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    tx_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    tx_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    invalidation: Mapped[dict | None] = mapped_column(JSONB)
 
     __table_args__ = (
         Index("ix_edges_graph_variant_id", "graph_variant_id"),
         Index("ix_edges_source", "source_node_id"),
         Index("ix_edges_target", "target_node_id"),
+        Index("ix_edges_tx", "graph_variant_id", "tx_from", "tx_to"),
     )
 
 
@@ -361,3 +375,64 @@ class VectorOutbox(Base):
             "created_at",
         ),
     )
+
+
+class IngestionEvent(Base):
+    """One unit on the bi-temporal scrubber axis (R2 §2.1). Typically one
+    per podcast episode: event_time is the publication date (T),
+    ingested_at is the build time (T')."""
+
+    __tablename__ = "ingestion_events"
+
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
+    corpus_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("corpora.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    graph_variant_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("graph_variants.id", ondelete="CASCADE"),
+    )
+    label: Mapped[str] = mapped_column(String(512), nullable=False)
+    event_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    source_uri: Mapped[str | None] = mapped_column(Text)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False, default="episode")
+    metadata_json: Mapped[dict] = mapped_column(
+        "metadata", JSONB, nullable=False, default=dict
+    )
+
+    __table_args__ = (
+        Index("ix_ingestion_events_event_time", "corpus_id", "event_time"),
+        Index("ix_ingestion_events_ingested_at", "corpus_id", "ingested_at"),
+    )
+
+
+class Snapshot(Base):
+    """A named point on the temporal axis for a variant (R2 §2)."""
+
+    __tablename__ = "snapshots"
+
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
+    graph_variant_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("graph_variants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    label: Mapped[str] = mapped_column(String(512), nullable=False)
+    as_of_tx: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    as_of_valid: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ingestion_event_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("ingestion_events.id", ondelete="SET NULL"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (Index("ix_snapshots_variant", "graph_variant_id"),)

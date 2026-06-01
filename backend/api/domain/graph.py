@@ -61,6 +61,22 @@ class GraphVariantStatus(StrEnum):
     ARCHIVED = "archived"
 
 
+class EdgeInvalidation(DomainModel):
+    """Why and when an edge was killed (bi-temporal §1.4 provenance).
+
+    Attached to Edge.invalidation when an ingestion event (or a manual
+    curation delete carrying a `reason`) retires an edge instead of
+    plainly deleting it. The §2.4 revert flow re-adds the edge and clears
+    this record, preserving the audit trail.
+    """
+
+    ingestion_event_id: Id | None = None
+    at: datetime
+    reason: str
+    superseded_by_edge_id: Id | None = None
+    auto: bool = True
+
+
 class Node(DomainModel):
     id: Id = Field(default_factory=new_id)
     graph_variant_id: Id
@@ -89,6 +105,17 @@ class Node(DomainModel):
     provenance: list[Provenance] = Field(default_factory=list)
     embedding: EmbeddingRef | None = None
 
+    # ---- bi-temporal stamps (§0/§1) ----
+    # All nullable so existing JSON/preview states deserialize unchanged.
+    valid_from: datetime | None = None
+    """event time T start — when the fact became true in the world."""
+    valid_to: datetime | None = None
+    """event time T end (None = still valid)."""
+    tx_from: datetime | None = None
+    """ingestion/transaction time T' start — when we learned the fact."""
+    tx_to: datetime | None = None
+    """ingestion time T' end (None = still current)."""
+
 
 class Edge(DomainModel):
     id: Id = Field(default_factory=new_id)
@@ -105,6 +132,15 @@ class Edge(DomainModel):
     explanation: str | None = None
     provenance: list[Provenance] = Field(default_factory=list)
     attributes: dict[str, Any] = Field(default_factory=dict)
+
+    # ---- bi-temporal stamps (§0/§1), identical semantics to Node ----
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+    tx_from: datetime | None = None
+    tx_to: datetime | None = None
+
+    invalidation: EdgeInvalidation | None = None
+    """Why/when/by-which-event this edge died (§1.4). None = live edge."""
 
 
 class GraphVariant(DomainModel):
