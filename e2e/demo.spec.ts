@@ -21,6 +21,20 @@ test.beforeAll(async () => {
   fixture = await seed(BACKEND);
 });
 
+// §2.6 GuidedWalkthrough auto-starts on first graph-page visit (no
+// 'gr:walkthrough:seen' in localStorage) and its full-screen spotlight
+// intercepts clicks these feature tests drive. Mark the tour as seen
+// before any page loads — the tour itself is covered by temporal.spec.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("gr:walkthrough:seen", "1");
+    } catch {
+      /* storage disabled — non-fatal */
+    }
+  });
+});
+
 async function gotoAndSettle(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
@@ -30,7 +44,7 @@ test("§1 corpus list shows the seeded HSE Podcast with two ready variants", asy
   page,
 }) => {
   await gotoAndSettle(page, "/corpora");
-  await expect(page.getByRole("heading", { name: "Corpora" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Корпуса" })).toBeVisible();
 
   const card = page.locator("li").filter({ hasText: fixture.corpus_name });
   await expect(card).toHaveCount(1);
@@ -109,7 +123,7 @@ test("§5 Suggestions sidebar opens, lists pending or empty path", async ({ page
   await expect(sidebar).toBeVisible();
   await expect(sidebar.getByText("Suggestions")).toBeVisible();
 
-  const firstAccept = sidebar.getByRole("button", { name: "Accept" }).first();
+  const firstAccept = sidebar.getByRole("button", { name: "Принять" }).first();
   if (await firstAccept.isVisible({ timeout: 3000 }).catch(() => false)) {
     const versionBefore = await readVersion(page);
     await firstAccept.click();
