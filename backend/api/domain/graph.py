@@ -52,6 +52,15 @@ class EdgeType(StrEnum):
     carries `layer`, `channels` (per-channel contributions), and
     `alpha` (the disparity p-value on the keep side) for inspection."""
 
+    DERIVED = "derived"
+    """Higher-order (2nd-order) relation between two same-layer nodes,
+    materialized from a *latent* two-mode projection (Batagelj network
+    multiplication). Two entities linked because they share chunks /
+    communities / etc.; `weight` is the chosen normalization (raw,
+    Newman/fractional, cosine, Jaccard). `attributes` carries `via`
+    (the two-mode path), `neighbor_layer`, `normalization`, `raw_count`,
+    and `order=2` so these can be filtered/styled apart from builder edges."""
+
 
 class GraphVariantStatus(StrEnum):
     PENDING = "pending"

@@ -7,3 +7,4 @@ sub-package keeps that decorator graph in one place.
 """
 
 from . import intra_layer_backbone  # noqa: F401 — side-effect: register
+from . import multiprojection  # noqa: F401 — side-effect: register

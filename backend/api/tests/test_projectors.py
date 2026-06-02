@@ -13,7 +13,6 @@ sparse periphery, plus cross-layer evidence) and assert:
 
 from __future__ import annotations
 
-import asyncio
 from uuid import UUID, uuid4
 
 import pytest
@@ -165,3 +164,75 @@ def test_projector_registry_lists_intra_layer_backbone() -> None:
     desc = projectors.get_descriptor("intra_layer_backbone")
     assert desc.kind == "projector"
     assert "target_min" in (desc.params_schema or {})
+
+
+# ---- multiprojection (Batagelj normalized two-mode projections) --------
+
+from api.strategies.projectors.multiprojection import MultiProjection  # noqa: E402
+
+
+@pytest.mark.asyncio
+async def test_multiprojection_emits_derived_higher_order_edges() -> None:
+    # e0,e1,e2 all mentioned in one shared chunk → a derived triangle.
+    variant_id = uuid4()
+    chunk = _node(Layer.CHUNK, "c", variant_id)
+    ents = [_node(Layer.ENTITY, f"e{i}", variant_id) for i in range(3)]
+    edges = [_edge(variant_id, e.id, chunk.id, EdgeType.MENTIONED_IN) for e in ents]
+    state = GraphBuildState(nodes=[chunk, *ents], edges=edges, journal=[])
+
+    out = await MultiProjection().project(
+        state,
+        params={
+            "normalization": "newman",
+            "projections": [
+                {"name": "entity_co_chunk", "target_layer": "entity",
+                 "via": "mentioned_in", "neighbor_layer": "chunk"},
+            ],
+            "top_k_per_node": 0,
+        },
+    )
+    derived = [e for e in out.edges if e.type == EdgeType.DERIVED]
+    assert len(derived) == 3  # all entity pairs
+    e = derived[0]
+    assert e.attributes["order"] == 2
+    assert e.attributes["via"] == "mentioned_in"
+    assert e.attributes["normalization"] == "newman"
+    assert e.relation == "entity_co_chunk"
+    # original MENTIONED_IN edges are untouched
+    assert sum(1 for x in out.edges if x.type == EdgeType.MENTIONED_IN) == 3
+
+
+@pytest.mark.asyncio
+async def test_multiprojection_newman_deflates_promiscuous_intermediary() -> None:
+    # Pair (a,b) co-occur only via a *big* chunk shared by 11 entities;
+    # pair (c,d) co-occur only via a *small* chunk shared by just the two.
+    # Raw count is 1 for both, but Newman weights the small-group pair higher.
+    variant_id = uuid4()
+    big = _node(Layer.CHUNK, "big", variant_id)
+    small = _node(Layer.CHUNK, "small", variant_id)
+    crowd = [_node(Layer.ENTITY, f"x{i}", variant_id) for i in range(11)]  # a,b ∈ crowd
+    c_ent = _node(Layer.ENTITY, "c", variant_id)
+    d_ent = _node(Layer.ENTITY, "d", variant_id)
+    edges = [_edge(variant_id, e.id, big.id, EdgeType.MENTIONED_IN) for e in crowd]
+    edges += [
+        _edge(variant_id, c_ent.id, small.id, EdgeType.MENTIONED_IN),
+        _edge(variant_id, d_ent.id, small.id, EdgeType.MENTIONED_IN),
+    ]
+    state = GraphBuildState(
+        nodes=[big, small, *crowd, c_ent, d_ent], edges=edges, journal=[]
+    )
+
+    out = await MultiProjection().project(
+        state, params={"normalization": "newman", "top_k_per_node": 0}
+    )
+    by_pair = {
+        frozenset({e.source_node_id, e.target_node_id}): e for e in out.edges
+        if e.type == EdgeType.DERIVED
+    }
+    crowd_pair = by_pair[frozenset({crowd[0].id, crowd[1].id})]
+    small_pair = by_pair[frozenset({c_ent.id, d_ent.id})]
+    assert crowd_pair.attributes["raw_count"] == small_pair.attributes["raw_count"] == 1
+    # 1/(11-1)=0.1  vs  1/(2-1)=1.0 — the big chunk barely links its pairs.
+    assert small_pair.weight > crowd_pair.weight
+    assert crowd_pair.weight == pytest.approx(0.1)
+    assert small_pair.weight == pytest.approx(1.0)
