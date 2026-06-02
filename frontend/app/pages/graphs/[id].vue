@@ -67,6 +67,18 @@
     tw.setAxis(next);
     refreshTimeline();
   }
+  // Switching to diff mode auto-fires a full-span diff so the delta
+  // grammar + legend render immediately, without requiring a handle drag.
+  function onDiffMode() {
+    const evs = timeline.value ?? [];
+    if (!evs.length) {
+      tw.mode.value = "diff";
+      return;
+    }
+    const key = tw.axis.value === "tx" ? "ingested_at" : "event_time";
+    const times = evs.map((e) => e[key]).sort();
+    scrubModel.value = [times[0], times[times.length - 1]];
+  }
 
   // §2.2 query-delta bridge (evidence highlight from the ask wizard).
   const queryDelta = useQueryDelta();
@@ -300,7 +312,7 @@
               <button
                 type="button"
                 :class="[$style.modeBtn, tw.mode.value === 'diff' ? $style.modeBtn_active : '']"
-                @click="tw.mode.value = 'diff'"
+                @click="onDiffMode()"
               >
                 {{ t("timeline.modeDiff") }}
               </button>

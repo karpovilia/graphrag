@@ -91,6 +91,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--corpus-name", default="KB Dump")
     parser.add_argument("--variant-name", default="kb-ner-leiden")
     parser.add_argument(
+        "--prune-weight",
+        type=float,
+        default=0.0,
+        help="threshold_prune weight cutoff; >0 drops weak co-mention edges (UI readability)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Use InMemoryRepository, do not persist; only count + report",
@@ -390,6 +396,7 @@ async def main() -> None:
         builder="ner_extraction",
         cleaner_chain=["threshold_prune"],
         clusterer="leiden",
+        cleaner_params={"threshold_prune": {"weight_threshold": args.prune_weight}},
     )
     elapsed = time.perf_counter() - t0
     logger.info(
