@@ -31,9 +31,10 @@ from typing import Any
 from loguru import logger
 
 from api.domain.corpus import Corpus, Document
-from api.domain.curation import JournalEntry, Suggestion, SuggestionStatus
+from api.domain.curation import JournalEntry, Suggestion
 from api.domain.graph import Edge, GraphLayout, GraphVariant, Node
 from api.domain.run import ToolInvocation
+from api.domain.temporal import IngestionEvent
 from api.domain.types import Id
 from api.domain.user import Language, User
 from api.strategies.state import GraphBuildState
@@ -110,6 +111,13 @@ class SnapshotRepository(InMemoryRepository):
         expected_version: int,
     ) -> JournalAppendResult:
         out = await super().revert_last(variant_id, expected_version)
+        await self._snapshot()
+        return out
+
+    # ---- ingestion events ----
+
+    async def create_ingestion_event(self, event: IngestionEvent) -> IngestionEvent:
+        out = await super().create_ingestion_event(event)
         await self._snapshot()
         return out
 
@@ -216,6 +224,9 @@ class SnapshotRepository(InMemoryRepository):
             "next_outbox_id": self._next_outbox_id,
             "users": [u.model_dump(mode="json") for u in self._users.values()],
             "layouts": [lay.model_dump(mode="json") for lay in self._layouts.values()],
+            "ingestion_events": [
+                e.model_dump(mode="json") for e in self._ingestion_events.values()
+            ],
         }
 
     def _load_sync(self) -> None:
@@ -276,14 +287,18 @@ class SnapshotRepository(InMemoryRepository):
         for lay_raw in payload.get("layouts", []):
             lay = GraphLayout.model_validate(lay_raw)
             self._layouts[(lay.graph_variant_id, lay.user_id)] = lay
+        for ev_raw in payload.get("ingestion_events", []):
+            ev = IngestionEvent.model_validate(ev_raw)
+            self._ingestion_events[ev.id] = ev
         logger.info(
             "snapshot loaded: {} corpora, {} documents, {} variants, "
-            "{} suggestions, {} outbox",
+            "{} suggestions, {} outbox, {} ingestion-events",
             len(self._corpora),
             len(self._documents),
             len(self._variants),
             len(self._suggestions),
             len(self._outbox),
+            len(self._ingestion_events),
         )
 
 
