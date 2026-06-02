@@ -14,6 +14,7 @@
   import InvalidationPanel from "@/components/organisms/InvalidationPanel/InvalidationPanel.vue";
   import GuidedWalkthrough from "@/components/organisms/GuidedWalkthrough/GuidedWalkthrough.vue";
   import ErrorBanner from "@/components/molecules/ErrorBanner/ErrorBanner.vue";
+  import LatencyBadge from "@/components/molecules/LatencyBadge/LatencyBadge.vue";
   import { themeBehaviorSubject } from "@/entities/tech";
   import { useApi } from "@/lib/api-client";
   import { formatNumber } from "@/lib/format";
@@ -262,8 +263,20 @@
           v-if="tw.mode.value === 'diff' && tw.lastDiff.value && tw.lastDiff.value.invalidated.length"
           :variant="variant"
           :diff="tw.lastDiff.value"
+          :cascade="cascade"
           @variant-changed="onVariantChanged"
-          @reverted="() => { refreshTimeline(); }"
+          @reverted="() => { refreshTimeline(); tw.refresh(); }"
+        />
+
+        <!-- §2.4 — page-level latency feedback for journal writes whose
+             surface (e.g. the invalidation panel) collapses on success, so
+             the badge isn't lost when the row it lived on drops out. -->
+        <LatencyBadge
+          v-if="cascade.lastTiming.value"
+          :ms="cascade.lastTiming.value.recompute_ms"
+          :node-count="cascade.lastTiming.value.node_count_after"
+          :edge-count="cascade.lastTiming.value.edge_count_after"
+          :class="$style.pageLatency"
         />
 
         <DeltaLegend
@@ -458,6 +471,13 @@
 
   .temporalError {
     margin: var(--gr-space-xs) var(--gr-space-md) 0;
+  }
+
+  .pageLatency {
+    position: absolute;
+    top: var(--gr-space-sm);
+    right: var(--gr-space-sm);
+    z-index: 5;
   }
 
   .timeline {

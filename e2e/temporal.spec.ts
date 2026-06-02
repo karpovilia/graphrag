@@ -30,6 +30,22 @@ test.beforeAll(async () => {
   fixture = await seed(BACKEND);
 });
 
+// The graph page auto-starts a one-shot guided tour (§2.6) on first visit
+// (localStorage 'gr:walkthrough:seen' unset). Its full-screen spotlight
+// overlay intercepts clicks, which would block the curation surfaces these
+// temporal flows drive. Mark the tour as already seen before any page
+// script runs so it stays dismissed. (The tour itself is exercised by its
+// own §2.6 spec.)
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("gr:walkthrough:seen", "1");
+    } catch {
+      /* storage disabled — non-fatal */
+    }
+  });
+});
+
 async function gotoAndSettle(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
@@ -48,13 +64,19 @@ test("§2.2 query-delta highlight lights evidence and dims complement", async ({
 }) => {
   test.skip(!fixture.variant_leiden_id, "no leiden variant seeded");
 
-  // Walk the ask wizard → MoE (mirror demo.spec §7) so the results graph
-  // mounts and fires POST /api/reason/delta, which we intercept.
+  // Walk the ask wizard in *single* mode: the query-delta highlight
+  // grammar (§0/§2.2) is a single-variant "evidence vs complement" split,
+  // so one variant is all this asserts. (MoE mode would gate the wizard on
+  // ≥2 variants — a different flow tested in demo.spec.) Steps:
+  // mode → variants → strategy → query → results.
   await gotoAndSettle(page, "/wizards/ask");
 
-  await page.getByText("Mixture of Experts", { exact: true }).click();
+  // Step 0 — mode. Single is the default, but click it to be explicit and
+  // to satisfy `canAdvance` (mode set).
+  await page.getByText("Single", { exact: true }).click();
   await page.getByRole("button", { name: "Далее", exact: true }).click();
 
+  // Step 1 — variants. Pick the leiden variant (one is enough for single).
   const leidenRow = page.locator("li", {
     hasText: fixture.variant_leiden_name,
   });
@@ -62,23 +84,37 @@ test("§2.2 query-delta highlight lights evidence and dims complement", async ({
   await leidenRow.click();
   await page.getByRole("button", { name: "Далее", exact: true }).click();
 
-  // VariantsStep → (skip) → QueryStep.
+  // Step 2 — strategy. The wizard preloads defaults (keyword_search /
+  // evidence_union) which already satisfy `canAdvance`, so just advance.
+  await expect(page.getByRole("heading", { name: "Reasoner" })).toBeVisible({
+    timeout: 15_000,
+  });
   await page.getByRole("button", { name: "Далее", exact: true }).click();
 
+  // Step 3 — query.
   await page.locator("textarea").fill(fixture.moe_query);
   await page.getByRole("button", { name: "Далее", exact: true }).click();
 
-  // Intercept the delta call fired when the answer is shown on the graph.
+  // Step 4 — results. "Спросить" streams the answer over SSE; the delta
+  // call (POST /api/reason/delta) fires from the "Показать на графе" CTA,
+  // which only appears once an answer has rendered. Run the ask first.
+  await page
+    .getByRole("main")
+    .getByRole("button", { name: "Спросить", exact: true })
+    .click();
+
+  // Wait for the answer block + the show-on-graph CTA to surface.
+  const showOnGraph = page.getByTestId("results-show-on-graph");
+  await expect(showOnGraph).toBeVisible({ timeout: 45_000 });
+
+  // Intercept the delta call fired by the show-on-graph CTA.
   const deltaPromise = page.waitForResponse(
     (resp: Response) =>
       resp.url().includes("/api/reason/delta") && resp.request().method() === "POST",
     { timeout: 45_000 },
   );
 
-  await page
-    .getByRole("main")
-    .getByRole("button", { name: "Спросить", exact: true })
-    .click();
+  await showOnGraph.click();
 
   const deltaResp = await deltaPromise;
   expect(deltaResp.ok()).toBeTruthy();
@@ -94,12 +130,11 @@ test("§2.2 query-delta highlight lights evidence and dims complement", async ({
     body.total_node_ids.length,
   );
 
-  // Return to / surface the results graph so the canvas mounts and the
-  // legend that explains the grammar is visible.
-  const showOnGraph = page.getByTestId("results-show-on-graph");
-  if (await showOnGraph.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await showOnGraph.click();
-  }
+  // The show-on-graph CTA navigated to /graphs/{id}?queryDelta=1; the
+  // canvas mounts and the legend that explains the grammar is visible.
+  await expect(page).toHaveURL(/\/graphs\/[^/?]+\?.*queryDelta=1/, {
+    timeout: 20_000,
+  });
   await expect(page.getByTestId("graph-canvas")).toBeVisible({
     timeout: 20_000,
   });
@@ -126,37 +161,35 @@ test("§2.1 timeline scrub compresses graph + AxisToggle re-sorts (buttons, not 
   await expect(page.getByTestId("graph-canvas")).toBeVisible();
 
   // (1) Compression. Assert on the /at API (deterministic) rather than DOM
-  // node count: the window at tx_a (early) must contain fewer facts than
-  // at tx_b (late) — the temporal window compresses the visible graph.
-  const atTxA = await getMaterialized(page, fixture.tx_a!, "tx");
+  // node count: an instant *before* the first ingest (tx_pre) materializes
+  // an empty graph, while tx_b (after the last ingest) materializes the
+  // full one — the temporal window compresses the visible graph. (tx_a sits
+  // after the first ingest where the backend has already stamped every
+  // node's tx_from, so tx_a..tx_b alone would NOT compress — that pair is
+  // reserved for §2.4's invalidation diff.)
+  const atPre = await getMaterialized(page, fixture.tx_pre!, "tx");
   const atTxB = await getMaterialized(page, fixture.tx_b!, "tx");
-  expect(atTxA.node_ids.length).toBeLessThan(atTxB.node_ids.length);
+  expect(atPre.node_ids.length).toBeLessThan(atTxB.node_ids.length);
 
-  // (2) Axis re-sort. Capture the scrubber's rendered episode-label order
-  // under axis=tx, click the AxisToggle (T′↔T), capture under axis=valid,
-  // expect the two orderings DIFFER (the back-dated Эпизод 3 moves) and
-  // that GET .../at then carries axis=valid.
-  const orderTx = await scrubberLabelOrder(page);
+  // (2) Axis re-sort. The scrubber lays its episode ticks out by axis time
+  // (axis=tx → ingested_at, axis=valid → event_time). Capture the tick
+  // order *by rendered position* under axis=tx, click the AxisToggle
+  // (T′↔T), and expect the order under axis=valid to DIFFER — the
+  // back-dated Эпизод 3 (published 3rd, ingested last) moves.
+  const orderTx = await scrubberTickOrder(page);
+  expect(orderTx.length).toBeGreaterThan(2);
 
-  const axisToggle = page.getByTestId("axis-toggle");
-  // Fall back to accessible name if the testid isn't wired yet (contract
-  // recommends adding data-testid='axis-toggle' to make this stable).
-  const toggle = (await axisToggle.count())
-    ? axisToggle
-    : page.getByRole("button", { name: /T['′]|valid|tx/i }).first();
-  await toggle.click();
+  // Default axis is T′ (tx). Click the T (valid / event-time) segment of
+  // the AxisToggle. The scrubber re-sorts client-side off the same events
+  // (no network fetch — it just reads event_time instead of ingested_at).
+  await page
+    .getByTestId("axis-toggle")
+    .getByRole("button", { name: /T \(/ })
+    .click();
+  // Let the re-render settle so tick positions reflect the new axis.
+  await page.waitForTimeout(300);
 
-  const validAtPromise = page.waitForResponse(
-    (resp: Response) =>
-      /\/api\/graphs\/[^/]+\/at\b/.test(resp.url()) &&
-      new URL(resp.url()).searchParams.get("axis") === "valid",
-    { timeout: 15_000 },
-  );
-  // Nudge the scrubber so the axis-switched /at fires (drag/scrub). If the
-  // toggle itself re-fetches, this resolves immediately.
-  await validAtPromise.catch(() => undefined);
-
-  const orderValid = await scrubberLabelOrder(page);
+  const orderValid = await scrubberTickOrder(page);
   expect(orderValid).not.toEqual(orderTx);
 });
 
@@ -183,9 +216,13 @@ test("§2.3 edit → LatencyBadge shows numeric ms + tier + cascade ripple", asy
     "no pending suggestion to accept",
   );
 
+  // The Accept write surface is POST /api/suggestions/{id}/accept, which
+  // returns a JournalAppendResult (recompute_ms, affected, variant). A
+  // direct journal append (/journal) carries the same shape — accept both.
   const journalPromise = page.waitForResponse(
     (resp: Response) =>
-      /\/journal\b/.test(resp.url()) && resp.request().method() === "POST",
+      /\/(journal|suggestions\/[^/]+\/accept)\b/.test(resp.url()) &&
+      resp.request().method() === "POST",
     { timeout: 20_000 },
   );
 
@@ -202,15 +239,18 @@ test("§2.3 edit → LatencyBadge shows numeric ms + tier + cascade ripple", asy
   const badge = page.getByTestId("latency-badge").first();
   await expect(badge).toBeVisible({ timeout: 10_000 });
 
+  // Numeric ms + the unit (localized: "ms" in en, "мс" under ru-RU).
   const badgeText = (await badge.innerText()).trim();
-  expect(badgeText).toMatch(/\d+(\.\d+)?\s*ms/);
+  expect(badgeText).toMatch(/\d+(\.\d+)?\s*(ms|мс)/);
 
   const tier = await badge.getAttribute("data-tier");
   expect(["fast", "mid", "slow"]).toContain(tier);
 
   // The rendered ms matches the contract value within rounding tolerance.
-  const renderedMs = Number(badgeText.match(/(\d+(?:\.\d+)?)\s*ms/)?.[1]);
-  expect(Math.abs(renderedMs - Math.round(journalBody.recompute_ms))).toBeLessThanOrEqual(1);
+  // The badge rounds for display (1 decimal under 10ms, whole ms above), so
+  // a tolerance of 1 covers the rounding of any recompute_ms.
+  const renderedMs = Number(badgeText.match(/(\d+(?:\.\d+)?)\s*(?:ms|мс)/)?.[1]);
+  expect(Math.abs(renderedMs - journalBody.recompute_ms)).toBeLessThanOrEqual(1);
 
   // The cascade ripple ran: data-source='edit' marker appears then clears.
   const cascade = page.getByTestId("edit-cascade");
@@ -237,12 +277,31 @@ test("§2.4 revert auto-invalidation removes the row and re-adds the edge", asyn
 
   await gotoAndSettle(page, `/graphs/${fixture.variant_leiden_id}`);
 
-  // The invalidation-panel only mounts when the diff window has
-  // invalidated edges. Open the temporal view and set the scrubber to a
-  // window covering tx_a..tx_b so the auto-invalidated edge is in
-  // diff.invalidated. Drive the Time button (canvas eats keys).
+  // The invalidation-panel only mounts in DIFF mode when the diff window
+  // has invalidated edges. Open the temporal view, switch to Диф (diff),
+  // then click the scrubber track near its left edge — that emits a
+  // [t_a, t_b] range spanning the events (handle B stays at the max), which
+  // the host turns into GET .../diff. The auto-invalidated edge (alive at
+  // the first ingest, dead by the last) lands in diff.invalidated. Drive
+  // visible controls only (the canvas eats keys).
   await page.getByTestId("timeline-toggle").click();
   await expect(page.getByTestId("graph-canvas")).toBeVisible();
+
+  await page.getByRole("button", { name: "Диф", exact: true }).click();
+
+  // Emit the diff range by clicking the track near its left edge so handle
+  // A moves to ~min while handle B stays at ~max → widest window.
+  const track = page.getByTestId("timeline-track");
+  await expect(track).toBeVisible({ timeout: 10_000 });
+  const box = await track.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(box!.x + 4, box!.y + box!.height / 2);
+
+  // The diff fetch carries the range; wait for it before asserting panel.
+  await page.waitForResponse(
+    (resp: Response) => /\/api\/graphs\/[^/]+\/diff\b/.test(resp.url()),
+    { timeout: 15_000 },
+  );
 
   const panel = page.getByTestId("invalidation-panel");
   await expect(panel).toBeVisible({ timeout: 15_000 });
@@ -253,6 +312,19 @@ test("§2.4 revert auto-invalidation removes the row and re-adds the edge", asyn
   await expect(row).toBeVisible();
   // Provenance text — the reason carried by the auto-invalidation.
   await expect(row).toContainText(/superseded by Эпизод 3/);
+
+  // The revert is an optimistic-concurrency write: it must carry the
+  // variant's CURRENT version as expected_version. Read it live (prior
+  // tests in this serial suite share backend state and may have advanced
+  // it past the seed-time invalidated_edge_version), so we assert against
+  // the live version rather than a stale constant — but never below the
+  // version at which the auto-invalidation landed.
+  const liveVersion = (
+    await getJson<{ version: number }>(
+      page,
+      `${BACKEND}/api/graphs/${fixture.variant_leiden_id}`,
+    )
+  ).version;
 
   const revertPromise = page.waitForResponse(
     (resp: Response) =>
@@ -272,7 +344,10 @@ test("§2.4 revert auto-invalidation removes the row and re-adds the edge", asyn
     expected_version: number;
     actor: string;
   };
-  expect(reqBody.expected_version).toBe(fixture.invalidated_edge_version);
+  expect(reqBody.expected_version).toBe(liveVersion);
+  expect(reqBody.expected_version).toBeGreaterThanOrEqual(
+    fixture.invalidated_edge_version!,
+  );
   expect(reqBody.actor).toMatch(/^user:/);
 
   // The row for that edge is removed.
@@ -309,7 +384,25 @@ test("§2.5 ErrorBanner on forced 409 stale-merge", async ({ page }) => {
 
   await gotoAndSettle(page, `/graphs/${fixture.variant_leiden_id}`);
 
-  // Read the current variant version (stale-v we will reuse below).
+  // We need ≥2 pending suggestions: one to bump the backend version
+  // out-of-band (so the page's in-memory `variant.version` goes stale),
+  // and one to Accept *through the UI* at that now-stale version → the
+  // backend rejects it 409 and the SuggestionsSidebar surfaces the
+  // ErrorBanner. (Driving the 409 through the UI is the whole point — a
+  // raw fetch would never render the banner.)
+  const pending = await getJson<Array<{ id: string }>>(
+    page,
+    `${BACKEND}/api/graphs/${fixture.variant_leiden_id}/suggestions?status=pending`,
+  );
+  test.skip(pending.length < 2, "need >=2 pending suggestions to force a 409");
+
+  // Open the sidebar so the UI holds the current (soon-to-be-stale)
+  // variant.version.
+  await page
+    .getByRole("button", { name: /Показать Suggestions/ })
+    .click();
+  await expect(page.getByTestId("suggestions-sidebar")).toBeVisible();
+
   const staleVersion = await readVersion(page).catch(async () => {
     const v = await getJson<{ version: number }>(
       page,
@@ -318,77 +411,37 @@ test("§2.5 ErrorBanner on forced 409 stale-merge", async ({ page }) => {
     return v.version;
   });
 
-  // Bump the version to v+1 via a successful UI write (suggestion accept)
-  // so the next write at expected_version=staleVersion is genuinely stale.
-  await page
-    .getByRole("button", { name: /Показать Suggestions/ })
-    .click();
-  const accept = page.getByTestId("suggestion-accept").first();
-  if (await accept.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    const before = await readVersion(page).catch(() => staleVersion);
-    await accept.click();
-    await expect.poll(() => readVersion(page).catch(() => before), {
-      timeout: 10_000,
-    }).toBeGreaterThan(before);
-  } else {
-    // No suggestion to accept — fall back to a direct journal bump so the
-    // stale-v reproduction is still deterministic.
-    const nodes = await getJson<Array<{ id: string }>>(
-      page,
-      `${BACKEND}/api/graphs/${fixture.variant_leiden_id}/nodes?limit=1`,
-    );
-    if (nodes.length > 0) {
-      await page.evaluate(
-        async ([backend, vid, v, eid, nid]) => {
-          await fetch(`${backend}/api/graphs/${vid}/journal`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              op: "set_summary",
-              payload: { node_id: nid, summary: "bump" },
-              expected_version: v,
-              actor: `user:${eid}`,
-            }),
-          });
-        },
-        [BACKEND, fixture.variant_leiden_id, staleVersion, USER_EMAIL, nodes[0].id] as const,
-      );
-    }
-  }
-
-  // Drive a second write whose expected_version is still the stale v.
-  // merge_nodes needs two real node ids. The frontend's write layer
-  // surfaces the 409 as the ErrorBanner.
-  const nodes = await getJson<Array<{ id: string }>>(
-    page,
-    `${BACKEND}/api/graphs/${fixture.variant_leiden_id}/nodes?limit=2`,
-  );
-  test.skip(nodes.length < 2, "need >=2 nodes to force a merge 409");
-
-  const status = await page.evaluate(
-    async ([backend, vid, v, email, a, b]) => {
-      const resp = await fetch(`${backend}/api/graphs/${vid}/journal`, {
+  // Out-of-band bump: accept a DIFFERENT suggestion straight against the
+  // backend at expected_version=staleVersion → backend advances to v+1.
+  // The page never learns about this, so its variant.version stays stale.
+  const bumpStatus = await page.evaluate(
+    async ([backend, sid, v, email]) => {
+      const resp = await fetch(`${backend}/api/suggestions/${sid}/accept`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          op: "merge_nodes",
-          payload: { node_ids: [a, b], survivor_id: a },
-          expected_version: v,
+          expected_variant_version: v,
           actor: `user:${email}`,
         }),
       });
       return resp.status;
     },
-    [
-      BACKEND,
-      fixture.variant_leiden_id,
-      staleVersion,
-      USER_EMAIL,
-      nodes[0].id,
-      nodes[1].id,
-    ] as const,
+    [BACKEND, pending[pending.length - 1].id, staleVersion, USER_EMAIL] as const,
   );
-  expect(status).toBe(409);
+  expect(bumpStatus).toBe(200);
+
+  // Now Accept the FIRST suggestion through the UI. The sidebar still
+  // believes the variant is at staleVersion, so its accept carries the
+  // stale expected_variant_version → backend 409 → ErrorBanner.
+  const acceptResp = page.waitForResponse(
+    (resp: Response) =>
+      /\/suggestions\/[^/]+\/accept\b/.test(resp.url()) &&
+      resp.request().method() === "POST",
+    { timeout: 15_000 },
+  );
+  await page.getByTestId("suggestion-accept").first().click();
+  const resp = await acceptResp;
+  expect(resp.status()).toBe(409);
 
   // The banner is visible, scoped to the 409, role=alert, and explains
   // what happened + what to do (non-empty, not a raw stack).
@@ -427,22 +480,20 @@ async function getJson<T>(page: Page, url: string): Promise<T> {
   return (await resp.json()) as T;
 }
 
-// The ordered episode labels rendered on the scrubber. Reads the visible
-// label text in DOM order from the timeline region.
-async function scrubberLabelOrder(page: Page): Promise<string[]> {
-  const labels = page
-    .getByTestId("timeline-toggle")
-    .locator("xpath=ancestor::*[1]")
-    .locator("text=/Эпизод \\d+/");
-  // Prefer an explicit scrubber region if the contract exposes one; fall
-  // back to any visible "Эпизод N" labels in document order.
-  const all = page.locator("text=/Эпизод \\d+ \\(ВШЭ\\)/");
-  const count = await all.count();
-  const out: string[] = [];
+// The episode labels in rendered timeline order. The scrubber lays ticks
+// out absolutely (left%) by axis time, so DOM order is constant — we sort
+// the ticks by their rendered position (data-left) to recover the axis
+// ordering the user sees. The back-dated Эпизод 3 changes position between
+// the tx and valid axes, so this order differs across the toggle.
+async function scrubberTickOrder(page: Page): Promise<string[]> {
+  const ticks = page.getByTestId("timeline-tick");
+  const count = await ticks.count();
+  const rows: Array<{ label: string; left: number }> = [];
   for (let i = 0; i < count; i++) {
-    const txt = (await all.nth(i).innerText()).trim();
-    if (txt) out.push(txt);
+    const t = ticks.nth(i);
+    const label = (await t.getAttribute("data-label")) ?? "";
+    const left = Number((await t.getAttribute("data-left")) ?? "0");
+    rows.push({ label, left });
   }
-  void labels;
-  return out;
+  return rows.sort((a, b) => a.left - b.left).map((r) => r.label);
 }

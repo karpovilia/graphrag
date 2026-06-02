@@ -11,7 +11,7 @@
   import type { DeltaItem, GraphVariant, TemporalDiff } from "@/entities/api";
   import ErrorBanner from "@/components/molecules/ErrorBanner/ErrorBanner.vue";
   import LatencyBadge from "@/components/molecules/LatencyBadge/LatencyBadge.vue";
-  import { useEditCascade } from "@/composables/use-edit-cascade";
+  import { useEditCascade, type EditCascade } from "@/composables/use-edit-cascade";
   import { formatRelativeTime } from "@/lib/format";
 
   const { t } = useI18n();
@@ -20,6 +20,10 @@
     variant: GraphVariant;
     diff: TemporalDiff | null;
     actor?: string;
+    /** §2.4 — shared page cascade so the revert's latency badge survives
+     * after the panel collapses (the row drops out of the diff). Falls back
+     * to an owned instance when used standalone. */
+    cascade?: EditCascade;
   };
   const props = withDefaults(defineProps<Props>(), {
     actor: "user:ui",
@@ -30,9 +34,7 @@
     (e: "reverted", edgeId: string): void;
   }>();
 
-  // Owned cascade — its own ripple/latency, no edges getter needed here
-  // (the page paints the ripple; revert affects a single edge).
-  const cascade = useEditCascade(props.variant.id);
+  const cascade = props.cascade ?? useEditCascade(props.variant.id);
 
   const rows = computed<DeltaItem[]>(() =>
     (props.diff?.invalidated ?? []).filter((it) => it.kind === "edge"),

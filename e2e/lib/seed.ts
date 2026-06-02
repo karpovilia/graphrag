@@ -39,10 +39,20 @@ export type SeedResult = {
 
   // --- R2 §2 temporal fixture (empty on older backends → specs skip) ---
   episode_events: EpisodeEvent[];
-  // Two ISO instants on the tx axis bracketing born/dead facts. Used by
-  // diff(tx_a, tx_b, axis=tx) and the scrubber compression assertion.
+  // Two ISO instants on the tx axis bracketing the auto-invalidation.
+  // Used by diff(tx_a, tx_b, axis=tx) in §2.4 (the invalidated edge is
+  // alive at tx_a and dead by tx_b → it lands in diff.invalidated).
   tx_a: string | null;
   tx_b: string | null;
+  // §2.1 compression: an instant *before* the first ingest, when zero
+  // facts are born. materialize_at(tx_pre) yields an empty graph while
+  // materialize_at(tx_b) yields the full one — a true, observable
+  // temporal compression. (Distinct from tx_a, which must sit *after*
+  // the first ingest so §2.4's invalidated edge stays in the diff
+  // window — the backend stamps every node's tx_from at the first
+  // event's ingested_at, so an instant between episodes is NOT enough to
+  // compress; see backend test_backfill_is_idempotent_and_staggered.)
+  tx_pre: string | null;
   // The auto-invalidated edge and the variant version *after* the
   // auto-invalidation journal append landed (revert expected_version).
   invalidated_edge_id: string | null;
@@ -109,6 +119,7 @@ export async function seed(backendUrl: string): Promise<SeedResult> {
   let episode_events: EpisodeEvent[] = [];
   let tx_a: string | null = null;
   let tx_b: string | null = null;
+  let tx_pre: string | null = null;
   let invalidated_edge_id: string | null = null;
   let invalidated_edge_version: number | null = null;
 
@@ -117,6 +128,7 @@ export async function seed(backendUrl: string): Promise<SeedResult> {
     episode_events = temporal.episode_events;
     tx_a = temporal.tx_a;
     tx_b = temporal.tx_b;
+    tx_pre = temporal.tx_pre;
     invalidated_edge_id = temporal.invalidated_edge_id;
     invalidated_edge_version = temporal.invalidated_edge_version;
   } catch (err) {
@@ -143,6 +155,7 @@ export async function seed(backendUrl: string): Promise<SeedResult> {
     episode_events,
     tx_a,
     tx_b,
+    tx_pre,
     invalidated_edge_id,
     invalidated_edge_version,
   };
@@ -152,6 +165,7 @@ type TemporalSeed = {
   episode_events: EpisodeEvent[];
   tx_a: string | null;
   tx_b: string | null;
+  tx_pre: string | null;
   invalidated_edge_id: string | null;
   invalidated_edge_version: number | null;
 };
@@ -237,6 +251,8 @@ async function seedTemporal(
   const last = sortedByTx[sortedByTx.length - 1];
   const tx_a = plusOneSecond(first.ingested_at);
   const tx_b = plusOneSecond(last.ingested_at);
+  // One second *before* the first ingest: nothing is born yet.
+  const tx_pre = new Date(Date.parse(first.ingested_at) - 1000).toISOString();
 
   // --- one auto EdgeInvalidation via the journal API ---------------
   // Read the variant's current version and first edge, then DELETE_EDGE
@@ -277,6 +293,7 @@ async function seedTemporal(
     episode_events: created,
     tx_a,
     tx_b,
+    tx_pre,
     invalidated_edge_id,
     invalidated_edge_version,
   };

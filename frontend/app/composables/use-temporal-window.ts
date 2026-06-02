@@ -125,6 +125,17 @@ export function useTemporalWindow(variantId: Id) {
     }, 120);
   }
 
+  /** Re-fetch the active window from scratch (cache-busting). Used after a
+   * journal write (e.g. an invalidation revert) so a diff that's currently
+   * on screen reflects the new state instead of a stale cached payload. */
+  async function refresh() {
+    atCache.clear();
+    diffCache.clear();
+    if (mode.value === "diff" && range.value)
+      await goToDiff(range.value[0], range.value[1]);
+    else if (t.value) await goToInstant(t.value);
+  }
+
   /** Clear the temporal overlay — back to the full, current graph. */
   function reset() {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -170,6 +181,7 @@ export function useTemporalWindow(variantId: Id) {
     goToInstant,
     goToDiff,
     scrubTo,
+    refresh,
     reset,
     setAxis,
   };

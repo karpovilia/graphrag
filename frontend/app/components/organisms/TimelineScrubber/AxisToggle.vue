@@ -13,7 +13,12 @@
 </script>
 
 <template>
-  <div :class="$style.toggle" role="group" :aria-label="t('timeline.axisAria')">
+  <div
+    :class="$style.toggle"
+    role="group"
+    data-testid="axis-toggle"
+    :aria-label="t('timeline.axisAria')"
+  >
     <button
       type="button"
       :class="[$style.seg, axis === 'valid' ? $style.seg_active : '']"

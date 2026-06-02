@@ -49,6 +49,13 @@
   const hasDelta = computed(
     () => props.nodeCount !== undefined || props.edgeCount !== undefined,
   );
+
+  // Display: sub-ms recomputes are common on the in-memory repo; show one
+  // decimal under 10ms (so 0.13 doesn't render as a raw 16-digit float),
+  // whole milliseconds above.
+  const displayMs = computed<number>(() =>
+    props.ms < 10 ? Math.round(props.ms * 10) / 10 : Math.round(props.ms),
+  );
 </script>
 
 <template>
@@ -60,7 +67,7 @@
     :title="t('latency.tip')"
     :aria-label="t('latency.badgeAria', { ms })"
   >
-    <span :class="$style.ms">{{ ms }} {{ t("latency.unit") }}</span>
+    <span :class="$style.ms">{{ displayMs }} {{ t("latency.unit") }}</span>
     <span v-if="hasDelta" :class="$style.delta">
       · {{ nodeCount ?? 0 }}n {{ edgeCount ?? 0 }}e
     </span>

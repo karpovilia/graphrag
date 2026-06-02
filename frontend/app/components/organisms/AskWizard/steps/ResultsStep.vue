@@ -230,6 +230,7 @@
     <div v-if="wizard.streaming.value.answer" :class="$style.graphCta">
       <button
         type="button"
+        data-testid="results-show-on-graph"
         :class="$style.showGraphBtn"
         :disabled="showingDelta"
         @click="showOnGraph"

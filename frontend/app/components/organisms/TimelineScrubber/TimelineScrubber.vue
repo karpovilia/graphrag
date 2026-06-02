@@ -247,7 +247,12 @@
       {{ playing ? "⏸" : "▶" }}
     </button>
 
-    <div ref="trackRef" :class="$style.track" @click="onTrackClick">
+    <div
+      ref="trackRef"
+      data-testid="timeline-track"
+      :class="$style.track"
+      @click="onTrackClick"
+    >
       <!-- range fill (diff mode) -->
       <div
         v-if="mode === 'diff'"
@@ -262,12 +267,15 @@
       <span
         v-for="(ev, i) in events"
         :key="ev.id"
+        data-testid="timeline-tick"
         :class="$style.tick"
         :style="{
           left: `${pct(Date.parse(axis === 'valid' ? ev.event_time : ev.ingested_at))}%`,
         }"
         :title="eventLabel(ev)"
         :data-i="i"
+        :data-label="ev.label"
+        :data-left="pct(Date.parse(axis === 'valid' ? ev.event_time : ev.ingested_at))"
       />
 
       <!-- handle A -->
