@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from api.domain.curation import JournalEntry, JournalOp
-from api.domain.graph import Edge, EdgeType, Node
+from api.domain.graph import Edge, EdgeInvalidation, EdgeType, Node
 from api.domain.types import Id, new_id
 from api.strategies.state import GraphBuildState
 
@@ -91,7 +91,7 @@ def apply_journal_op(
             edges = _apply_edit_edge(edges, payload)
         case JournalOp.DELETE_EDGE:
             assert isinstance(payload, DeleteEdgePayload)
-            edges = [e for e in edges if e.id != payload.edge_id]
+            edges = _apply_delete_edge(edges, payload, entry)
         case JournalOp.DELETE_NODE:
             assert isinstance(payload, DeleteNodePayload)
             nodes = [n for n in nodes if n.id != payload.node_id]
@@ -352,6 +352,41 @@ def _apply_edit_edge(edges: list[Edge], payload: EditEdgePayload) -> list[Edge]:
         e if e.id != payload.edge_id else e.model_copy(update=payload.updates)
         for e in edges
     ]
+
+
+def _apply_delete_edge(
+    edges: list[Edge],
+    payload: DeleteEdgePayload,
+    entry: JournalEntry,
+) -> list[Edge]:
+    """Soft delete when a `reason` is given (§1.4 invalidation), hard
+    delete otherwise (back-compat).
+
+    Soft delete keeps the edge in state but stamps `tx_to` and an
+    `EdgeInvalidation` so it drops out of materialize_at(t>=tx_to) and
+    surfaces in diff().invalidated — and stays revert-eligible. The death
+    instant is `payload.superseded_at` (filled by the route from the
+    linked ingestion event) or the entry timestamp as a fallback.
+    """
+
+    if payload.reason is None:
+        return [e for e in edges if e.id != payload.edge_id]
+
+    at = payload.superseded_at or entry.created_at
+    invalidation = EdgeInvalidation(
+        ingestion_event_id=payload.ingestion_event_id,
+        at=at,
+        reason=payload.reason,
+        superseded_by_edge_id=None,
+        auto=entry.actor.startswith("agent:"),
+    )
+    out: list[Edge] = []
+    for e in edges:
+        if e.id == payload.edge_id:
+            out.append(e.model_copy(update={"tx_to": at, "invalidation": invalidation}))
+        else:
+            out.append(e)
+    return out
 
 
 def _update_node(nodes: list[Node], node_id: Id, **updates: Any) -> list[Node]:

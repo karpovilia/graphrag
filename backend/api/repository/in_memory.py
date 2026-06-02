@@ -158,6 +158,24 @@ class InMemoryRepository(RepositoryProtocol):
         except KeyError as e:
             raise NotFoundError(f"variant state {variant_id} not found") from e
 
+    async def replace_state(
+        self, variant_id: Id, state: GraphBuildState
+    ) -> GraphVariant:
+        try:
+            variant = self._variants[variant_id]
+        except KeyError as e:
+            raise NotFoundError(f"variant {variant_id} not found") from e
+        self._states[variant_id] = state
+        new_variant = variant.model_copy(
+            update={
+                "node_count": len(state.nodes),
+                "edge_count": len(state.edges),
+                "layers_present": sorted({n.layer for n in state.nodes}),
+            }
+        )
+        self._variants[variant_id] = new_variant
+        return new_variant
+
     # ---- curation ----
 
     async def append_journal(

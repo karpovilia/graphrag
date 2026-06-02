@@ -103,6 +103,15 @@ class RepositoryProtocol(Protocol):
     async def load_state(self, variant_id: Id) -> GraphBuildState: ...
     """Hydrate the full nodes + edges + journal for the variant."""
 
+    async def replace_state(
+        self, variant_id: Id, state: GraphBuildState
+    ) -> GraphVariant: ...
+    """Overwrite the stored nodes/edges of a variant (journal untouched)
+    and refresh the counts. Used by the ingestion-events backfill to
+    stamp tx_from/valid_from on previously-null rows. Does NOT bump
+    `version` (it isn't a journal op). Raises NotFoundError if the
+    variant is unknown."""
+
     # ---- bi-temporal (R2 §2) ----
 
     async def list_ingestion_events(

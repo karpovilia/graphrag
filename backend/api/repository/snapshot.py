@@ -84,6 +84,13 @@ class SnapshotRepository(InMemoryRepository):
         await self._snapshot()
         return out
 
+    async def replace_state(
+        self, variant_id: Id, state: GraphBuildState
+    ) -> GraphVariant:
+        out = await super().replace_state(variant_id, state)
+        await self._snapshot()
+        return out
+
     # ---- curation ----
 
     async def append_journal(

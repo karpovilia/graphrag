@@ -535,10 +535,24 @@ async def append_journal(
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"invalid payload: {e}") from e
 
+    payload = dict(body.payload)
+    # Soft DELETE_EDGE linked to an ingestion event: stamp the death
+    # instant from that event's ingested_at so tx_to lands inside the
+    # historical tx window (not "now"). Unknown event id → leave None,
+    # the applier falls back to the entry timestamp.
+    if body.op == JournalOp.DELETE_EDGE and payload.get("ingestion_event_id"):
+        events = await repo.list_ingestion_events()
+        event = next(
+            (e for e in events if str(e.id) == str(payload["ingestion_event_id"])),
+            None,
+        )
+        if event is not None:
+            payload["superseded_at"] = event.ingested_at.isoformat()
+
     entry = JournalEntry(
         graph_variant_id=variant_id,
         op=body.op,
-        payload=body.payload,
+        payload=payload,
         actor=body.actor,
     )
     try:

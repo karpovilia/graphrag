@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import Field
 
 from api.domain.corpus import Corpus, Document
 from api.domain.schema import CorpusSchema
+from api.domain.temporal import IngestionEvent
 from api.domain.types import DomainModel, Id, new_id
 from api.eda.schema_proposer import propose_corpus_schema
 from api.llm import CompletionClient
@@ -142,6 +145,126 @@ async def get_document(
     if doc.corpus_id != corpus_id:
         raise HTTPException(status_code=404, detail="document not found in corpus")
     return doc
+
+
+# ---- ingestion events (bi-temporal timeline, R2 §2) ----
+
+
+class CreateIngestionEventRequest(DomainModel):
+    label: str = Field(min_length=1)
+    event_time: datetime
+    """T — episode/publication date (when the fact became true)."""
+
+    ingested_at: datetime
+    """T' — build/ingest time (when we learned the fact)."""
+
+    graph_variant_id: Id
+    kind: str = "episode"
+    source_uri: str | None = None
+
+
+@router.post(
+    "/corpora/{corpus_id}/ingestion-events",
+    response_model=IngestionEvent,
+    status_code=201,
+)
+async def create_ingestion_event(
+    corpus_id: Id,
+    body: CreateIngestionEventRequest,
+    repo: RepositoryProtocol = Depends(get_repository),
+) -> IngestionEvent:
+    """Record one timeline unit (§2.1) and staggered-backfill the linked
+    variant's bi-temporal stamps.
+
+    Seed/demo-friendly: no LLM, no build. After creating the event we
+    distribute the variant's nodes/edges across N buckets (N = number of
+    ingestion events for the variant, sorted by ingested_at) by index;
+    each previously-unstamped node/edge gets `tx_from = bucket.ingested_at`
+    and `valid_from = bucket.event_time`. Idempotent — only fills NULLs —
+    so re-runs and incremental episodes monotonically reveal more of the
+    graph as `t` advances on the tx axis.
+    """
+
+    try:
+        await repo.get_corpus(corpus_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    try:
+        variant = await repo.get_variant(body.graph_variant_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    if variant.corpus_id != corpus_id:
+        raise HTTPException(
+            status_code=404,
+            detail=f"variant {body.graph_variant_id} not found in corpus {corpus_id}",
+        )
+
+    event = IngestionEvent(
+        corpus_id=corpus_id,
+        graph_variant_id=body.graph_variant_id,
+        label=body.label,
+        event_time=body.event_time,
+        ingested_at=body.ingested_at,
+        kind=body.kind,
+        source_uri=body.source_uri,
+    )
+    created = await repo.create_ingestion_event(event)
+
+    # Staggered backfill across all events of this variant.
+    events = await repo.list_ingestion_events(
+        corpus_id=corpus_id, variant_id=body.graph_variant_id
+    )
+    events = sorted(events, key=lambda e: e.ingested_at)
+    n_buckets = len(events)
+    if n_buckets > 0:
+        state = await repo.load_state(body.graph_variant_id)
+
+        def _bucket_for(index: int, total: int) -> IngestionEvent:
+            # bucket = index * n_buckets // total
+            b = (index * n_buckets) // total if total > 0 else 0
+            return events[min(b, n_buckets - 1)]
+
+        new_nodes = []
+        for i, node in enumerate(state.nodes):
+            if node.tx_from is None:
+                bucket = _bucket_for(i, len(state.nodes))
+                new_nodes.append(
+                    node.model_copy(
+                        update={
+                            "tx_from": bucket.ingested_at,
+                            "valid_from": bucket.event_time,
+                        }
+                    )
+                )
+            else:
+                new_nodes.append(node)
+
+        new_edges = []
+        for i, edge in enumerate(state.edges):
+            if edge.tx_from is None:
+                bucket = _bucket_for(i, len(state.edges))
+                new_edges.append(
+                    edge.model_copy(
+                        update={
+                            "tx_from": bucket.ingested_at,
+                            "valid_from": bucket.event_time,
+                        }
+                    )
+                )
+            else:
+                new_edges.append(edge)
+
+        from api.strategies.state import GraphBuildState
+
+        await repo.replace_state(
+            body.graph_variant_id,
+            GraphBuildState(
+                nodes=new_nodes, edges=new_edges, journal=list(state.journal)
+            ),
+        )
+
+    return created
 
 
 # ---- schema (entity / relation ontology) ----

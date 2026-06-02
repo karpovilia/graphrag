@@ -165,9 +165,11 @@ def test_add_and_delete_edge_round_trip() -> None:
     assert after_delete.edges == []
 
 
-def test_delete_edge_with_reason_applies() -> None:
-    """DeleteEdgePayload accepts optional `reason` (§1.4) without breaking
-    the existing apply path."""
+def test_delete_edge_with_reason_soft_invalidates() -> None:
+    """DELETE_EDGE *with* a reason is a soft delete (§1.4): the edge stays
+    in state but gets tx_to + an EdgeInvalidation stamped, instead of
+    being dropped. This is what feeds diff().invalidated and keeps the
+    edge revert-eligible (R2 §2.4)."""
     gv = new_id()
     a, b = _node("a", gv=gv), _node("b", gv=gv)
     e = _edge(a.id, b.id, gv=gv)
@@ -178,6 +180,59 @@ def test_delete_edge_with_reason_applies() -> None:
         JournalOp.DELETE_EDGE,
         {"edge_id": str(e.id), "reason": "superseded by ingest"},
     )
+    after = apply_journal_op(state, entry)
+    # Edge survives, now carrying invalidation provenance.
+    assert len(after.edges) == 1
+    survived = after.edges[0]
+    assert survived.id == e.id
+    assert survived.tx_to is not None
+    assert survived.invalidation is not None
+    assert survived.invalidation.reason == "superseded by ingest"
+    # actor "user:test" → manual curation, not auto.
+    assert survived.invalidation.auto is False
+    assert survived.tx_to == survived.invalidation.at
+
+
+def test_delete_edge_with_superseded_at_and_event_link() -> None:
+    """superseded_at (filled by the route) sets tx_to/invalidation.at, and
+    ingestion_event_id is threaded into the invalidation record. An
+    `agent:` actor marks the invalidation auto=True."""
+    from datetime import datetime, timezone
+
+    gv = new_id()
+    a, b = _node("a", gv=gv), _node("b", gv=gv)
+    e = _edge(a.id, b.id, gv=gv)
+    state = GraphBuildState(nodes=[a, b], edges=[e])
+    at = datetime(2024, 5, 20, tzinfo=timezone.utc)
+    ev_id = new_id()
+
+    entry = JournalEntry(
+        graph_variant_id=gv,
+        op=JournalOp.DELETE_EDGE,
+        payload={
+            "edge_id": str(e.id),
+            "reason": "superseded by Эпизод 3",
+            "ingestion_event_id": str(ev_id),
+            "superseded_at": at.isoformat(),
+        },
+        actor="agent:ingestion",
+    )
+    after = apply_journal_op(state, entry)
+    survived = after.edges[0]
+    assert survived.tx_to == at
+    assert survived.invalidation.at == at
+    assert survived.invalidation.ingestion_event_id == ev_id
+    assert survived.invalidation.auto is True
+
+
+def test_delete_edge_without_reason_hard_deletes() -> None:
+    """No reason → legacy hard delete (back-compat)."""
+    gv = new_id()
+    a, b = _node("a", gv=gv), _node("b", gv=gv)
+    e = _edge(a.id, b.id, gv=gv)
+    state = GraphBuildState(nodes=[a, b], edges=[e])
+
+    entry = _entry(gv, JournalOp.DELETE_EDGE, {"edge_id": str(e.id)})
     after = apply_journal_op(state, entry)
     assert after.edges == []
 

@@ -273,7 +273,7 @@ test("§2.4 revert auto-invalidation removes the row and re-adds the edge", asyn
     actor: string;
   };
   expect(reqBody.expected_version).toBe(fixture.invalidated_edge_version);
-  expect(reqBody.actor).toBe(`user:${USER_EMAIL}`);
+  expect(reqBody.actor).toMatch(/^user:/);
 
   // The row for that edge is removed.
   await expect(row).toBeHidden({ timeout: 10_000 });

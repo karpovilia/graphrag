@@ -196,6 +196,20 @@ class PostgresRepository(RepositoryProtocol):
                 journal=[_row_to_journal(r) for r in journal_rows],
             )
 
+    async def replace_state(
+        self, variant_id: Id, state: GraphBuildState
+    ) -> GraphVariant:
+        async with self._sm() as session, session.begin():
+            variant_row = await self._lock_variant(session, variant_id)
+            before = await self._load_state_in_session(session, variant_id)
+            await self._apply_diff(session, variant_id, before, state)
+            variant_row.node_count = len(state.nodes)
+            variant_row.edge_count = len(state.edges)
+            variant_row.layers_present = sorted(
+                {n.layer.value for n in state.nodes}
+            )
+            return _row_to_variant(variant_row)
+
     # ---- curation ----
 
     async def append_journal(

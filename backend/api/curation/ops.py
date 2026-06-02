@@ -9,6 +9,7 @@ without polluting the wire format.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import Field
@@ -66,7 +67,19 @@ class DeleteEdgePayload(DomainModel):
     reason: str | None = None
     """Human-readable cause (parity with MergeNodesPayload.reason). When
     an auto-invalidation delete supplies one it feeds Edge.invalidation
-    provenance (§1.4)."""
+    provenance (§1.4) — and switches the applier to *soft* delete: the
+    edge stays in state with tx_to + invalidation stamped instead of
+    being dropped. reason=None keeps the legacy hard-delete behaviour."""
+
+    ingestion_event_id: Id | None = None
+    """Which ingestion event retired this edge (§1.4 provenance). Linked
+    into Edge.invalidation. None for a manual curation delete."""
+
+    superseded_at: datetime | None = None
+    """tx_to / invalidation.at instant for the soft delete. Filled by the
+    journal-append route from the linked IngestionEvent.ingested_at (so
+    the death lands inside the historical tx window), NOT by the client.
+    Falls back to the entry timestamp when absent."""
 
 
 class DeleteNodePayload(DomainModel):
