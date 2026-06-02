@@ -37,6 +37,9 @@ class IngestionEvent(DomainModel):
     """T' — when this batch of facts was ingested."""
     source_uri: str | None = None
     kind: str = "episode"
+    event_count: int = 0
+    """How many underlying source events (messages/utterances) fell in this
+    bucket — drives the activity histogram on the scrubber (§2.1)."""
     metadata: dict = Field(default_factory=dict)
 
 

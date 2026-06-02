@@ -40,7 +40,9 @@ export function useTemporalWindow(variantId: Id) {
   // variants don't clobber each other, but a single page's two
   // LayeredGraph instances on the SAME variant share the window.
   const axis = useState<TimeAxis>(`tw:${variantId}:axis`, () => "tx");
-  const mode = useState<TemporalMode>(`tw:${variantId}:mode`, () => "instant");
+  // Range/period is the primary interaction (diff); the instant point
+  // snapshot is the secondary mode.
+  const mode = useState<TemporalMode>(`tw:${variantId}:mode`, () => "diff");
   const t = useState<string | null>(`tw:${variantId}:t`, () => null);
   const range = useState<[string, string] | null>(
     `tw:${variantId}:range`,

@@ -50,6 +50,46 @@
     return ((ms - minT.value) / span.value) * 100;
   }
 
+  function evTime(ev: IngestionEvent): number {
+    return Date.parse(props.axis === "valid" ? ev.event_time : ev.ingested_at);
+  }
+
+  // Activity heatmap: each bucket is a full-height cell whose colour
+  // intensity ∝ event_count, normalised to the busiest bucket — so the eye
+  // reads "where a lot happened vs little" along the axis.
+  const maxCount = computed(() =>
+    Math.max(1, ...props.events.map((ev) => ev.event_count ?? 0)),
+  );
+  // Events laid out left→right by the active axis (cells must tile in order).
+  const sortedEvents = computed<IngestionEvent[]>(() =>
+    [...props.events].sort((a, b) => evTime(a) - evTime(b)),
+  );
+  function cellLeftPct(i: number): number {
+    return pct(evTime(sortedEvents.value[i]!));
+  }
+  function cellWidthPct(i: number): number {
+    const arr = sortedEvents.value;
+    const next = i < arr.length - 1 ? pct(evTime(arr[i + 1]!)) : 100;
+    return Math.max(0.5, next - cellLeftPct(i));
+  }
+  function heat(ev: IngestionEvent): string {
+    const r = Math.min(1, (ev.event_count ?? 0) / maxCount.value);
+    // sequential blue ramp (light = quiet, dark = busy)
+    return `rgba(31, 119, 180, ${(0.06 + 0.9 * r).toFixed(3)})`;
+  }
+
+  // Total events inside the currently-selected period (diff) — the schematic
+  // "how much happened in this window" readout.
+  const eventsInRange = computed<number>(() => {
+    if (props.mode !== "diff") return 0;
+    const lo = Math.min(handleA.value, handleB.value);
+    const hi = Math.max(handleA.value, handleB.value);
+    return props.events.reduce((sum, ev) => {
+      const t = evTime(ev);
+      return t >= lo && t <= hi ? sum + (ev.event_count ?? 0) : sum;
+    }, 0);
+  });
+
   // Current handle position(s) in ms. Default to the extremes.
   const handleA = ref<number>(minT.value);
   const handleB = ref<number>(maxT.value);
@@ -263,19 +303,22 @@
         }"
       />
 
-      <!-- event ticks -->
+      <!-- activity heatmap: one cell per bucket, colour intensity ∝ count -->
       <span
-        v-for="(ev, i) in events"
+        v-for="(ev, i) in sortedEvents"
         :key="ev.id"
         data-testid="timeline-tick"
-        :class="$style.tick"
+        :class="$style.cell"
         :style="{
-          left: `${pct(Date.parse(axis === 'valid' ? ev.event_time : ev.ingested_at))}%`,
+          left: `${cellLeftPct(i)}%`,
+          width: `${cellWidthPct(i)}%`,
+          background: heat(ev),
         }"
-        :title="eventLabel(ev)"
+        :title="`${eventLabel(ev)} · ${ev.event_count} эв.`"
         :data-i="i"
         :data-label="ev.label"
-        :data-left="pct(Date.parse(axis === 'valid' ? ev.event_time : ev.ingested_at))"
+        :data-left="cellLeftPct(i)"
+        :data-count="ev.event_count"
       />
 
       <!-- handle A -->
@@ -301,6 +344,7 @@
         {{ new Date(Math.min(handleA, handleB)).toLocaleDateString() }}
         →
         {{ new Date(Math.max(handleA, handleB)).toLocaleDateString() }}
+        · {{ eventsInRange }} эв.
       </template>
     </span>
   </div>
@@ -339,29 +383,29 @@
   .track {
     position: relative;
     flex: 1;
-    height: 24px;
+    height: 48px;
     background: var(--ksd-card-bg-color);
     border-radius: var(--gr-radius-sm);
     cursor: pointer;
   }
 
+  // Translucent highlight of the selected period (range/diff mode).
   .range {
     position: absolute;
-    top: 8px;
-    height: 8px;
-    background: rgba(31, 119, 180, 0.35);
-    border-radius: var(--gr-radius-sm);
+    top: 0;
+    bottom: 0;
+    background: rgba(31, 119, 180, 0.12);
+    border-left: 1px solid rgba(31, 119, 180, 0.5);
+    border-right: 1px solid rgba(31, 119, 180, 0.5);
     pointer-events: none;
   }
 
-  .tick {
+  // Activity heatmap cell — one per bucket, full height, colour ∝ count.
+  .cell {
     position: absolute;
-    top: 4px;
-    width: 2px;
-    height: 16px;
-    margin-left: -1px;
-    background: var(--ksd-text-secondary-color);
-    opacity: 0.6;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid var(--ksd-bg-color);
     pointer-events: auto;
   }
 

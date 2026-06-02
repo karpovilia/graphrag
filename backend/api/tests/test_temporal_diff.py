@@ -84,13 +84,33 @@ def test_materialize_valid_axis_independent_of_tx():
     assert {x.id for x in materialize_at(state, _t(25), "valid").nodes} == {n.id}
 
 
-def test_materialize_null_anchor_excluded():
+def test_materialize_tx_null_anchor_excluded():
     vid = new_id()
-    # legacy row: no tx_from anchor → excluded on tx axis
+    # no tx_from anchor → not in the graph yet → excluded on tx axis
     n = _node(vid, tx_from=None, valid_from=None)
     state = GraphBuildState(nodes=[n], edges=[])
     assert materialize_at(state, _t(5), "tx").nodes == []
-    assert materialize_at(state, _t(5), "valid").nodes == []
+
+
+def test_materialize_valid_three_forms():
+    """valid-time forms of facts extracted from text: timeless, half-open
+    (one border), and point — see _live_at."""
+    vid = new_id()
+    timeless = _node(vid, valid_from=None, valid_to=None)  # бессрочный
+    open_end = _node(vid, valid_from=_t(3), valid_to=None)  # since t=3
+    open_start = _node(vid, valid_from=None, valid_to=_t(7))  # until t=7
+    point = _node(vid, valid_from=_t(5), valid_to=_t(5))  # точечный, only t=5
+    state = GraphBuildState(
+        nodes=[timeless, open_end, open_start, point], edges=[]
+    )
+
+    def ids(t):
+        return {n.id for n in materialize_at(state, _t(t), "valid").nodes}
+
+    assert ids(1) == {timeless.id, open_start.id}  # before open_end, before point
+    assert ids(5) == {timeless.id, open_end.id, open_start.id, point.id}  # point fires
+    assert ids(6) == {timeless.id, open_end.id, open_start.id}  # point gone, still < 7
+    assert ids(9) == {timeless.id, open_end.id}  # open_start expired at 7
 
 
 # ---- temporal_diff buckets ----

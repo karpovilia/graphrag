@@ -79,6 +79,14 @@
     const times = evs.map((e) => e[key]).sort();
     scrubModel.value = [times[0], times[times.length - 1]];
   }
+  // Opening the timeline shows a full-span period diff immediately (period is
+  // the primary interaction) so the activity histogram + delta render at once.
+  function onToggleTimeline() {
+    showTimeline.value = !showTimeline.value;
+    if (showTimeline.value && tw.mode.value === "diff" && !scrubModel.value) {
+      onDiffMode();
+    }
+  }
 
   // §2.2 query-delta bridge (evidence highlight from the ask wizard).
   const queryDelta = useQueryDelta();
@@ -191,7 +199,7 @@
           type="button"
           data-testid="timeline-toggle"
           :class="[$style.toggle, showTimeline ? $style.toggle_active : '']"
-          @click="showTimeline = !showTimeline"
+          @click="onToggleTimeline"
         >
           {{ t("timeline.toggle") }}
         </button>

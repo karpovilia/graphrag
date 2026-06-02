@@ -32,26 +32,40 @@ Axis = Literal["tx", "valid"]
 def _live_at(obj: Node | Edge, t: datetime, axis: Axis) -> bool:
     """True iff `obj` is live at instant `t` under `axis`.
 
-    tx-mode:    tx_from <= t AND (tx_to IS NULL OR t < tx_to)
-    valid-mode: valid_from <= t AND (valid_to IS NULL OR t < valid_to)
+    The two axes have different semantics:
 
-    A row with a NULL `*_from` has no anchor on that axis and is excluded
-    (legacy rows have no event-time; T-mode simply skips them, documented
-    in the migration notes).
+    **tx (transaction / ingestion time)** is cumulative existence: a fact
+    enters the graph when we learn it and never un-happens. `tx_from` is a
+    required anchor — a row with NULL `tx_from` is not in the graph yet and
+    is excluded. Live iff ``tx_from <= t AND (tx_to IS NULL OR t < tx_to)``.
+
+    **valid (event / real-world time)** carries the fact's real extent and
+    supports the three forms facts extracted from text take:
+      - timeless         (valid_from=None, valid_to=None) — live at all t;
+      - open one border  (X, None) / (None, X)            — half-bounded;
+      - point            (valid_from == valid_to == X)    — live only at X.
+    A NULL border means "unbounded on that side", NOT "excluded".
     """
 
     if axis == "tx":
         start, end = obj.tx_from, obj.tx_to
-    else:
-        start, end = obj.valid_from, obj.valid_to
+        if start is None:
+            return False  # no ingestion anchor → not in the graph
+        if t < start:
+            return False
+        if end is not None and t >= end:
+            return False
+        return True
 
-    if start is None:
-        return False
-    if start > t:
+    # valid axis — open borders + point events
+    start, end = obj.valid_from, obj.valid_to
+    if start is not None and end is not None and start == end:
+        return t == start  # point event: true only at its instant
+    if start is not None and t < start:
         return False
     if end is not None and t >= end:
         return False
-    return True
+    return True  # None border = unbounded; both None = timeless
 
 
 def materialize_at(

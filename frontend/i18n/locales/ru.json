@@ -346,7 +346,7 @@
     "axisValidTip": "Valid time — когда факт был истинен в мире (event_time).",
     "axisTxTip": "Transaction time — когда мы узнали о факте (ingested_at). ADR-0002.",
     "modeInstant": "Срез",
-    "modeDiff": "Диф",
+    "modeDiff": "Период",
     "clear": "Сбросить",
     "playTip": "Проигрывание (пробел)"
   },

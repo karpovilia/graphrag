@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import re
 import time
 from collections import Counter
 from datetime import datetime, timezone
@@ -136,6 +137,10 @@ def _enumerate_weeks(dump: Path, week_range: str | None) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
+# A message block header: "YYYY-MM-DD HH:MM:SS <author>" at line start.
+_MSG_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} ", re.MULTILINE)
+
+
 def _collect_documents(
     dump: Path,
     *,
@@ -143,16 +148,36 @@ def _collect_documents(
     weeks: list[str],
     channels: list[str],
     max_files_per_week: int,
-) -> tuple[list[Document], dict[Id, datetime]]:
-    """Build one Document per .txt file. Returns the docs plus a
-    document.id -> week-Monday map for later weekly stamping."""
+) -> tuple[list[Document], dict[Id, datetime], dict[str, int]]:
+    """Build one Document per .txt file. Returns the docs, a
+    document.id -> week-Monday map for weekly stamping, and a
+    week -> message-count map for the scrubber activity histogram."""
 
     documents: list[Document] = []
     doc_week: dict[Id, datetime] = {}
+    week_counts: dict[str, int] = {}
 
+    all_channels = ("mattermost", "telegram", "calls")
     for week in weeks:
         monday = _week_monday(week)
         monday_iso = monday.isoformat()
+
+        # Activity histogram = every message across ALL channels this week,
+        # independent of the (small) build slice — so the scrubber shows true
+        # weekly volume even when the graph is built from a sample.
+        total = 0
+        for channel in all_channels:
+            chan_dir = dump / week / channel
+            if not chan_dir.is_dir():
+                continue
+            for path in sorted(chan_dir.glob("*.txt")):
+                try:
+                    total += len(_MSG_RE.findall(path.read_text(encoding="utf-8", errors="replace")))
+                except OSError:  # pragma: no cover - defensive
+                    pass
+        week_counts[week] = total
+
+        # Build documents from the selected channels (capped).
         for channel in channels:
             chan_dir = dump / week / channel
             if not chan_dir.is_dir():
@@ -184,7 +209,7 @@ def _collect_documents(
                 )
                 documents.append(doc)
                 doc_week[doc.id] = monday
-    return documents, doc_week
+    return documents, doc_week, week_counts
 
 
 # ---------------------------------------------------------------------------
@@ -196,8 +221,17 @@ def _stamp_weekly(
     state: GraphBuildState,
     doc_week: dict[Id, datetime],
 ) -> tuple[int, dict[str, int]]:
-    """In-place: set tx_from = valid_from = week-Monday on every node/edge
-    following the propagation rules in the module docstring.
+    """In-place bi-temporal stamping by week-Monday.
+
+    tx_from (existence / cumulative knowledge) = first week seen, on every
+    node/edge — this drives the "graph grows over time" scrub. valid time
+    (real-world extent) takes the form that fits the fact:
+      - chunk (a dated message) and mention/relation observations → POINT
+        (valid_from == valid_to == week);
+      - entity / community / membership → OPEN END (valid_from = first week,
+        valid_to = None — known/holds since first seen).
+    (Timeless (None, None) is reserved for definitional facts an LLM
+    extractor would mark; the structural NER pass emits none.)
 
     Returns (entities_without_week, born-histogram by week-iso)."""
 
@@ -214,7 +248,9 @@ def _stamp_weekly(
                     break
             if wk is not None:
                 chunk_week[n.id] = wk
-                n.tx_from = n.valid_from = wk
+                # chunk = a dated message block → point event in valid time
+                n.tx_from = wk
+                n.valid_from = n.valid_to = wk
 
     # entity node -> MIN week over MENTIONED_IN-linked chunks.
     # MENTIONED_IN is emitted entity -> chunk; we also accept either
@@ -309,6 +345,10 @@ def _stamp_weekly(
                     wk = cand
         if wk is not None:
             e.tx_from = e.valid_from = wk
+            # co-mention / mention observations are point events; membership
+            # is an open-ended interval (entity belongs since first seen).
+            if e.type in (EdgeType.MENTIONED_IN, EdgeType.ENTITY_RELATION):
+                e.valid_to = wk
 
     # born histogram: nodes whose tx_from == each week
     born = Counter()
@@ -375,7 +415,7 @@ async def main() -> None:
     )
     corpus = await repo.create_corpus(corpus)
 
-    documents, doc_week = _collect_documents(
+    documents, doc_week, week_counts = _collect_documents(
         dump,
         corpus_id=corpus.id,
         weeks=weeks,
@@ -449,6 +489,7 @@ async def main() -> None:
                 event_time=monday,
                 ingested_at=monday,
                 kind="week",
+                event_count=week_counts.get(week, 0),
             )
         )
 

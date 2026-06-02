@@ -390,6 +390,8 @@ export type IngestionEvent = {
   ingested_at: string;
   source_uri: string | null;
   kind: string;
+  /** Number of underlying source events in this bucket (activity histogram). */
+  event_count: number;
   metadata: Record<string, unknown>;
 };
 

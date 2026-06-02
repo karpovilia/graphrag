@@ -346,7 +346,7 @@
     "axisValidTip": "Valid time — when the fact was true in the world (event_time).",
     "axisTxTip": "Transaction time — when we learned the fact (ingested_at). ADR-0002.",
     "modeInstant": "Instant",
-    "modeDiff": "Diff",
+    "modeDiff": "Period",
     "clear": "Clear",
     "playTip": "Play (space)"
   },
