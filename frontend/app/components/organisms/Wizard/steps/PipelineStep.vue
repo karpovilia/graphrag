@@ -125,6 +125,46 @@
     wizard.invalidateDownstream(3);
   }
 
+  // Editable scalar/enum params of the currently-selected projector,
+  // surfaced as inputs (e.g. multiprojection's `normalization`). Object/
+  // array params (e.g. `projections`) are left to their schema defaults.
+  type ParamMeta = {
+    type?: string;
+    default?: unknown;
+    enum?: string[];
+    description?: string;
+  };
+  const selectedProjector = computed(() =>
+    (projectors.value ?? []).find(
+      (p) => p.name === wizard.data.value.build_request.projector,
+    ) ?? null,
+  );
+  const projectorScalarParams = computed(() => {
+    const schema = (selectedProjector.value?.params_schema ?? {}) as Record<
+      string,
+      ParamMeta
+    >;
+    return Object.entries(schema)
+      .filter(([, v]) =>
+        ["string", "number", "integer", "boolean"].includes(v?.type ?? ""),
+      )
+      .map(([key, v]) => ({ key, ...v }));
+  });
+  function projectorParamValue(key: string, def: unknown): unknown {
+    const pp = wizard.data.value.build_request.projector_params ?? {};
+    return pp[key] ?? def;
+  }
+  function setProjectorParam(key: string, raw: unknown, type?: string) {
+    let v: unknown = raw;
+    if (type === "number" || type === "integer") v = raw === "" ? undefined : Number(raw);
+    if (type === "boolean") v = Boolean(raw);
+    const pp = { ...(wizard.data.value.build_request.projector_params ?? {}) };
+    if (v === undefined || v === "") delete pp[key];
+    else pp[key] = v;
+    wizard.data.value.build_request.projector_params = pp;
+    wizard.invalidateDownstream(3);
+  }
+
   function setOutputLanguage(e: Event) {
     const lang = (e.target as HTMLSelectElement).value === "en" ? "en" : "ru";
     wizard.data.value.build_request.output_language = lang;
@@ -345,6 +385,38 @@
           <p :class="$style.summary">{{ p.summary }}</p>
         </li>
       </ul>
+      <div
+        v-if="selectedProjector && projectorScalarParams.length"
+        :class="$style.projectorParams"
+      >
+        <p :class="$style.note">{{ t("wizard.pipeline.projectorParamsHint") }}</p>
+        <div
+          v-for="p in projectorScalarParams"
+          :key="p.key"
+          :class="$style.paramRow"
+        >
+          <label :class="$style.paramLabel" :title="p.description ?? ''">{{ p.key }}</label>
+          <select
+            v-if="p.enum && p.enum.length"
+            :value="projectorParamValue(p.key, p.default)"
+            @change="setProjectorParam(p.key, ($event.target as HTMLSelectElement).value, p.type)"
+          >
+            <option v-for="opt in p.enum" :key="opt" :value="opt">{{ opt }}</option>
+          </select>
+          <input
+            v-else-if="p.type === 'boolean'"
+            type="checkbox"
+            :checked="Boolean(projectorParamValue(p.key, p.default))"
+            @change="setProjectorParam(p.key, ($event.target as HTMLInputElement).checked, p.type)"
+          />
+          <input
+            v-else
+            type="number"
+            :value="projectorParamValue(p.key, p.default)"
+            @input="setProjectorParam(p.key, ($event.target as HTMLInputElement).value, p.type)"
+          />
+        </div>
+      </div>
     </div>
 
     <div :class="$style.section">
@@ -439,6 +511,31 @@
     margin: 0;
     font-size: 0.875rem;
     color: var(--ksd-text-secondary-color);
+  }
+
+  .projectorParams {
+    margin-top: var(--gr-space-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gr-space-xs);
+  }
+
+  .paramRow {
+    display: flex;
+    align-items: center;
+    gap: var(--gr-space-sm);
+
+    select,
+    input {
+      flex: 0 0 auto;
+    }
+  }
+
+  .paramLabel {
+    min-width: 9rem;
+    font-size: 0.8125rem;
+    font-family: var(--gr-font-mono, monospace);
+    color: var(--ksd-text-main-color);
   }
 
   .chain {

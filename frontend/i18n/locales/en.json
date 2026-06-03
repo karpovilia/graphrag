@@ -171,6 +171,7 @@
       "projectorHint": "After community detection, derives per-layer NPMI-weighted co-occurrence edges and keeps the 2n-5n most locally-significant ones via a disparity filter — kills the megahub and gives a readable graph per layer.",
       "projectorNone": "(none)",
       "projectorNoneHint": "Skip backbone projection. The graph keeps only its original inter-layer and ENTITY_RELATION edges.",
+      "projectorParamsHint": "Projector parameters (e.g. the two-mode projection normalization).",
       "outputLanguage": "Language for entities and summaries",
       "outputLanguageHint": "Language used to normalise entity names and generate summaries.",
       "tooltipCost": "Cost:",

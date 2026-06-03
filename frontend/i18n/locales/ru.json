@@ -171,6 +171,7 @@
       "projectorHint": "После community detection строит intra-layer связи на каждом слое из совместной встречаемости (NPMI) и оставляет 2n-5n самых значимых через disparity-filter — это убирает мегахаб и даёт читаемый граф per layer.",
       "projectorNone": "(none)",
       "projectorNoneHint": "Не добавлять backbone-связи. Граф останется с исходными inter-layer рёбрами и ENTITY_RELATION.",
+      "projectorParamsHint": "Параметры проектора (например, нормировка two-mode проекции).",
       "outputLanguage": "Язык вершин и summary",
       "outputLanguageHint": "На каком языке нормализовать имена сущностей и генерировать summary.",
       "tooltipCost": "Стоимость:",
