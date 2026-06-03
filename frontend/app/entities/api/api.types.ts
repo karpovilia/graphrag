@@ -490,6 +490,30 @@ export type GraphLayout = {
   owner: "self" | "global";
 };
 
+// On-the-fly two-mode layer-pair projection (#6).
+export type ProjectionOption = {
+  target_layer: string;
+  via: string;
+  neighbor_layer: string;
+  label: string;
+  edge_count: number;
+};
+
+export type ProjectionEdge = {
+  source_node_id: Id;
+  target_node_id: Id;
+  weight: number;
+  raw_count: number;
+};
+
+export type ProjectionResult = {
+  target_layer: string;
+  via: string;
+  neighbor_layer: string;
+  normalization: string;
+  edges: ProjectionEdge[];
+};
+
 // Conversational curation assistant — free-text instructions over a variant.
 export type AssistantChatMessage = {
   role: "user" | "assistant";

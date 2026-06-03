@@ -82,7 +82,13 @@
     "typeFilter": "type: {type}",
     "clearFilter": "× clear",
     "showCommunities": "show communities",
-    "askRag": "🔍 Ask (RAG)"
+    "askRag": "🔍 Ask (RAG)",
+    "layerProjection": "🔗 Layer pair",
+    "projPair": "Projection",
+    "projNorm": "Normalization",
+    "projApply": "Show",
+    "projClear": "Clear",
+    "projEdges": "{n} derived edges ({norm})"
   },
   "wizard": {
     "build": {

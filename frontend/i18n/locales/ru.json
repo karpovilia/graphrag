@@ -82,7 +82,13 @@
     "typeFilter": "тип: {type}",
     "clearFilter": "× сброс",
     "showCommunities": "показать communities",
-    "askRag": "🔍 Спросить (RAG)"
+    "askRag": "🔍 Спросить (RAG)",
+    "layerProjection": "🔗 Пара слоёв",
+    "projPair": "Проекция",
+    "projNorm": "Нормировка",
+    "projApply": "Показать",
+    "projClear": "Убрать",
+    "projEdges": "{n} производных рёбер ({norm})"
   },
   "wizard": {
     "build": {

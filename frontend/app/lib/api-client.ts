@@ -31,6 +31,8 @@ import type {
   Suggestion,
   SuggestionStatus,
   ProjectionImportanceResult,
+  ProjectionOption,
+  ProjectionResult,
   TemporalDiff,
   TimeAxis,
   ToolInvocation,
@@ -213,6 +215,29 @@ export function createApiClient(baseUrl = "") {
       request<ProjectionImportanceResult>(
         `/api/graphs/${id}/projection-importance?include_direct=${includeDirect}`,
       ),
+    projectionAvailable: (id: Id) =>
+      request<ProjectionOption[]>(`/api/graphs/${id}/projection/available`),
+    projection: (
+      id: Id,
+      p: {
+        target_layer: string;
+        via: string;
+        neighbor_layer: string;
+        normalization?: string;
+        top_k?: number;
+        max_edges?: number;
+      },
+    ) => {
+      const q = new URLSearchParams({
+        target_layer: p.target_layer,
+        via: p.via,
+        neighbor_layer: p.neighbor_layer,
+        normalization: p.normalization ?? "newman",
+        top_k: String(p.top_k ?? 8),
+        max_edges: String(p.max_edges ?? 2000),
+      });
+      return request<ProjectionResult>(`/api/graphs/${id}/projection?${q}`);
+    },
     revertInvalidation: (
       id: Id,
       edgeId: Id,

@@ -25,6 +25,8 @@
     GraphVariant,
     Node,
     ProjectionImportanceResult,
+    ProjectionOption,
+    ProjectionResult,
     TimeAxis,
   } from "@/entities/api";
   import { useTemporalWindow } from "@/composables/use-temporal-window";
@@ -84,6 +86,43 @@
     } finally {
       loadingImportance.value = false;
     }
+  }
+  // #6 — layer-pair projection picker.
+  const showProjection = ref(false);
+  const projOptions = ref<ProjectionOption[]>([]);
+  const projChoiceKey = ref<string>("");
+  const projNorm = ref<string>("newman");
+  const projResult = ref<ProjectionResult | null>(null);
+  const projLoading = ref(false);
+  function projKey(o: ProjectionOption) {
+    return `${o.target_layer}|${o.via}|${o.neighbor_layer}`;
+  }
+  async function toggleProjection() {
+    showProjection.value = !showProjection.value;
+    if (showProjection.value && !projOptions.value.length) {
+      projOptions.value = await api.graphs.projectionAvailable(variantId);
+      const first = projOptions.value.find((o) => o.target_layer === "entity");
+      projChoiceKey.value = projKey(first ?? projOptions.value[0] ?? ({} as ProjectionOption));
+    }
+  }
+  async function applyProjection() {
+    const o = projOptions.value.find((x) => projKey(x) === projChoiceKey.value);
+    if (!o) return;
+    projLoading.value = true;
+    try {
+      projResult.value = await api.graphs.projection(variantId, {
+        target_layer: o.target_layer,
+        via: o.via,
+        neighbor_layer: o.neighbor_layer,
+        normalization: projNorm.value,
+      });
+      showDerived.value = true; // make the overlay visible
+    } finally {
+      projLoading.value = false;
+    }
+  }
+  function clearProjection() {
+    projResult.value = null;
   }
   const highlightedNodes = ref<id[]>([]);
   // Fine-grained graph filters, lifted here so LayersPanel (table) and
@@ -161,15 +200,40 @@
     if (tw.mode.value !== "instant" || !ids) return all;
     return all.filter((n) => ids.has(String(n.id)));
   });
-  const hasDerived = computed(() =>
-    (edges.value ?? []).some((e) => e.type === "derived"),
+  const hasDerived = computed(
+    () =>
+      (edges.value ?? []).some((e) => e.type === "derived") ||
+      projectionEdges.value.length > 0,
   );
+  // #6 — on-the-fly layer-pair projection overlaid as synthetic DERIVED edges.
+  const projectionEdges = computed<Edge[]>(() => {
+    const p = projResult.value;
+    if (!p || !variant.value) return [];
+    return p.edges.map(
+      (e) =>
+        ({
+          id: `proj:${e.source_node_id}:${e.target_node_id}`,
+          graph_variant_id: variant.value!.id,
+          type: "derived",
+          source_node_id: e.source_node_id,
+          target_node_id: e.target_node_id,
+          weight: e.weight,
+          relation: `${p.target_layer} via ${p.neighbor_layer}`,
+        }) as unknown as Edge,
+    );
+  });
   const visibleEdges = computed<Edge[]>(() => {
     let all = edges.value ?? [];
     if (!showDerived.value) all = all.filter((e) => e.type !== "derived");
     const ids = tw.visibleEdgeIds.value;
-    if (tw.mode.value !== "instant" || !ids) return all;
-    return all.filter((e) => ids.has(String(e.id)));
+    if (tw.mode.value === "instant" && ids) {
+      all = all.filter((e) => ids.has(String(e.id)));
+    }
+    // Synthetic projection edges aren't time-stamped — show them whenever a
+    // projection is loaded and derived edges are visible.
+    return showDerived.value && projectionEdges.value.length
+      ? [...all, ...projectionEdges.value]
+      : all;
   });
 
   const selectedNode = computed<Node | null>(() => {
@@ -291,6 +355,14 @@
           {{ t("layersPanel.open") }}
         </button>
         <button
+          type="button"
+          data-testid="projection-toggle"
+          :class="[$style.toggle, showProjection ? $style.toggle_active : '']"
+          @click="toggleProjection"
+        >
+          {{ t("graph.layerProjection") }}
+        </button>
+        <button
           v-if="timeline && timeline.length"
           type="button"
           data-testid="timeline-toggle"
@@ -372,6 +444,55 @@
         </ol>
         <p v-if="importance.note" :class="$style.importanceNote">{{ importance.note }}</p>
       </template>
+    </div>
+
+    <div v-if="showProjection" :class="$style.importancePanel" data-testid="projection-panel">
+      <header :class="$style.importanceHead">
+        <strong>{{ t("graph.layerProjection") }}</strong>
+        <button type="button" :class="$style.importanceClose" @click="showProjection = false">
+          ×
+        </button>
+      </header>
+      <label :class="$style.projRow">
+        <span :class="$style.projLabel">{{ t("graph.projPair") }}</span>
+        <select v-model="projChoiceKey" :class="$style.projSelect" data-testid="projection-pair">
+          <option v-for="o in projOptions" :key="projKey(o)" :value="projKey(o)">
+            {{ o.label }}
+          </option>
+        </select>
+      </label>
+      <label :class="$style.projRow">
+        <span :class="$style.projLabel">{{ t("graph.projNorm") }}</span>
+        <select v-model="projNorm" :class="$style.projSelect">
+          <option value="newman">newman</option>
+          <option value="cosine">cosine</option>
+          <option value="jaccard">jaccard</option>
+          <option value="min">min</option>
+          <option value="raw">raw</option>
+        </select>
+      </label>
+      <div :class="$style.projActions">
+        <button
+          type="button"
+          :class="$style.toggle"
+          :disabled="projLoading || !projChoiceKey"
+          data-testid="projection-apply"
+          @click="applyProjection"
+        >
+          {{ projLoading ? t("common.loading") : t("graph.projApply") }}
+        </button>
+        <button
+          v-if="projResult"
+          type="button"
+          :class="$style.toggle"
+          @click="clearProjection"
+        >
+          {{ t("graph.projClear") }}
+        </button>
+      </div>
+      <p v-if="projResult" :class="$style.importanceNote" data-testid="projection-count">
+        {{ t("graph.projEdges", { n: projResult.edges.length, norm: projResult.normalization }) }}
+      </p>
     </div>
 
     <div v-if="error" :class="$style.error">
@@ -763,6 +884,32 @@
     border: 1px solid var(--ksd-border-color);
     border-radius: var(--gr-radius-md);
     box-shadow: var(--gr-shadow-md);
+  }
+
+  .projRow {
+    display: flex;
+    align-items: center;
+    gap: var(--gr-space-xs);
+    margin-top: var(--gr-space-xs);
+  }
+  .projLabel {
+    flex: 0 0 5rem;
+    font-size: 0.8125rem;
+    color: var(--ksd-text-secondary-color, var(--ksd-text-main-color));
+  }
+  .projSelect {
+    flex: 1;
+    padding: var(--gr-space-2xs) var(--gr-space-xs);
+    border: 1px solid var(--ksd-border-color);
+    border-radius: var(--gr-radius-sm);
+    background: var(--ksd-bg-color);
+    color: var(--ksd-text-main-color);
+    font-size: 0.8125rem;
+  }
+  .projActions {
+    display: flex;
+    gap: var(--gr-space-xs);
+    margin-top: var(--gr-space-sm);
   }
 
   .importanceHead {
