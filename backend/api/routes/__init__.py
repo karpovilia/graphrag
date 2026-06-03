@@ -2,6 +2,7 @@
 
 from .agents import router as agents_router
 from .analysis import router as analysis_router
+from .assistant import router as assistant_router
 from .auth import router as auth_router
 from .corpora import router as corpora_router
 from .eda import router as eda_router
@@ -15,6 +16,7 @@ from .tools import router as tools_router
 __all__ = [
     "agents_router",
     "analysis_router",
+    "assistant_router",
     "auth_router",
     "corpora_router",
     "eda_router",

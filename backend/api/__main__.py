@@ -20,6 +20,7 @@ from api.llm.yandex import YandexCompletionClient, YandexEmbeddingClient
 from api.routes import (
     agents_router,
     analysis_router,
+    assistant_router,
     auth_router,
     corpora_router,
     eda_router,
@@ -55,6 +56,7 @@ app.include_router(temporal_router)
 app.include_router(journal_export_router)
 app.include_router(tools_router)
 app.include_router(analysis_router)
+app.include_router(assistant_router)
 
 
 @app.on_event("startup")
