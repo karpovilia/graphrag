@@ -488,5 +488,14 @@
     "truncated": "Showing the first 200 nodes — narrow your filters.",
     "hideUnnamedCommunities": "Hide unnamed communities",
     "hideUnnamedCommunitiesHint": "Hides community nodes without a summary (e.g. \"leiden #4\", \"Community 12\")."
+  },
+  "rag": {
+    "title": "RAG — ask the graph",
+    "placeholder": "Ask the graph… (Enter to ask, Shift+Enter for newline)",
+    "ask": "Ask",
+    "asking": "Thinking…",
+    "history": "Query history",
+    "historyEmpty": "No history yet.",
+    "showOnGraph": "Show on graph ({n})"
   }
 }

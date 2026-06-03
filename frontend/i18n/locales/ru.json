@@ -488,5 +488,14 @@
     "truncated": "Показано первые 200 узлов — уточните фильтры.",
     "hideUnnamedCommunities": "Скрыть безымянные communities",
     "hideUnnamedCommunitiesHint": "Прячет узлы community без summary (например, «leiden #4», «Community 12»)."
+  },
+  "rag": {
+    "title": "RAG — вопрос к графу",
+    "placeholder": "Спросите граф… (Enter — спросить, Shift+Enter — перенос)",
+    "ask": "Спросить",
+    "asking": "Думаю…",
+    "history": "История запросов",
+    "historyEmpty": "История пуста.",
+    "showOnGraph": "Показать на графе ({n})"
   }
 }

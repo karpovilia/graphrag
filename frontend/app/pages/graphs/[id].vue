@@ -10,6 +10,7 @@
   import EdgeDrawer from "@/components/organisms/EdgeDrawer/EdgeDrawer.vue";
   import SuggestionsSidebar from "@/components/organisms/SuggestionsSidebar/SuggestionsSidebar.vue";
   import AssistantChat from "@/components/organisms/AssistantChat/AssistantChat.vue";
+  import RagDialog from "@/components/organisms/RagDialog/RagDialog.vue";
   import TimelineScrubber from "@/components/organisms/TimelineScrubber/TimelineScrubber.vue";
   import AxisToggle from "@/components/organisms/TimelineScrubber/AxisToggle.vue";
   import DeltaLegend from "@/components/organisms/DeltaLegend/DeltaLegend.vue";
@@ -71,6 +72,7 @@
   const showLayers = ref(false);
   const showTimeline = ref(false);
   const showAssistant = ref(false);
+  const showRag = ref(false);
   // DERIVED higher-order projection edges are dense → hidden by default.
   const showDerived = ref(false);
   // #1c projection-importance panel (lazy-loaded on first open).
@@ -331,13 +333,14 @@
       </div>
 
       <div :class="$style.headerActions">
-        <NuxtLink
-          to="/wizards/ask"
-          data-testid="ask-rag-link"
-          :class="$style.toggle"
+        <button
+          type="button"
+          data-testid="ask-rag-toggle"
+          :class="[$style.toggle, showRag ? $style.toggle_active : '']"
+          @click="showRag = !showRag"
         >
           {{ t("graph.askRag") }}
-        </NuxtLink>
+        </button>
         <button
           type="button"
           data-testid="assistant-toggle"
@@ -521,6 +524,13 @@
         :slice-node-ids="visibleNodes.map((n) => String(n.id))"
         @close="showAssistant = false"
         @variant-changed="onVariantChanged"
+        @highlight="(ids) => (highlightedNodes = ids)"
+      />
+
+      <RagDialog
+        v-if="showRag"
+        :variant="variant"
+        @close="showRag = false"
         @highlight="(ids) => (highlightedNodes = ids)"
       />
 
