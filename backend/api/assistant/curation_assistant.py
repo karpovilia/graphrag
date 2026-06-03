@@ -82,6 +82,9 @@ _SYSTEM_PROMPT = """\
 Используй highlight_nodes с "query" (подстрока имени, регистр игнорируется) — \
 система сама подсветит ВСЕ совпадения в срезе. Можно сузить по "type". Не \
 выбирай один узел и не уточняй «кого именно» — подсвечивай все подходящие.
+- Если пользователь ссылается на «их», «эти», «найденные», «подсвеченные» — \
+это узлы из блока «Подсвечено сейчас» (результат прошлого поиска). Применяй \
+операцию к каждому из них (например, слить всех в один survivor, удалить всех).
 - Для мутаций используй ТОЛЬКО id из блока КОНТЕКСТ; не выдумывай id. Если цель \
 мутации не найдена — верни пустой "ops" и переспроси в "message".
 - Минимум операций. Тип в retype_node бери из существующих, если есть \
@@ -120,6 +123,7 @@ class CurationAssistant:
         message: str,
         selected_node_ids: list[str] | None = None,
         slice_node_ids: list[str] | None = None,
+        highlighted_node_ids: list[str] | None = None,
         history: list[dict[str, str]] | None = None,
         max_context_nodes: int = 400,
     ) -> AssistantPlan:
@@ -131,10 +135,13 @@ class CurationAssistant:
             if slice_set is not None
             else state.nodes
         )
+        hl_set = {str(h) for h in highlighted_node_ids or []}
+        highlighted = [n for n in state.nodes if str(n.id) in hl_set]
         context = build_graph_context(
             state,
             selected_node_ids=selected_node_ids or [],
             mentioned=_mentioned_nodes(message, slice_nodes),
+            highlighted=highlighted,
             slice_nodes=slice_nodes,
             in_slice=slice_set is not None,
             max_nodes=max_context_nodes,
@@ -194,6 +201,7 @@ def build_graph_context(
     *,
     selected_node_ids: list[str],
     mentioned: list[Node] | None = None,
+    highlighted: list[Node] | None = None,
     slice_nodes: list[Node] | None = None,
     in_slice: bool = False,
     max_nodes: int = 400,
@@ -221,6 +229,15 @@ def build_graph_context(
                     f"  • id={n.id} имя={n.name!r} тип={n.type} слой={n.layer.value}"
                     + (f" summary={n.summary[:120]!r}" if n.summary else "")
                 )
+    if highlighted:
+        lines.append(
+            "Подсвечено сейчас (результат прошлого поиска — это «их», «эти», "
+            "«найденные»):"
+        )
+        for n in highlighted:
+            lines.append(
+                f"  • id={n.id} имя={n.name!r} тип={n.type} слой={n.layer.value}"
+            )
     if mentioned:
         lines.append("Узлы, упомянутые в запросе:")
         for n in mentioned:

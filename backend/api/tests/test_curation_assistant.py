@@ -161,6 +161,40 @@ async def test_highlight_type_filter():
     assert plan.highlight == [str(org.id)]
 
 
+async def test_followup_acts_on_previously_highlighted():
+    # Turn 2: "слей их всех в первого" — model references the highlighted set.
+    a, b, c = _ent("Миша Карелин"), _ent("Миша"), _ent("Мишке")
+    state = _state([a, b, c])
+    llm = OneShotLLM(
+        {"message": "Сливаю всех найденных Миш в «Миша Карелин».",
+         "ops": [{
+             "op": "merge_nodes", "survivor_id": str(a.id),
+             "absorbed_ids": [str(b.id), str(c.id)], "reason": "дубли Миши",
+             "survivor_name": "Миша Карелин",
+             "absorbed_names": ["Миша", "Мишке"], "entity_type": "PERSON",
+         }]}
+    )
+    plan = await CurationAssistant(llm).plan(
+        state,
+        message="слей их всех в Мишу Карелина",
+        highlighted_node_ids=[str(a.id), str(b.id), str(c.id)],
+    )
+    assert len(plan.ops) == 1
+    p = plan.ops[0].payload
+    assert p["survivor_id"] == str(a.id)
+    assert set(p["absorbed_ids"]) == {str(b.id), str(c.id)}
+
+
+def test_context_shows_highlighted_block():
+    a, b = _ent("Миша"), _ent("Пётр")
+    state = _state([a, b])
+    ctx = build_graph_context(
+        state, selected_node_ids=[], highlighted=[a]
+    )
+    assert "Подсвечено сейчас" in ctx
+    assert str(a.id) in ctx
+
+
 def test_context_lists_selection_types_and_edges():
     a = _ent("Воксисом", "PERSON")
     b = _ent("Иван", "PERSON")

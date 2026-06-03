@@ -43,6 +43,9 @@ class AssistantRequest(DomainModel):
     slice_node_ids: list[str] = Field(default_factory=list)
     """Ids of the nodes currently visible (the "текущий срез") — scopes
     find/highlight. Empty = whole graph."""
+    highlighted_node_ids: list[str] = Field(default_factory=list)
+    """Ids the assistant highlighted on the previous turn — carried back so a
+    follow-up ("слей их всех", "удали этих") resolves «их»/«эти»."""
     history: list[ChatMessage] = Field(default_factory=list)
     expected_version: int = Field(ge=0)
     actor: str = Field(default="user:ui", min_length=1)
@@ -90,6 +93,7 @@ async def assistant_chat(
         message=body.message,
         selected_node_ids=body.selected_node_ids,
         slice_node_ids=body.slice_node_ids,
+        highlighted_node_ids=body.highlighted_node_ids,
         history=[m.model_dump() for m in body.history],
     )
 
