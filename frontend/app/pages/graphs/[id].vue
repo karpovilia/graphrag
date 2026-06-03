@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { useAsyncData } from "nuxt/app";
-  import { computed, onMounted, ref, watch } from "vue";
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
   import { useRoute } from "vue-router";
   import { useI18n } from "vue-i18n";
 
@@ -58,6 +58,12 @@
 
   const selectedNodes = ref<id[]>([]);
   const selectedLink = ref<id | null>(null);
+  // Merge-by-click: while the NodeDrawer is in merge-pick mode, the next
+  // graph node click selects the *absorbed* node instead of moving the
+  // drawer. `mergePickTarget` carries that click down to the drawer, which
+  // owns the actual merge call.
+  const mergePicking = ref(false);
+  const mergePickTarget = ref<Node | null>(null);
   const showSuggestions = ref(false);
   const showLayers = ref(false);
   const showTimeline = ref(false);
@@ -170,6 +176,29 @@
     return (nodes.value ?? []).find((n) => n.id === id) ?? null;
   });
 
+  // Graph selection sink. In merge-pick mode a single click on a *different*
+  // node is the absorbed target — capture it and keep the survivor selected
+  // so the drawer stays put; any other selection exits pick mode normally.
+  function onSelectNodes(ids: id[]) {
+    if (mergePicking.value) {
+      const survivor = selectedNodes.value[0];
+      if (ids.length === 1 && ids[0] !== survivor) {
+        mergePickTarget.value =
+          (nodes.value ?? []).find((n) => n.id === ids[0]) ?? null;
+        return; // don't move the drawer off the survivor
+      }
+      // clicked elsewhere / cleared selection → abandon the pick
+      mergePicking.value = false;
+      mergePickTarget.value = null;
+    }
+    selectedNodes.value = ids;
+  }
+
+  function onMergePickCancel() {
+    mergePicking.value = false;
+    mergePickTarget.value = null;
+  }
+
   // Edge counterpart — drives EdgeDrawer when the user clicks a link
   // (CityGraph already mutex's selectedNodes vs selectedLink).
   const selectedEdge = computed<Edge | null>(() => {
@@ -199,11 +228,21 @@
 
   // §2.6 — auto-start the tour on ?walkthrough=1 (explicit) or on a first
   // visit (localStorage 'gr:walkthrough:seen' unset). Graph page only.
+  // Esc cancels an in-flight merge pick (the LayeredGraph's own Esc only
+  // clears the active layer, so we add a page-level guard).
+  function onPageKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape" && mergePicking.value) {
+      onMergePickCancel();
+    }
+  }
+
   onMounted(() => {
     if (route.query.walkthrough === "1" || !walkthrough.hasSeen()) {
       walkthrough.start();
     }
+    window.addEventListener("keydown", onPageKeydown);
   });
+  onBeforeUnmount(() => window.removeEventListener("keydown", onPageKeydown));
 </script>
 
 <template>
@@ -338,7 +377,17 @@
           :class="$style.temporalError"
         />
 
-        <div data-testid="graph-canvas" :class="$style.canvas">
+        <div
+          data-testid="graph-canvas"
+          :class="[$style.canvas, mergePicking ? $style.canvas_picking : '']"
+        >
+          <div
+            v-if="mergePicking"
+            data-testid="merge-pick-banner"
+            :class="$style.mergePickBanner"
+          >
+            {{ t("graph.mergePickBanner") }}
+          </div>
           <!-- §2.3 transient ripple marker — lets e2e detect the ~600ms
                edit cascade is running and which source painted it. -->
           <span
@@ -356,7 +405,8 @@
             :highlighted-node-ids="highlightedNodes"
             :delta-index="deltaIndex"
             :delta-source="deltaSource"
-            v-model:selectedNodes="selectedNodes"
+            :selectedNodes="selectedNodes"
+            @update:selectedNodes="onSelectNodes"
             v-model:selectedLink="selectedLink"
             v-model:typeFilter="typeFilter"
             v-model:hideUnnamedCommunities="hideUnnamedCommunities"
@@ -440,8 +490,11 @@
         :cascade="cascade"
         :all-nodes="nodes ?? []"
         :all-edges="edges ?? []"
+        :merge-pick-target="mergePickTarget"
         @close="selectedNodes = []"
         @variant-changed="onVariantChanged"
+        @merge-pick-start="mergePicking = true"
+        @merge-pick-cancel="onMergePickCancel"
       />
       <EdgeDrawer
         v-else-if="selectedEdge"
@@ -582,6 +635,26 @@
     flex: 1;
     overflow: hidden;
     position: relative;
+  }
+
+  .canvas_picking {
+    cursor: crosshair;
+    box-shadow: inset 0 0 0 2px var(--ksd-accent-color);
+  }
+
+  .mergePickBanner {
+    position: absolute;
+    top: var(--gr-space-sm);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    padding: var(--gr-space-2xs) var(--gr-space-sm);
+    border-radius: var(--gr-radius-sm);
+    background: var(--ksd-accent-color);
+    color: #fff;
+    font-size: 0.8125rem;
+    box-shadow: var(--gr-shadow-sm, 0 1px 4px rgb(0 0 0 / 30%));
+    pointer-events: none;
   }
 
   .cascadeMarker {

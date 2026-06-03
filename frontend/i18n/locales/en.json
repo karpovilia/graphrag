@@ -65,6 +65,7 @@
     "documentLoadFailed": "Failed to load document"
   },
   "graph": {
+    "mergePickBanner": "Merge mode: click the duplicate node on the graph (Esc to cancel).",
     "layerLabel": "Layer:",
     "showAll": "all",
     "layerMap": "layer map",
@@ -297,10 +298,9 @@
     "sourcesTitle": "Sources",
     "curationTitle": "Actions",
     "mergeAction": "Merge with…",
-    "mergeSearchPlaceholder": "Find a node on the same layer…",
-    "mergeNoResults": "No matches.",
+    "mergePickPrompt": "Click the duplicate node on the graph to absorb it into \"{name}\".",
+    "mergeSaving": "Merging…",
     "mergeCancel": "Cancel",
-    "mergeConfirmHint": "Absorb \"{name}\" into the current node",
     "splitAction": "Split…",
     "splitTitle": "Split this node",
     "splitHint": "Distribute sources between two new nodes. L → first, R → second. Both names are required and must differ.",

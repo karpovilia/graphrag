@@ -29,6 +29,11 @@
     /** Full node list from the host page — used by the merge picker so we
      * don't refetch /api/graphs/{id}/nodes per drawer mount. */
     allNodes?: Node[];
+    /** The node the user clicked on the graph while merge-pick mode is
+     * active. The host page captures the next graph click and feeds it
+     * here; the drawer confirms the merge (this node = survivor, the
+     * clicked node = absorbed). Null when no pick is pending. */
+    mergePickTarget?: Node | null;
     /** Full edge list — passed to SplitNodeModal so it can show the
      * incident edges and let the operator route each one to a branch. */
     allEdges?: Edge[];
@@ -38,10 +43,15 @@
     actor: "user:ui",
     allNodes: () => [],
     allEdges: () => [],
+    mergePickTarget: null,
   });
   const emit = defineEmits<{
     (e: "close"): void;
     (e: "variant-changed", variant: GraphVariant): void;
+    /** Merge-pick mode toggled on (the page should route the next graph
+     * click here as the absorbed node) / off (cancelled or done). */
+    (e: "merge-pick-start"): void;
+    (e: "merge-pick-cancel"): void;
   }>();
   const { t } = useI18n();
   const api = useApi();
@@ -82,8 +92,10 @@
       renameErrorRaw.value = null;
       summaryEditing.value = false;
       summaryErrorRaw.value = null;
-      mergePickerOpen.value = false;
-      mergeQuery.value = "";
+      if (mergePickerOpen.value) {
+        mergePickerOpen.value = false;
+        emit("merge-pick-cancel");
+      }
       mergeErrorRaw.value = null;
       splitOpen.value = false;
     },
@@ -220,34 +232,41 @@
       .sort((a, b) => b.count - a.count);
   });
 
-  // ---- merge picker ----
+  // ---- merge by clicking a node on the graph ----
+  // The survivor is THIS drawer's node; the absorbed node is picked by
+  // clicking it on the graph (not searched — the operator already sees the
+  // dup right there). The host page captures the next graph click while
+  // `mergePickerOpen` and feeds it back via the `mergePickTarget` prop.
   const mergePickerOpen = ref(false);
-  const mergeQuery = ref("");
   const mergeSaving = ref(false);
   const mergeErrorRaw = ref<unknown>(null);
 
-  const mergeCandidates = computed<Node[]>(() => {
-    const q = mergeQuery.value.trim().toLowerCase();
-    const self = props.node.id;
-    const layer = props.node.layer;
-    return (props.allNodes ?? [])
-      .filter((n) => n.id !== self && n.layer === layer)
-      .filter((n) =>
-        q ? (n.name ?? "").toLowerCase().includes(q) : true,
-      )
-      .slice(0, 8);
-  });
-
   function startMerge() {
     mergePickerOpen.value = true;
-    mergeQuery.value = "";
     mergeErrorRaw.value = null;
+    emit("merge-pick-start");
   }
 
   function cancelMerge() {
     mergePickerOpen.value = false;
     mergeErrorRaw.value = null;
+    emit("merge-pick-cancel");
   }
+
+  // A graph click arrived while picking → confirm the merge against it.
+  watch(
+    () => props.mergePickTarget,
+    (target) => {
+      if (
+        target &&
+        mergePickerOpen.value &&
+        !mergeSaving.value &&
+        target.id !== props.node.id
+      ) {
+        confirmMerge(target);
+      }
+    },
+  );
 
   async function confirmMerge(absorbed: Node) {
     mergeSaving.value = true;
@@ -268,7 +287,7 @@
       });
       emit("variant-changed", result.variant);
       mergePickerOpen.value = false;
-      mergeQuery.value = "";
+      emit("merge-pick-cancel");
     } catch (e) {
       mergeErrorRaw.value = e;
     } finally {
@@ -558,38 +577,19 @@
         </button>
       </div>
 
-      <div v-if="mergePickerOpen" :class="$style.mergeBox">
-        <input
-          v-model="mergeQuery"
-          type="search"
-          :placeholder="t('node.mergeSearchPlaceholder')"
-          :class="$style.mergeInput"
-          :disabled="mergeSaving"
-        />
-        <ul :class="$style.mergeList">
-          <li v-if="!mergeCandidates.length" :class="$style.muted">
-            {{ t("node.mergeNoResults") }}
-          </li>
-          <li
-            v-for="cand in mergeCandidates"
-            :key="cand.id"
-          >
-            <button
-              type="button"
-              data-testid="node-merge-pick"
-              :class="$style.mergePick"
-              :disabled="mergeSaving"
-              @click="confirmMerge(cand)"
-              :title="t('node.mergeConfirmHint', { name: cand.name })"
-            >
-              <strong>{{ cand.name }}</strong>
-              <span :class="$style.muted">{{ cand.type }}</span>
-            </button>
-          </li>
-        </ul>
+      <div
+        v-if="mergePickerOpen"
+        data-testid="node-merge-pick-mode"
+        :class="$style.mergeBox"
+      >
+        <p :class="$style.mergeHint">
+          <span v-if="mergeSaving">{{ t("node.mergeSaving") }}</span>
+          <span v-else>{{ t("node.mergePickPrompt", { name: node.name }) }}</span>
+        </p>
         <div :class="$style.formActions">
           <button
             type="button"
+            data-testid="node-merge-cancel"
             :class="$style.renameCancel"
             :disabled="mergeSaving"
             @click="cancelMerge"
@@ -948,47 +948,10 @@
     border-radius: var(--gr-radius-sm);
     background: var(--ksd-bg-color);
   }
-  .mergeInput {
-    padding: var(--gr-space-2xs) var(--gr-space-xs);
-    border: 1px solid var(--ksd-border-color);
-    border-radius: var(--gr-radius-sm);
-    background: var(--ksd-bg-color);
-    color: var(--ksd-text-main-color);
-    font-size: 0.875rem;
-  }
-  .mergeList {
-    list-style: none;
+  .mergeHint {
     margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--gr-space-2xs);
-    max-height: 220px;
-    overflow-y: auto;
-  }
-  .mergePick {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    padding: var(--gr-space-2xs) var(--gr-space-xs);
-    border: 1px solid var(--ksd-border-color);
-    border-radius: var(--gr-radius-sm);
-    background: transparent;
-    color: var(--ksd-text-main-color);
-    cursor: pointer;
-    text-align: left;
     font-size: 0.875rem;
-
-    &:hover:not(:disabled) {
-      border-color: var(--ksd-accent-color);
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    color: var(--ksd-text-secondary-color, var(--ksd-text-main-color));
   }
 
   .temporal {

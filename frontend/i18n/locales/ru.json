@@ -65,6 +65,7 @@
     "documentLoadFailed": "Не удалось загрузить документ"
   },
   "graph": {
+    "mergePickBanner": "Режим объединения: кликните узел-дубликат на графе (Esc — отмена).",
     "layerLabel": "Layer:",
     "showAll": "all",
     "layerMap": "layer map",
@@ -297,10 +298,9 @@
     "sourcesTitle": "Источники",
     "curationTitle": "Действия",
     "mergeAction": "Объединить с…",
-    "mergeSearchPlaceholder": "Найти узел того же слоя…",
-    "mergeNoResults": "Ничего не найдено.",
+    "mergePickPrompt": "Кликните на графе узел-дубликат, который поглотить в «{name}».",
+    "mergeSaving": "Объединяю…",
     "mergeCancel": "Отмена",
-    "mergeConfirmHint": "Поглотить «{name}» в текущий узел",
     "splitAction": "Разбить…",
     "splitTitle": "Разбить узел",
     "splitHint": "Распределите источники между двумя новыми узлами. L — первый, R — второй. Имена обязательны и должны различаться.",
