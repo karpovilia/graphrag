@@ -27,6 +27,24 @@ class YandexSettings(BaseModel):
     embedding_dim: int = 256
 
 
+class GLMSettings(BaseModel):
+    """Local GLM (vLLM) reachable over an SSH tunnel — powers the
+    merge-pattern learning agent (`merge_pattern_learner`).
+
+    Defaults to the dev tunnel: `ssh -L 18000:10.42.0.200:8000 user@192.168.2.48`.
+    `enable_thinking=False` is load-bearing: glm-4.x-flash is a thinking
+    model and returns empty `content` with a small `max_tokens` budget
+    unless thinking is disabled (passed through as an `extra_body` chat
+    template kwarg, which vLLM honours).
+    """
+
+    base_url: str = "http://127.0.0.1:18000/v1"
+    api_key: str = "EMPTY"
+    model: str = "glm-4.7-flash"
+    timeout_s: float = 120.0
+    enable_thinking: bool = False
+
+
 class PostgresSettings(BaseModel):
     host: str = "localhost"
     port: int = 5432
@@ -89,6 +107,7 @@ class R2Settings(BaseSettings):
 
     deepseek: DeepseekSettings = DeepseekSettings()
     yandex: YandexSettings = YandexSettings()
+    glm: GLMSettings = GLMSettings()
     postgres: PostgresSettings = PostgresSettings()
     storage: StorageSettings = StorageSettings()
     auth: AuthSettings = AuthSettings()

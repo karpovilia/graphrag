@@ -9,6 +9,7 @@ the repository turns into a JournalEntry via the Phase 2 applier).
 from .community_stability import CommunityStabilityScout
 from .entity_dedup import EntityDeduplicator
 from .low_confidence_triplet import LowConfidenceTriplet
+from .merge_pattern_learner import MergePatternLearner
 from .orphan_rescuer import OrphanRescuer
 from .relation_consistency import RelationConsistencyChecker
 from .similarity_merge_candidates import SimilarityMergeCandidates
@@ -18,6 +19,7 @@ __all__ = [
     "CommunityStabilityScout",
     "EntityDeduplicator",
     "LowConfidenceTriplet",
+    "MergePatternLearner",
     "OrphanRescuer",
     "RelationConsistencyChecker",
     "SimilarityMergeCandidates",
