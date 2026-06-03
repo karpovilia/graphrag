@@ -55,6 +55,8 @@
   const showSuggestions = ref(false);
   const showLayers = ref(false);
   const showTimeline = ref(false);
+  // DERIVED higher-order projection edges are dense → hidden by default.
+  const showDerived = ref(false);
   const highlightedNodes = ref<id[]>([]);
   // Fine-grained graph filters, lifted here so LayersPanel (table) and
   // LayeredGraph (canvas) share the same state — pick "PERSON" in the
@@ -131,8 +133,12 @@
     if (tw.mode.value !== "instant" || !ids) return all;
     return all.filter((n) => ids.has(String(n.id)));
   });
+  const hasDerived = computed(() =>
+    (edges.value ?? []).some((e) => e.type === "derived"),
+  );
   const visibleEdges = computed<Edge[]>(() => {
-    const all = edges.value ?? [];
+    let all = edges.value ?? [];
+    if (!showDerived.value) all = all.filter((e) => e.type !== "derived");
     const ids = tw.visibleEdgeIds.value;
     if (tw.mode.value !== "instant" || !ids) return all;
     return all.filter((e) => ids.has(String(e.id)));
@@ -216,6 +222,14 @@
           @click="onToggleTimeline"
         >
           {{ t("timeline.toggle") }}
+        </button>
+        <button
+          v-if="hasDerived"
+          type="button"
+          :class="[$style.toggle, showDerived ? $style.toggle_active : '']"
+          @click="showDerived = !showDerived"
+        >
+          {{ showDerived ? t("graph.hideDerived") : t("graph.showDerived") }}
         </button>
         <a
           :href="api.graphs.exportJournalUrl(variant.id, 'json')"

@@ -72,6 +72,8 @@
     "hotkeyHint": "hotkeys: 1/2/3/4 · Tab · L · F · 0/Esc",
     "showSuggestions": "Show suggestions",
     "hideSuggestions": "Hide suggestions",
+    "showDerived": "Show derived edges",
+    "hideDerived": "Hide derived edges",
     "exportJournal": "Export journal (JSON)",
     "backToCorpora": "← Back to corpora",
     "typeFilter": "type: {type}",

@@ -70,7 +70,8 @@ export type EdgeType =
   | "member_of"
   | "summary_of"
   | "entity_relation"
-  | "backbone";
+  | "backbone"
+  | "derived";
 
 export type GraphVariantStatus =
   | "pending"

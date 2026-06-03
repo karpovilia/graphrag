@@ -336,7 +336,9 @@
         target: e.target_node_id,
         data: {
           id: i,
-          color: delta.color ?? "#888888",
+          // Higher-order (2nd-order) DERIVED projection edges get a distinct
+          // violet so they read apart from builder edges; delta overrides win.
+          color: delta.color ?? (e.type === "derived" ? "#9467bd" : "#888888"),
           alpha,
           strike: delta.strike || undefined,
           explanation: e.explanation ?? e.relation ?? "",

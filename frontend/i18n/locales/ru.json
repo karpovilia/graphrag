@@ -72,6 +72,8 @@
     "hotkeyHint": "хоткеи: 1/2/3/4 · Tab · L · F · 0/Esc",
     "showSuggestions": "Показать Suggestions",
     "hideSuggestions": "Скрыть Suggestions",
+    "showDerived": "Показать производные рёбра",
+    "hideDerived": "Скрыть производные рёбра",
     "exportJournal": "Экспорт журнала (JSON)",
     "backToCorpora": "← К списку корпусов",
     "typeFilter": "тип: {type}",
