@@ -274,7 +274,12 @@
       "evidenceNodesLabel": "Evidence узлов",
       "openCompare": "Открыть сравнение вариантов →",
       "showOnGraph": "Показать на графе →",
-      "showingOnGraph": "Готовлю граф…"
+      "showingOnGraph": "Готовлю граф…",
+      "configTitle": "Конфиги RAG",
+      "configEmpty": "Сохранённых конфигов пока нет.",
+      "configNamePlaceholder": "Название конфига…",
+      "configSave": "Сохранить",
+      "configDelete": "Удалить конфиг"
     },
     "assistant": {
       "openCta": "💬 спросить ассистента",

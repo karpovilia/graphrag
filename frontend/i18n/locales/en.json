@@ -274,7 +274,12 @@
       "evidenceNodesLabel": "Evidence nodes",
       "openCompare": "Open variant comparison →",
       "showOnGraph": "Show on graph →",
-      "showingOnGraph": "Preparing graph…"
+      "showingOnGraph": "Preparing graph…",
+      "configTitle": "RAG configs",
+      "configEmpty": "No saved configs yet.",
+      "configNamePlaceholder": "Config name…",
+      "configSave": "Save",
+      "configDelete": "Delete config"
     },
     "assistant": {
       "openCta": "💬 ask the assistant",

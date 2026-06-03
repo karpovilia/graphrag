@@ -3,6 +3,7 @@
   import { useI18n } from "vue-i18n";
 
   import { useAskWizard } from "@/composables/use-ask-wizard";
+  import RagConfigGear from "@/components/organisms/AskWizard/RagConfigGear.vue";
 
   const { t } = useI18n();
   const wizard = useAskWizard();
@@ -18,10 +19,13 @@
 <template>
   <section :class="$style.step">
     <h2 :class="$style.title">{{ t("wizard.ask.queryTitle") }}</h2>
-    <p :class="$style.hint">
-      <strong>{{ wizard.data.value.reasoner }}</strong> ·
-      <strong>{{ wizard.data.value.aggregator }}</strong>
-    </p>
+    <div :class="$style.strategyRow">
+      <p :class="$style.hint">
+        <strong>{{ wizard.data.value.reasoner }}</strong> ·
+        <strong>{{ wizard.data.value.aggregator }}</strong>
+      </p>
+      <RagConfigGear />
+    </div>
 
     <textarea
       v-model="wizard.data.value.query"
@@ -65,6 +69,13 @@
   .hint {
     margin: 0;
     color: var(--ksd-text-secondary-color);
+  }
+
+  .strategyRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gr-space-sm);
   }
 
   .textarea {
