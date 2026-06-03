@@ -59,6 +59,26 @@ export function getNodeOptions(
         if (!ctx) return;
         const r = (o.radius ?? 1) as number;
 
+        // Minimum SCREEN-space node size. The package draws the node circle
+        // in graph coords scaled by the zoom k, so on strong zoom-out r*k
+        // goes sub-pixel and the whole graph fades to nothing. Read the live
+        // scale and, when a node would render below MIN_SCREEN_PX, paint a
+        // floor dot of radius MIN_SCREEN_PX/k (→ constant on-screen size) so
+        // the graph stays a visible cloud at any zoom.
+        const k =
+          (this as unknown as { areaTransform?: { k?: number } }).areaTransform
+            ?.k ?? 1;
+        const MIN_SCREEN_PX = 1.6;
+        if (k > 0 && r * k < MIN_SCREEN_PX) {
+          ctx.save();
+          ctx.globalAlpha = (o.alpha as number | undefined) ?? data.alpha ?? 1;
+          ctx.fillStyle = (data.color as string | undefined) ?? "#888888";
+          ctx.beginPath();
+          ctx.arc(x, y, MIN_SCREEN_PX / k, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
         if (data.glow) {
           ctx.save();
           ctx.globalAlpha = 0.4;
