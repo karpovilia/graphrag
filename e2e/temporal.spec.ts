@@ -278,7 +278,7 @@ test("§2.4 revert auto-invalidation removes the row and re-adds the edge", asyn
   await gotoAndSettle(page, `/graphs/${fixture.variant_leiden_id}`);
 
   // The invalidation-panel only mounts in DIFF mode when the diff window
-  // has invalidated edges. Open the temporal view, switch to Диф (diff),
+  // has invalidated edges. Open the temporal view, switch to Период (diff),
   // then click the scrubber track near its left edge — that emits a
   // [t_a, t_b] range spanning the events (handle B stays at the max), which
   // the host turns into GET .../diff. The auto-invalidated edge (alive at
@@ -287,7 +287,7 @@ test("§2.4 revert auto-invalidation removes the row and re-adds the edge", asyn
   await page.getByTestId("timeline-toggle").click();
   await expect(page.getByTestId("graph-canvas")).toBeVisible();
 
-  await page.getByRole("button", { name: "Диф", exact: true }).click();
+  await page.getByRole("button", { name: "Период", exact: true }).click();
 
   // Emit the diff range by clicking the track near its left edge so handle
   // A moves to ~min while handle B stays at ~max → widest window.
