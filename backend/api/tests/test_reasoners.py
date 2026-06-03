@@ -134,7 +134,7 @@ def test_stub_reasoners_have_descriptors(cls, name, layers) -> None:
 
 @pytest.mark.parametrize(
     "cls",
-    [MicrosoftGlobalSearch, MicrosoftLocalSearch, LightRAGDualKeyword],
+    [MicrosoftGlobalSearch, MicrosoftLocalSearch],
 )
 async def test_stub_reasoners_raise_not_implemented(cls) -> None:
     inst = cls()
@@ -145,3 +145,53 @@ async def test_stub_reasoners_raise_not_implemented(cls) -> None:
             params={},
             loader=_StaticLoader({}),
         )
+
+
+# ---- LightRAGDualKeyword (dual-level keyword retrieval) ----
+
+
+def _community(name: str, summary: str | None = None) -> Node:
+    return Node(
+        graph_variant_id=new_id(),
+        layer=Layer.COMMUNITY,
+        type="COMMUNITY",
+        granularity=2,
+        name=name,
+        summary=summary,
+    )
+
+
+async def test_lightrag_dual_splits_local_entities_and_global_themes() -> None:
+    gv = new_id()
+    entity = _node("Voxys")  # low-level hit on "voxys"
+    other = _node("Мария")  # no hit
+    theme = _community("Кластер 3", summary="Обсуждение интеграции Voxys")  # global hit
+    loader = _StaticLoader({gv: [entity, other, theme]})
+
+    result = await LightRAGDualKeyword().reason(
+        query="интеграция Voxys",
+        graph_variant_ids=[gv],
+        params={},
+        loader=loader,
+    )
+
+    assert entity.id in result.evidence_node_ids
+    assert theme.id in result.evidence_node_ids
+    assert other.id not in result.evidence_node_ids
+    assert "сущности" in result.text.lower()
+    assert "темы" in result.text.lower()
+    assert result.metadata["local_count"] == 1
+    assert result.metadata["global_count"] == 1
+
+
+async def test_lightrag_dual_empty_when_no_match() -> None:
+    gv = new_id()
+    loader = _StaticLoader({gv: [_node("Мария")]})
+    result = await LightRAGDualKeyword().reason(
+        query="квантовая хромодинамика",
+        graph_variant_ids=[gv],
+        params={},
+        loader=loader,
+    )
+    assert result.evidence_node_ids == []
+    assert result.confidence == 0.0
