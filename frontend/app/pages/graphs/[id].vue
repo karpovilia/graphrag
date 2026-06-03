@@ -9,6 +9,7 @@
   import NodeDrawer from "@/components/organisms/NodeDrawer/NodeDrawer.vue";
   import EdgeDrawer from "@/components/organisms/EdgeDrawer/EdgeDrawer.vue";
   import SuggestionsSidebar from "@/components/organisms/SuggestionsSidebar/SuggestionsSidebar.vue";
+  import AssistantChat from "@/components/organisms/AssistantChat/AssistantChat.vue";
   import TimelineScrubber from "@/components/organisms/TimelineScrubber/TimelineScrubber.vue";
   import AxisToggle from "@/components/organisms/TimelineScrubber/AxisToggle.vue";
   import DeltaLegend from "@/components/organisms/DeltaLegend/DeltaLegend.vue";
@@ -67,6 +68,7 @@
   const showSuggestions = ref(false);
   const showLayers = ref(false);
   const showTimeline = ref(false);
+  const showAssistant = ref(false);
   // DERIVED higher-order projection edges are dense → hidden by default.
   const showDerived = ref(false);
   // #1c projection-importance panel (lazy-loaded on first open).
@@ -261,6 +263,14 @@
       <div :class="$style.headerActions">
         <button
           type="button"
+          data-testid="assistant-toggle"
+          :class="[$style.toggle, showAssistant ? $style.toggle_active : '']"
+          @click="showAssistant = !showAssistant"
+        >
+          {{ t("assistant.toggle") }}
+        </button>
+        <button
+          type="button"
           :class="[$style.toggle, showSuggestions ? $style.toggle_active : '']"
           @click="showSuggestions = !showSuggestions"
         >
@@ -368,6 +378,14 @@
         :cascade="cascade"
         @variant-changed="onVariantChanged"
         @highlight="(ids) => (highlightedNodes = ids)"
+      />
+
+      <AssistantChat
+        v-if="showAssistant"
+        :variant="variant"
+        :selected-node-ids="selectedNodes.map(String)"
+        @close="showAssistant = false"
+        @variant-changed="onVariantChanged"
       />
 
       <div :class="$style.canvasWrap">

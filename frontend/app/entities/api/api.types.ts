@@ -489,3 +489,31 @@ export type GraphLayout = {
   positions: Record<string, [number, number]>;
   owner: "self" | "global";
 };
+
+// Conversational curation assistant — free-text instructions over a variant.
+export type AssistantChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type AssistantRequest = {
+  message: string;
+  selected_node_ids?: string[];
+  history?: AssistantChatMessage[];
+  expected_version: number;
+  actor?: string;
+};
+
+export type AppliedOp = {
+  op: string;
+  payload: Record<string, unknown>;
+  ok: boolean;
+  error?: string | null;
+};
+
+export type AssistantResponse = {
+  message: string;
+  applied: AppliedOp[];
+  variant: GraphVariant;
+  recompute_ms: number;
+};

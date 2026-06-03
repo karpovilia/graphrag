@@ -280,6 +280,15 @@
       "stepContextInline": "Step context:"
     }
   },
+  "assistantChat": {
+    "toggle": "🛠 Assistant",
+    "title": "Curation assistant",
+    "close": "Close",
+    "placeholder": "Tell me what to fix in the graph — I'll pick the operations and apply them. E.g. \"delete the 'Да' node\", \"Воксисом is an organisation, change its type\", \"merge the selected node with its duplicate\".",
+    "inputPlaceholder": "What should I fix?  (Enter to send, Shift+Enter for newline)",
+    "send": "Send",
+    "sending": "Thinking…"
+  },
   "node": {
     "noTools": "No applicable tools.",
     "lastResult": "Last result",

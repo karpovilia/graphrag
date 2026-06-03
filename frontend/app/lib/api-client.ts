@@ -7,6 +7,8 @@
 import { useRuntimeConfig } from "nuxt/app";
 
 import type {
+  AssistantRequest,
+  AssistantResponse,
   AtSnapshot,
   BuildVariantRequest,
   Corpus,
@@ -220,6 +222,11 @@ export function createApiClient(baseUrl = "") {
         `/api/graphs/${id}/invalidations/${edgeId}/revert`,
         { method: "POST", body: JSON.stringify(body) },
       ),
+    assistant: (id: Id, body: AssistantRequest) =>
+      request<AssistantResponse>(`/api/graphs/${id}/assistant`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
     getLayout: (id: Id) =>
       request<GraphLayout>(`/api/graphs/${id}/layout`),
     putLayout: (id: Id, positions: Record<string, [number, number]>) =>
