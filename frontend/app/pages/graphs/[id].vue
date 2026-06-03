@@ -267,7 +267,7 @@
           :class="[$style.toggle, showAssistant ? $style.toggle_active : '']"
           @click="showAssistant = !showAssistant"
         >
-          {{ t("assistant.toggle") }}
+          {{ t("assistantChat.toggle") }}
         </button>
         <button
           type="button"

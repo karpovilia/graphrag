@@ -267,6 +267,13 @@
       const alpha = combineAlpha(layerAlpha, delta.alpha);
 
       const isHighlighted = highlightSet.has(String(n.id));
+      // Spotlight: when a highlight set is active (assistant "найди…",
+      // sidebar hover), the matches glow at full alpha and everything else
+      // dims hard — otherwise a halo on a few nodes is invisible in a dense
+      // cloud. No active highlight → leave alpha as the layer/delta result.
+      const spotlightActive = highlightSet.size > 0;
+      const effectiveAlpha =
+        spotlightActive && !isHighlighted ? Math.min(alpha, 0.08) : alpha;
       cityNodes.push({
         id: n.id,
         // top-level `name` is what @krainovsd/graph renders as the
@@ -274,8 +281,6 @@
         // UUID `id`. `data.texts` is consumed by custom textDraw hooks
         // (none wired yet) — keep both so a future hook can show summary too.
         name: n.name,
-        // The lib draws a halo when `highlight: true`. Sidebar hovers
-        // toggle this via the `highlightedNodeIds` prop.
         highlight: isHighlighted || undefined,
         data: {
           texts: [
@@ -286,10 +291,13 @@
           // so the delta tint is animatable and the wrapper no longer
           // bakes alpha into an 8-digit hex.
           color: baseColorOrDelta(color),
-          alpha,
+          alpha: effectiveAlpha,
           size: layerSize(n.layer),
           strike: delta.strike || undefined,
-          glow: delta.glow || undefined,
+          // The visible halo is drawn from `data.glow` (get-node-options
+          // nodeExtraDraw) — drive it from the highlight set too, not just
+          // born/evidence deltas, so search/sidebar highlights actually show.
+          glow: delta.glow || isHighlighted || undefined,
           deltaState: delta.state,
         },
       } as ICityGraphNode);
