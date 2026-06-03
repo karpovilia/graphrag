@@ -35,6 +35,9 @@
 
   type Turn = AssistantChatMessage & { applied?: AppliedOp[] };
   const turns = ref<Turn[]>([]);
+  // The assistant's own memory of what it last highlighted — carried into the
+  // next turn so "слей их всех" / "удали этих" resolve to that set.
+  const lastHighlight = ref<string[]>([]);
   const input = ref("");
   const sending = ref(false);
   const errorRaw = ref<unknown>(null);
@@ -60,6 +63,7 @@
         message: text,
         selected_node_ids: props.selectedNodeIds,
         slice_node_ids: props.sliceNodeIds,
+        highlighted_node_ids: lastHighlight.value,
         history,
         expected_version: props.variant.version,
         actor: props.actor,
@@ -71,8 +75,12 @@
       });
       // Any successful op bumped the variant → repaint the graph.
       if (res.applied.some((a) => a.ok)) emit("variant-changed", res.variant);
-      // Read-only find/highlight → light up the matches on the graph.
-      if (res.highlight && res.highlight.length) emit("highlight", res.highlight);
+      // Read-only find/highlight → light up the matches + remember them so a
+      // follow-up ("слей их всех") can act on the set.
+      if (res.highlight && res.highlight.length) {
+        lastHighlight.value = res.highlight;
+        emit("highlight", res.highlight);
+      }
       void scrollDown();
     } catch (e) {
       errorRaw.value = e;

@@ -500,6 +500,7 @@ export type AssistantRequest = {
   message: string;
   selected_node_ids?: string[];
   slice_node_ids?: string[];
+  highlighted_node_ids?: string[];
   history?: AssistantChatMessage[];
   expected_version: number;
   actor?: string;
