@@ -27,7 +27,7 @@ from api.auth.dependency import optional_user
 from api.domain.corpus import Document
 from api.domain.curation import JournalEntry, JournalOp
 from api.domain.graph import Edge as DomainEdge
-from api.domain.graph import GraphLayout, GraphVariant, Layer
+from api.domain.graph import EdgeType, GraphLayout, GraphVariant, Layer
 from api.domain.graph import Node as DomainNode
 from api.domain.types import DomainModel, Id, new_id
 from api.domain.user import User
@@ -635,6 +635,23 @@ _RESUMMARIZE_SYSTEM = (
 )
 
 
+def _mentioned_chunk_ids(state, node_id: Id) -> list[str]:
+    """Chunk-node ids linked to a node by a MENTIONED_IN edge (either
+    direction — the builder emits entity→chunk, but accept both)."""
+    nid = str(node_id)
+    chunk_ids: list[str] = []
+    seen: set[str] = set()
+    for e in state.edges:
+        if e.type != EdgeType.MENTIONED_IN:
+            continue
+        src, tgt = str(e.source_node_id), str(e.target_node_id)
+        other = tgt if src == nid else src if tgt == nid else None
+        if other is not None and other not in seen:
+            seen.add(other)
+            chunk_ids.append(other)
+    return chunk_ids
+
+
 def _snippet(text: str, start: int, end: int, pad: int = 120) -> str:
     """Carve out the span with a little context on both sides so the LLM
     sees the entity in its sentence, not just the mention."""
@@ -676,17 +693,28 @@ async def resummarize_node(
     if node is None:
         raise HTTPException(status_code=404, detail=f"node {node_id} not found")
 
-    if not node.provenance:
+    # Entity nodes carry no spans of their own — their evidence lives on the
+    # chunk nodes they're MENTIONED_IN. Gather the node's own provenance plus
+    # the provenance of every chunk it's linked to, so summaries work for
+    # entities (not just chunks).
+    spans = list(node.provenance)
+    chunk_ids = _mentioned_chunk_ids(state, node_id)
+    chunks_by_id = {str(n.id): n for n in state.nodes if str(n.id) in chunk_ids}
+    for cid in chunk_ids:
+        ch = chunks_by_id.get(cid)
+        if ch is not None:
+            spans.extend(ch.provenance)
+    if not spans:
         raise HTTPException(
             status_code=409,
-            detail="node has no provenance spans — cannot synthesize summary",
+            detail="node has no provenance spans (no own spans, no linked chunks)",
         )
 
     docs = await repo.list_documents(variant.corpus_id)
     docs_by_id = {str(d.id): d for d in docs}
 
     snippets: list[str] = []
-    for p in node.provenance[:12]:
+    for p in spans[:12]:
         doc = docs_by_id.get(str(p.document_id))
         if doc is None or not doc.text:
             continue

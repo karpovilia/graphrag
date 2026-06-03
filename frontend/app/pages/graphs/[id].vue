@@ -517,6 +517,7 @@
         :cascade="cascade"
         :all-nodes="nodes ?? []"
         :all-edges="edges ?? []"
+        :visible-node-ids="visibleNodes.map((n) => n.id)"
         :merge-pick-target="mergePickTarget"
         @close="selectedNodes = []"
         @variant-changed="onVariantChanged"

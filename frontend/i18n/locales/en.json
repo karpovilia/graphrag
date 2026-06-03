@@ -333,7 +333,9 @@
     "splitEdgeRedirectNote": "Each edge will be redirected to its selected branch. Leaving the default (branch 1) matches the old \"send everything to the first node\" behaviour.",
     "splitNoProvenance": "This node has no sources — empty nodes will be created with the names you provide.",
     "splitConfirm": "Split",
-    "splitCancel": "Cancel"
+    "splitCancel": "Cancel",
+    "chunksTitle": "Appears in chunks",
+    "chunksNoneInWindow": "None in the current window ({total} outside)"
   },
   "edge": {
     "close": "Close",

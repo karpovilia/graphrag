@@ -37,13 +37,51 @@
     /** Full edge list — passed to SplitNodeModal so it can show the
      * incident edges and let the operator route each one to a branch. */
     allEdges?: Edge[];
+    /** Ids of the nodes currently visible (the time-window slice). When set,
+     * the "chunks this entity appears in" list is scoped to it. */
+    visibleNodeIds?: Id[];
   };
 
   const props = withDefaults(defineProps<Props>(), {
     actor: "user:ui",
     allNodes: () => [],
     allEdges: () => [],
+    visibleNodeIds: () => [],
     mergePickTarget: null,
+  });
+
+  // §2 — chunks this entity appears in (via MENTIONED_IN), scoped to the
+  // current time-window slice when one is provided. Computed from the lists
+  // the host page already holds, so no extra fetch.
+  const linkedChunks = computed(() => {
+    const nid = props.node.id;
+    const chunkIds = new Set<Id>();
+    for (const e of props.allEdges) {
+      if (e.type !== "mentioned_in") continue;
+      if (e.source_node_id === nid) chunkIds.add(e.target_node_id);
+      else if (e.target_node_id === nid) chunkIds.add(e.source_node_id);
+    }
+    const vis = props.visibleNodeIds.length
+      ? new Set(props.visibleNodeIds.map(String))
+      : null;
+    return props.allNodes
+      .filter(
+        (n) =>
+          n.layer === "chunk" &&
+          chunkIds.has(n.id) &&
+          (!vis || vis.has(String(n.id))),
+      )
+      .sort((a, b) => String(b.valid_from ?? "").localeCompare(String(a.valid_from ?? "")));
+  });
+  const linkedChunksTotal = computed(() => {
+    const nid = props.node.id;
+    const ids = new Set<Id>();
+    for (const e of props.allEdges) {
+      if (e.type !== "mentioned_in") continue;
+      if (e.source_node_id === nid) ids.add(e.target_node_id);
+      else if (e.target_node_id === nid) ids.add(e.source_node_id);
+    }
+    return ids.size;
   });
   const emit = defineEmits<{
     (e: "close"): void;
@@ -584,6 +622,24 @@
       </ul>
     </section>
 
+    <section v-if="linkedChunksTotal > 0" :class="$style.chunks">
+      <h3 :class="$style.subhead">
+        {{ t("node.chunksTitle") }}
+        <span :class="$style.muted">
+          {{ linkedChunks.length }}<template v-if="visibleNodeIds.length && linkedChunks.length !== linkedChunksTotal">/{{ linkedChunksTotal }}</template>
+        </span>
+      </h3>
+      <p v-if="!linkedChunks.length" :class="$style.muted">
+        {{ t("node.chunksNoneInWindow", { total: linkedChunksTotal }) }}
+      </p>
+      <ul v-else :class="$style.chunkList">
+        <li v-for="c in linkedChunks" :key="c.id" :class="$style.chunkItem">
+          <span :class="$style.chunkWeek">{{ fmtStamp(c.valid_from) }}</span>
+          <span :class="$style.chunkName">{{ c.name || c.id }}</span>
+        </li>
+      </ul>
+    </section>
+
     <section :class="$style.curation">
       <h3 :class="$style.subhead">{{ t("node.curationTitle") }}</h3>
       <div :class="$style.curationRow">
@@ -1002,6 +1058,40 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+  }
+  .chunks {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gr-space-2xs);
+  }
+  .chunkList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .chunkItem {
+    display: flex;
+    gap: var(--gr-space-xs);
+    font-size: 0.8125rem;
+    padding: 2px 0;
+    border-bottom: 1px solid var(--ksd-border-color);
+  }
+  .chunkWeek {
+    flex: 0 0 auto;
+    color: var(--ksd-accent-color);
+    font-variant-numeric: tabular-nums;
+  }
+  .chunkName {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ksd-text-main-color);
   }
   .curationBtn_danger {
     color: var(--ksd-danger-color, #c0392b);
