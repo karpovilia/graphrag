@@ -105,14 +105,19 @@
     }
   }
 
-  // ---- box (marquee) selection: Shift+drag ----
-  // The lib has no rectangle-select, so we draw one ourselves over the canvas.
+  // ---- lasso selection: Shift+drag a freehand loop ----
+  // The lib has no node selection, so we draw a freehand lasso over the canvas.
   // Capture-phase pointerdown claims the gesture (preventDefault + stop) so the
-  // lib's d3-zoom doesn't pan; on release we hit-test node screen positions
-  // (screenX = k·x + tx, the lib's transform convention) against the rect and
-  // write the matches into the selectedNodes model — which the assistant reads.
-  const marquee = ref<{ left: number; top: number; width: number; height: number } | null>(null);
-  let dragStart: { x: number; y: number } | null = null;
+  // lib's d3-zoom doesn't pan; we collect the path, draw it as an SVG polygon,
+  // and on release point-in-polygon-test each node's screen position
+  // (screenX = k·x + tx, the lib's transform convention) and write the matches
+  // into the selectedNodes model — which the assistant reads.
+  const lasso = ref<{ x: number; y: number }[] | null>(null);
+  const lassoPath = computed(() =>
+    lasso.value && lasso.value.length
+      ? lasso.value.map((p) => `${p.x},${p.y}`).join(" ")
+      : "",
+  );
 
   function localPoint(e: PointerEvent): { x: number; y: number } {
     const rect = containerRef.value?.getBoundingClientRect();
@@ -123,30 +128,27 @@
     if (!e.shiftKey || e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
-    dragStart = localPoint(e);
-    marquee.value = { left: dragStart.x, top: dragStart.y, width: 0, height: 0 };
+    lasso.value = [localPoint(e)];
     window.addEventListener("pointermove", onMarqueeMove, true);
     window.addEventListener("pointerup", onMarqueeUp, true);
   }
 
   function onMarqueeMove(e: PointerEvent): void {
-    if (!dragStart) return;
+    if (!lasso.value) return;
     const p = localPoint(e);
-    marquee.value = {
-      left: Math.min(dragStart.x, p.x),
-      top: Math.min(dragStart.y, p.y),
-      width: Math.abs(p.x - dragStart.x),
-      height: Math.abs(p.y - dragStart.y),
-    };
+    const last = lasso.value[lasso.value.length - 1];
+    // sample by min distance so the path stays light
+    if (!last || Math.hypot(p.x - last.x, p.y - last.y) >= 3) {
+      lasso.value = [...lasso.value, p];
+    }
   }
 
   function onMarqueeUp(): void {
     window.removeEventListener("pointermove", onMarqueeMove, true);
     window.removeEventListener("pointerup", onMarqueeUp, true);
-    const m = marquee.value;
-    marquee.value = null;
-    dragStart = null;
-    if (!m || m.width < 4 || m.height < 4 || !graphController) return;
+    const poly = lasso.value;
+    lasso.value = null;
+    if (!poly || poly.length < 3 || !graphController) return;
     const ctrl = graphController as unknown as {
       areaTransform?: { k: number; x: number; y: number };
       nodes: { id: id; x?: number; y?: number }[];
@@ -158,12 +160,30 @@
       if (typeof n.x !== "number" || typeof n.y !== "number") continue;
       const sx = t.k * n.x + t.x;
       const sy = t.k * n.y + t.y;
-      if (sx >= m.left && sx <= m.left + m.width && sy >= m.top && sy <= m.top + m.height) {
-        hit.push(n.id);
-      }
+      if (_pointInPolygon(sx, sy, poly)) hit.push(n.id);
     }
     selectedLink.value = null;
     selectedNodes.value = hit;
+  }
+
+  // Ray-casting point-in-polygon (even-odd rule).
+  function _pointInPolygon(
+    px: number,
+    py: number,
+    poly: { x: number; y: number }[],
+  ): boolean {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i]!.x;
+      const yi = poly[i]!.y;
+      const xj = poly[j]!.x;
+      const yj = poly[j]!.y;
+      const intersect =
+        yi > py !== yj > py &&
+        px < ((xj - xi) * (py - yi)) / (yj - yi) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
   }
 
   /** Rescue the zoom transform ONLY when the entire graph bbox has left
@@ -382,17 +402,14 @@
   >
     <!-- lib-owned: keep empty so Vue never diffs the canvas the lib appends -->
     <div ref="graph" :class="$style.graph"></div>
-    <div
-      v-if="marquee"
-      :class="$style.marquee"
-      data-testid="graph-marquee"
-      :style="{
-        left: marquee.left + 'px',
-        top: marquee.top + 'px',
-        width: marquee.width + 'px',
-        height: marquee.height + 'px',
-      }"
-    />
+    <svg
+      v-if="lasso"
+      :class="$style.lasso"
+      data-testid="graph-lasso"
+      aria-hidden="true"
+    >
+      <polygon :points="lassoPath" />
+    </svg>
   </div>
 </template>
 
@@ -407,11 +424,19 @@
     height: 100%;
     position: relative;
   }
-  .marquee {
+  .lasso {
     position: absolute;
+    inset: 0;
     z-index: 6;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
-    border: 1px dashed var(--ksd-accent-color);
-    background: color-mix(in srgb, var(--ksd-accent-color) 12%, transparent);
+
+    polygon {
+      fill: color-mix(in srgb, var(--ksd-accent-color) 12%, transparent);
+      stroke: var(--ksd-accent-color);
+      stroke-width: 1.5;
+      stroke-dasharray: 4 3;
+    }
   }
 </style>
