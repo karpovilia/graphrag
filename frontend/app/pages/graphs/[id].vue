@@ -384,8 +384,10 @@
         v-if="showAssistant"
         :variant="variant"
         :selected-node-ids="selectedNodes.map(String)"
+        :slice-node-ids="visibleNodes.map((n) => String(n.id))"
         @close="showAssistant = false"
         @variant-changed="onVariantChanged"
+        @highlight="(ids) => (highlightedNodes = ids)"
       />
 
       <div :class="$style.canvasWrap">

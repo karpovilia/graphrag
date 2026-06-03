@@ -15,15 +15,20 @@
     /** Currently selected node ids — passed as context so "удали эту
      * вершину" / "слей с выделенным" resolve without a search. */
     selectedNodeIds?: string[];
+    /** Ids of the nodes currently visible (the "текущий срез") — scopes
+     * find/highlight to what's on screen. */
+    sliceNodeIds?: string[];
     actor?: string;
   };
   const props = withDefaults(defineProps<Props>(), {
     selectedNodeIds: () => [],
+    sliceNodeIds: () => [],
     actor: "user:ui",
   });
   const emit = defineEmits<{
     (e: "close"): void;
     (e: "variant-changed", variant: GraphVariant): void;
+    (e: "highlight", nodeIds: string[]): void;
   }>();
   const { t } = useI18n();
   const api = useApi();
@@ -54,6 +59,7 @@
       const res = await api.graphs.assistant(props.variant.id, {
         message: text,
         selected_node_ids: props.selectedNodeIds,
+        slice_node_ids: props.sliceNodeIds,
         history,
         expected_version: props.variant.version,
         actor: props.actor,
@@ -65,6 +71,8 @@
       });
       // Any successful op bumped the variant → repaint the graph.
       if (res.applied.some((a) => a.ok)) emit("variant-changed", res.variant);
+      // Read-only find/highlight → light up the matches on the graph.
+      if (res.highlight && res.highlight.length) emit("highlight", res.highlight);
       void scrollDown();
     } catch (e) {
       errorRaw.value = e;

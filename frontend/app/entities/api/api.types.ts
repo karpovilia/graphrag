@@ -499,6 +499,7 @@ export type AssistantChatMessage = {
 export type AssistantRequest = {
   message: string;
   selected_node_ids?: string[];
+  slice_node_ids?: string[];
   history?: AssistantChatMessage[];
   expected_version: number;
   actor?: string;
@@ -514,6 +515,7 @@ export type AppliedOp = {
 export type AssistantResponse = {
   message: string;
   applied: AppliedOp[];
+  highlight: string[];
   variant: GraphVariant;
   recompute_ms: number;
 };
