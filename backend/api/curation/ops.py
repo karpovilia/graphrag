@@ -22,6 +22,13 @@ class MergeNodesPayload(DomainModel):
     survivor_id: Id
     absorbed_ids: list[Id]
     reason: str | None = None
+    survivor_name: str | None = None
+    absorbed_names: list[str] = Field(default_factory=list)
+    entity_type: str | None = None
+    """Self-describing merge provenance (§A). The absorbed node is dropped,
+    so its name is recorded here for downstream consumers that learn from
+    merge history (canonical-alias sourcing, the merge-pattern agent) without
+    re-deriving names from free-text reasons."""
     new_name: str | None = None
     """Optional rename of the survivor as part of the merge.
 

@@ -100,6 +100,9 @@ class LLMDeduplicator:
                         "survivor_id": str(survivor.id),
                         "absorbed_ids": [str(absorbed.id)],
                         "reason": decision,
+                        "survivor_name": survivor.name,
+                        "absorbed_names": [absorbed.name],
+                        "entity_type": survivor.type,
                     },
                     actor=actor,
                 )

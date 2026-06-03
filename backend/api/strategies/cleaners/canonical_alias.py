@@ -128,6 +128,9 @@ class CanonicalAlias:
                             "survivor_id": str(survivor.id),
                             "absorbed_ids": [str(absorbed.id)],
                             "reason": f"canonical alias: '{absorbed.name}' → '{cname}'",
+                            "survivor_name": cname,
+                            "absorbed_names": [absorbed.name],
+                            "entity_type": survivor.type,
                         },
                         actor=actor,
                     )
