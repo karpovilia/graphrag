@@ -14,7 +14,10 @@ export const DEFAULT_SETTINGS: ICityGraphSettings = {
   },
   graphSettings: {
     ...GRAPH_SETTINGS,
-    zoomExtent: [0.2, 40],
+    // Floor the zoom-out: below ~0.4 a big graph collapses to a speck and
+    // looks like it vanished. 0.4 keeps the whole cloud on screen but legible;
+    // get-node-options also floors each node's on-screen size as a backstop.
+    zoomExtent: [0.4, 40],
     translateExtentCoefficient: [4.5, 4.5],
   },
   linkOptions: LINK_OPTIONS,

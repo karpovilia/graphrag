@@ -68,7 +68,7 @@ export function getNodeOptions(
         const k =
           (this as unknown as { areaTransform?: { k?: number } }).areaTransform
             ?.k ?? 1;
-        const MIN_SCREEN_PX = 1.6;
+        const MIN_SCREEN_PX = 2.4;
         if (k > 0 && r * k < MIN_SCREEN_PX) {
           ctx.save();
           ctx.globalAlpha = (o.alpha as number | undefined) ?? data.alpha ?? 1;
