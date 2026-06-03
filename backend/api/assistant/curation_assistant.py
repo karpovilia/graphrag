@@ -50,6 +50,15 @@ _OP_CATALOG: dict[str, str] = {
     ),
 }
 
+# Read-only "view" actions — NOT journal mutations. The planner pulls these out
+# of the ops list and returns the node ids to highlight; nothing is persisted.
+_VIEW_CATALOG: dict[str, str] = {
+    "highlight_nodes": (
+        '{"op":"highlight_nodes","query":"<подстрока имени>","type":"<опц. TYPE>",'
+        '"node_ids":["<опц. id>"]}'
+    ),
+}
+
 # Which payload fields hold node/edge ids — used to resolve a name the model
 # may have echoed instead of the id.
 _NODE_ID_FIELDS = ("node_id", "survivor_id")
@@ -57,20 +66,27 @@ _NODE_ID_LIST_FIELDS = ("absorbed_ids",)
 
 _SYSTEM_PROMPT = """\
 Ты — ассистент-куратор графа знаний. Пользователь пишет на естественном языке, \
-что поправить в текущем графе; ты выбираешь подходящие операции курации и \
-заполняешь их. Ты НЕ объясняешь, как это сделать вручную — ты выдаёшь сам план \
-операций, который система применит (с возможностью отката).
+что сделать с текущим срезом графа; ты выбираешь подходящие операции и \
+заполняешь их. Ты НЕ объясняешь, как сделать это вручную — ты выдаёшь сам план \
+операций, который система применит (мутации — с возможностью отката).
 
-Доступные операции (формат payload):
+Операции-мутации (изменяют граф, формат payload):
 {catalog}
 
+Операции-просмотр (НИЧЕГО не меняют, только подсвечивают узлы на графе):
+{view_catalog}
+
 Правила:
-- Используй ТОЛЬКО id из блока КОНТЕКСТ. Не выдумывай id.
-- Если цель не найдена в контексте или запрос неоднозначен — верни пустой \
-"ops" и объясни/переспроси в "message".
-- Минимум операций. Тип в retype_node бери из списка существующих типов, если \
-есть синонимичный (например «организация» → существующий тип ORG).
-- "message" — короткий ответ пользователю на его языке: что ты делаешь.
+- Если пользователь просит НАЙТИ / ПОКАЗАТЬ / ПОДСВЕТИТЬ / ВЫДЕЛИТЬ узлы \
+(«найди всех Миш», «покажи организации») — это НЕ повод переспрашивать. \
+Используй highlight_nodes с "query" (подстрока имени, регистр игнорируется) — \
+система сама подсветит ВСЕ совпадения в срезе. Можно сузить по "type". Не \
+выбирай один узел и не уточняй «кого именно» — подсвечивай все подходящие.
+- Для мутаций используй ТОЛЬКО id из блока КОНТЕКСТ; не выдумывай id. Если цель \
+мутации не найдена — верни пустой "ops" и переспроси в "message".
+- Минимум операций. Тип в retype_node бери из существующих, если есть \
+синонимичный (например «организация» → ORG).
+- "message" — короткий ответ на языке пользователя: что ты делаешь.
 
 Ответ — СТРОГО JSON-объект:
 {{"message": "<ответ>", "ops": [<операция>, ...]}}\
@@ -85,6 +101,9 @@ class PlannedOp(DomainModel):
 class AssistantPlan(DomainModel):
     message: str
     ops: list[PlannedOp]
+    highlight: list[str] = []
+    """Node ids the assistant wants lit up on the graph (read-only — from
+    highlight_nodes view actions). Resolved server-side against the slice."""
 
 
 class CurationAssistant:
@@ -100,13 +119,24 @@ class CurationAssistant:
         *,
         message: str,
         selected_node_ids: list[str] | None = None,
+        slice_node_ids: list[str] | None = None,
         history: list[dict[str, str]] | None = None,
         max_context_nodes: int = 400,
     ) -> AssistantPlan:
+        # "Текущий срез" = the nodes visible on screen (temporal window etc.).
+        # Search/highlight is scoped to it; absent → the whole graph.
+        slice_set = {str(s) for s in slice_node_ids} if slice_node_ids else None
+        slice_nodes = (
+            [n for n in state.nodes if str(n.id) in slice_set]
+            if slice_set is not None
+            else state.nodes
+        )
         context = build_graph_context(
             state,
             selected_node_ids=selected_node_ids or [],
-            mentioned=_mentioned_nodes(message, state.nodes),
+            mentioned=_mentioned_nodes(message, slice_nodes),
+            slice_nodes=slice_nodes,
+            in_slice=slice_set is not None,
             max_nodes=max_context_nodes,
         )
         name_to_id = _name_index(state.nodes)
@@ -115,7 +145,8 @@ class CurationAssistant:
             Message(
                 role="system",
                 content=_SYSTEM_PROMPT.format(
-                    catalog="\n".join(f"- {v}" for v in _OP_CATALOG.values())
+                    catalog="\n".join(f"- {v}" for v in _OP_CATALOG.values()),
+                    view_catalog="\n".join(f"- {v}" for v in _VIEW_CATALOG.values()),
                 ),
             )
         ]
@@ -143,12 +174,16 @@ class CurationAssistant:
         reply = str(parsed.get("message") or "").strip() or _FALLBACK_MSG
         raw_ops = parsed.get("ops")
         ops: list[PlannedOp] = []
+        highlight: set[str] = set()
         if isinstance(raw_ops, list):
             for raw in raw_ops:
+                if isinstance(raw, dict) and raw.get("op") in _VIEW_CATALOG:
+                    highlight |= _resolve_highlight(raw, slice_nodes, name_to_id)
+                    continue
                 op = _validate_op(raw, name_to_id)
                 if op is not None:
                     ops.append(op)
-        return AssistantPlan(message=reply, ops=ops)
+        return AssistantPlan(message=reply, ops=ops, highlight=sorted(highlight))
 
 
 _FALLBACK_MSG = "Не удалось разобрать ответ модели. Уточни запрос."
@@ -159,19 +194,28 @@ def build_graph_context(
     *,
     selected_node_ids: list[str],
     mentioned: list[Node] | None = None,
+    slice_nodes: list[Node] | None = None,
+    in_slice: bool = False,
     max_nodes: int = 400,
 ) -> str:
     """Compact, id-grounded view of the graph for the prompt: the selected
     node(s) and any node named in the instruction in full (so a big graph's
     400-row cap can't hide the target), the distinct entity types (so retype
-    picks a real one), and a capped id|name|type|layer index to target by id."""
+    picks a real one), and a capped id|name|type|layer index to target by id.
+
+    `slice_nodes` (when `in_slice`) scopes the listing/types to the nodes the
+    user currently sees — the "текущий срез" — so highlight/search means
+    "in what's on screen", not the whole graph."""
+    nodes = slice_nodes if slice_nodes is not None else state.nodes
     selected = {str(s) for s in selected_node_ids}
-    types = sorted({n.type for n in state.nodes if n.layer == Layer.ENTITY and n.type})
+    types = sorted({n.type for n in nodes if n.layer == Layer.ENTITY and n.type})
 
     lines: list[str] = []
+    if in_slice:
+        lines.append(f"Текущий срез: {len(nodes)} узлов видно.")
     if selected:
         lines.append("Выделено сейчас:")
-        for n in state.nodes:
+        for n in nodes:
             if str(n.id) in selected:
                 lines.append(
                     f"  • id={n.id} имя={n.name!r} тип={n.type} слой={n.layer.value}"
@@ -186,28 +230,55 @@ def build_graph_context(
     if types:
         lines.append(f"Существующие типы сущностей: {', '.join(types)}")
 
-    # Edges incident to the selection (so 'delete this relation' has an id).
-    if selected:
-        inc = [
-            e
-            for e in state.edges
-            if str(e.source_node_id) in selected or str(e.target_node_id) in selected
-        ][:60]
-        if inc:
-            lines.append("Рёбра выделенных узлов:")
-            for e in inc:
-                lines.append(
-                    f"  • edge_id={e.id} {e.source_node_id}→{e.target_node_id}"
-                    f" тип={e.type.value}"
-                )
+    sel_ids = selected
+    inc = [
+        e
+        for e in state.edges
+        if str(e.source_node_id) in sel_ids or str(e.target_node_id) in sel_ids
+    ][:60]
+    if inc:
+        lines.append("Рёбра выделенных узлов:")
+        for e in inc:
+            lines.append(
+                f"  • edge_id={e.id} {e.source_node_id}→{e.target_node_id}"
+                f" тип={e.type.value}"
+            )
 
-    lines.append(f"Узлы (id | имя | тип | слой), до {max_nodes}:")
-    shown = sorted(state.nodes, key=lambda n: (n.layer.value, str(n.id)))[:max_nodes]
+    label = "Узлы среза" if in_slice else "Узлы"
+    lines.append(f"{label} (id | имя | тип | слой), до {max_nodes}:")
+    shown = sorted(nodes, key=lambda n: (n.layer.value, str(n.id)))[:max_nodes]
     for n in shown:
         lines.append(f"  {n.id} | {n.name} | {n.type} | {n.layer.value}")
-    if len(state.nodes) > max_nodes:
-        lines.append(f"  …и ещё {len(state.nodes) - max_nodes} узлов (сузь запрос)")
+    if len(nodes) > max_nodes:
+        lines.append(f"  …и ещё {len(nodes) - max_nodes} узлов (сузь запрос)")
     return "\n".join(lines)
+
+
+def _resolve_highlight(
+    raw: dict[str, Any], slice_nodes: list[Node], name_to_id: dict[str, str]
+) -> set[str]:
+    """Expand a highlight_nodes view action to concrete node ids, scoped to the
+    slice: explicit node_ids (names resolved) plus every node whose name
+    contains `query` (case-insensitive), optionally filtered by `type`. This is
+    the 'find all the Mishas' path — match many, never disambiguate."""
+    in_slice = {str(n.id) for n in slice_nodes}
+    valid_ids = set(name_to_id.values())
+    out: set[str] = set()
+
+    for v in raw.get("node_ids") or []:
+        rid = _resolve_id(v, name_to_id, valid_ids)
+        if isinstance(rid, str) and rid in in_slice:
+            out.add(rid)
+
+    query = str(raw.get("query") or "").strip().lower()
+    type_f = str(raw.get("type") or "").strip().lower()
+    if query or type_f:
+        for n in slice_nodes:
+            name_ok = query in (n.name or "").lower() if query else True
+            type_ok = (n.type or "").lower() == type_f if type_f else True
+            if name_ok and type_ok:
+                out.add(str(n.id))
+    return out
 
 
 def _mentioned_nodes(message: str, nodes: list[Node], cap: int = 40) -> list[Node]:

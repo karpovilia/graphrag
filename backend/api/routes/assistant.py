@@ -40,6 +40,9 @@ class ChatMessage(DomainModel):
 class AssistantRequest(DomainModel):
     message: str = Field(min_length=1)
     selected_node_ids: list[str] = Field(default_factory=list)
+    slice_node_ids: list[str] = Field(default_factory=list)
+    """Ids of the nodes currently visible (the "текущий срез") — scopes
+    find/highlight. Empty = whole graph."""
     history: list[ChatMessage] = Field(default_factory=list)
     expected_version: int = Field(ge=0)
     actor: str = Field(default="user:ui", min_length=1)
@@ -55,6 +58,8 @@ class AppliedOp(DomainModel):
 class AssistantResponse(DomainModel):
     message: str
     applied: list[AppliedOp]
+    highlight: list[str] = []
+    """Node ids to light up on the graph (read-only, from highlight_nodes)."""
     variant: GraphVariant
     recompute_ms: float = 0.0
 
@@ -84,6 +89,7 @@ async def assistant_chat(
         state,
         message=body.message,
         selected_node_ids=body.selected_node_ids,
+        slice_node_ids=body.slice_node_ids,
         history=[m.model_dump() for m in body.history],
     )
 
@@ -123,6 +129,7 @@ async def assistant_chat(
     return AssistantResponse(
         message=plan.message,
         applied=applied,
+        highlight=plan.highlight,
         variant=variant,
         recompute_ms=total_ms,
     )

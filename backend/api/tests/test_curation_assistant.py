@@ -124,6 +124,43 @@ async def test_merge_resolves_names_in_list():
     assert p["absorbed_ids"] == [str(b.id)]
 
 
+async def test_highlight_query_matches_all_in_slice():
+    # "найди всех Миш" → highlight every name containing "Миш", no disambiguation.
+    m1, m2 = _ent("Миша"), _ent("Миша Иванов")
+    other = _ent("Пётр")
+    state = _state([m1, m2, other])
+    llm = OneShotLLM(
+        {"message": "Подсветил всех Миш.",
+         "ops": [{"op": "highlight_nodes", "query": "Миш"}]}
+    )
+    plan = await CurationAssistant(llm).plan(state, message="найди всех Миш")
+    assert plan.ops == []  # view action, not a mutation
+    assert set(plan.highlight) == {str(m1.id), str(m2.id)}
+
+
+async def test_highlight_scoped_to_slice():
+    inn, out = _ent("Миша"), _ent("Миша")
+    state = _state([inn, out])
+    llm = OneShotLLM(
+        {"message": "ок", "ops": [{"op": "highlight_nodes", "query": "Миш"}]}
+    )
+    # Only `inn` is in the current slice → only it lights up.
+    plan = await CurationAssistant(llm).plan(
+        state, message="найди Миш", slice_node_ids=[str(inn.id)]
+    )
+    assert plan.highlight == [str(inn.id)]
+
+
+async def test_highlight_type_filter():
+    org, person = _ent("Сбер", "ORG"), _ent("Сбер", "PERSON")
+    state = _state([org, person])
+    llm = OneShotLLM(
+        {"message": "ок", "ops": [{"op": "highlight_nodes", "query": "Сбер", "type": "ORG"}]}
+    )
+    plan = await CurationAssistant(llm).plan(state, message="покажи организации Сбер")
+    assert plan.highlight == [str(org.id)]
+
+
 def test_context_lists_selection_types_and_edges():
     a = _ent("Воксисом", "PERSON")
     b = _ent("Иван", "PERSON")
