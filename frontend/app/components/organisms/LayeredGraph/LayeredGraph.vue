@@ -17,6 +17,10 @@
   import { useApi } from "@/lib/api-client";
 
   import LayerMap from "./LayerMap.vue";
+
+  // Matches community-node names that were never summarised: clusterer
+  // placeholder labels like "leiden #4", "Community 12", "louvain 7".
+  const UNNAMED_COMMUNITY_RE = /^\s*(leiden|louvain|bayan|community)\s*#?\s*\d+\s*$/i;
   import {
     ACTIVE_ALPHA,
     LAYER_COLORS,
@@ -74,6 +78,17 @@
     { default: () => ({}) },
   );
   const sliceMode = defineModel<boolean>("sliceMode", { default: false });
+
+  // Fine-grained filters lifted to the host page so LayersPanel and the
+  // canvas stay in sync. typeFilter: "" = no filter, else nodes must
+  // match Node.type exactly. hideUnnamedCommunities drops community-layer
+  // nodes whose name still looks like a clusterer placeholder
+  // ("leiden #4", "Community 12") and which never received a summary.
+  const typeFilter = defineModel<string>("typeFilter", { default: "" });
+  const hideUnnamedCommunities = defineModel<boolean>(
+    "hideUnnamedCommunities",
+    { default: true },
+  );
 
   const layerMapOpen = ref(false);
   const hotkeyEnabled = ref(true);
@@ -209,8 +224,20 @@
 
     const deltaIndex = props.deltaIndex;
 
+    const tf = typeFilter.value;
+    const hideUnnamed = hideUnnamedCommunities.value;
+
     const cityNodes: ICityGraphNode[] = [];
     for (const n of nodesSorted) {
+      if (tf && n.type !== tf) continue;
+      if (
+        hideUnnamed
+        && n.layer === "community"
+        && !n.summary
+        && UNNAMED_COMMUNITY_RE.test(String(n.name ?? ""))
+      ) {
+        continue;
+      }
       const layerAlpha = resolveAlpha(
         n.layer,
         activeLayer.value,
@@ -443,6 +470,23 @@
       >
         {{ t("graph.recenter") }}
       </button>
+      <button
+        v-if="typeFilter"
+        type="button"
+        :class="[$style.chip, $style.chip_filter]"
+        :title="t('graph.clearFilter')"
+        @click="typeFilter = ''"
+      >
+        {{ t("graph.typeFilter", { type: typeFilter }) }} ×
+      </button>
+      <button
+        v-if="!hideUnnamedCommunities"
+        type="button"
+        :class="[$style.chip, $style.chip_filter]"
+        @click="hideUnnamedCommunities = true"
+      >
+        {{ t("graph.showCommunities") }} ✓
+      </button>
       <span :class="$style.hint">{{ t("graph.hotkeyHint") }}</span>
     </header>
 
@@ -516,6 +560,11 @@
 
   .chip_active {
     box-shadow: 0 0 0 2px var(--ksd-accent-color);
+  }
+
+  .chip_filter {
+    border-color: var(--ksd-accent-color);
+    color: var(--ksd-accent-color);
   }
 
   .hint {

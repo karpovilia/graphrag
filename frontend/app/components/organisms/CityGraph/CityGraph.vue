@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { GraphCanvas } from "@krainovsd/graph";
+  import { GraphCanvas, type ZoomEventInterface } from "@krainovsd/graph";
   import type { ThemeName } from "@krainovsd/vue-ui";
   import { computed, toRaw, useTemplateRef, watch } from "vue";
   import type {
@@ -101,6 +101,78 @@
     if (link) {
       selectedNodes.value = [];
       selectedLink.value = link.data?.id ?? null;
+    }
+  }
+
+  /** Rescue the zoom transform ONLY when the entire graph bbox has left
+   * the viewport — otherwise leave normal pan/zoom alone (zoom-to-cursor
+   * relies on the lib's own (k, x, y) math; touching it mid-event makes
+   * the canvas jump). Fires from d3-zoom's "zoom" handler before the
+   * lib commits `areaTransform = event.transform`; mutating
+   * event.transform is enough, but we also overwrite the canvas's
+   * `__zoom` stash so the next wheel/drag resumes from the rescued
+   * state rather than drifting further off-screen.
+   *
+   * Without this, strong zoom-out lets the user pan the graph clean
+   * off-screen — translateExtent is set to ±4.5 viewports so at k=0.2
+   * there's ~4 viewports of slack in every direction. The bbox-overlap
+   * test only triggers when *no* node is visible, so a partially
+   * off-screen graph still pans freely.
+   */
+  const PAN_RESCUE_MARGIN = 40;
+  function clampZoom(
+    this: GraphCanvas<ICityGraphNodeData, ICityGraphLinkData>,
+    event: ZoomEventInterface,
+  ) {
+    const ctrl = this as unknown as {
+      area: HTMLCanvasElement | null | undefined;
+      width: number;
+      height: number;
+      nodes: { x?: number; y?: number }[];
+    };
+    if (!ctrl.area || ctrl.width <= 0 || ctrl.height <= 0) return;
+    // Only act on wheel-zoom events. Drag-pan also fires d3-zoom's
+    // "zoom" event, and rescuing mid-drag fights the user's pointer —
+    // they grab empty space, pull, and the canvas snaps back. Leave
+    // pan alone; constrain only zoom-out wheel ticks.
+    if (!(event.sourceEvent instanceof WheelEvent)) return;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let count = 0;
+    for (const n of ctrl.nodes) {
+      if (typeof n.x === "number" && typeof n.y === "number") {
+        if (n.x < minX) minX = n.x;
+        if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+        count += 1;
+      }
+    }
+    if (count === 0) return;
+    const t = event.transform;
+    const w = ctrl.width;
+    const h = ctrl.height;
+    const m = PAN_RESCUE_MARGIN;
+    // bbox corners in screen space
+    const sMinX = t.k * minX + t.x;
+    const sMaxX = t.k * maxX + t.x;
+    const sMinY = t.k * minY + t.y;
+    const sMaxY = t.k * maxY + t.y;
+    let nx = t.x;
+    let ny = t.y;
+    // Only act when the WHOLE bbox is past one edge — partial off-screen
+    // (graph half-visible because user is exploring) is fine and we
+    // mustn't fight it.
+    if (sMaxX < m) nx = m - t.k * maxX;          // bbox entirely left of viewport
+    else if (sMinX > w - m) nx = (w - m) - t.k * minX; // entirely right
+    if (sMaxY < m) ny = m - t.k * maxY;          // entirely above
+    else if (sMinY > h - m) ny = (h - m) - t.k * minY; // entirely below
+    if (nx !== t.x || ny !== t.y) {
+      const ZoomTransform = (t as unknown as {
+        constructor: new (k: number, x: number, y: number) => typeof t;
+      }).constructor;
+      const clamped = new ZoomTransform(t.k, nx, ny);
+      event.transform = clamped;
+      (ctrl.area as unknown as { __zoom: unknown }).__zoom = clamped;
     }
   }
 
@@ -212,6 +284,7 @@
           onClick,
           onSimulationEnd: emitPositions,
           onEndDragFinished: emitPositions,
+          onZoom: clampZoom,
         },
       });
 

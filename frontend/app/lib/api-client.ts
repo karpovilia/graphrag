@@ -340,6 +340,15 @@ export function createApiClient(baseUrl = "") {
         `/api/nodes/${variantId}/${nodeId}/tool_invocations${tail ? `?${tail}` : ""}`,
       );
     },
+    /** LLM-driven summary draft. Backend reads node.provenance, fetches
+     * span snippets from the corpus documents and returns the generated
+     * text WITHOUT writing to the journal — the UI shows it in the
+     * editor and the operator saves explicitly via set_summary. */
+    resummarize: (variantId: Id, nodeId: Id) =>
+      request<{ summary: string; model: string; snippet_count: number }>(
+        `/api/graphs/${variantId}/nodes/${nodeId}/resummarize`,
+        { method: "POST" },
+      ),
   };
 
   // ---- auth ----

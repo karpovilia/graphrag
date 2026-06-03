@@ -41,6 +41,15 @@
   --gr-type-place: #2ca02c;
   --gr-type-org: #1f77b4;
 
+  // Alias for an opaque card/panel surface. `--ksd-card-bg-color` is
+  // referenced ~20 places (NodeDrawer, LayersPanel, SuggestionsSidebar,
+  // login/register cards, …) but the @krainovsd/vue-ui theme tokens
+  // never defined it — so the browser was silently falling back to
+  // transparent, making floating overlays (LayersPanel over the graph
+  // canvas) unreadable. Point it at the theme's standard container
+  // surface so every consumer becomes opaque without a per-component patch.
+  --ksd-card-bg-color: var(--ksd-bg-container-color);
+
   // Status chips (running / completed / failed) on Run cards.
   --gr-status-running: #f59e0b;
   --gr-status-success: #10b981;

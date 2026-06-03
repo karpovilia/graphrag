@@ -19,7 +19,13 @@
   const { t } = useI18n();
 
   const activeLayer = ref<Layer | "all">("all");
-  const typeFilter = ref<string>("");
+  // Lifted to the parent so the canvas (LayeredGraph) and this table
+  // stay in sync — picking PERSON here filters the graph too.
+  const typeFilter = defineModel<string>("typeFilter", { default: "" });
+  const hideUnnamedCommunities = defineModel<boolean>(
+    "hideUnnamedCommunities",
+    { default: true },
+  );
   const search = ref<string>("");
 
   // Outgoing-degree per node (incoming + outgoing summed via the
@@ -149,6 +155,19 @@
       </select>
     </section>
 
+    <section :class="$style.controls">
+      <label
+        :class="$style.checkRow"
+        :title="t('layersPanel.hideUnnamedCommunitiesHint')"
+      >
+        <input
+          type="checkbox"
+          v-model="hideUnnamedCommunities"
+        />
+        <span>{{ t("layersPanel.hideUnnamedCommunities") }}</span>
+      </label>
+    </section>
+
     <section :class="$style.tableShell">
       <table :class="$style.table">
         <thead>
@@ -272,6 +291,15 @@
   }
   .search {
     flex: 1;
+  }
+  .checkRow {
+    display: flex;
+    align-items: center;
+    gap: var(--gr-space-2xs);
+    font-size: 0.875rem;
+    color: var(--ksd-text-main-color);
+    cursor: pointer;
+    user-select: none;
   }
   .tableShell {
     overflow-y: auto;

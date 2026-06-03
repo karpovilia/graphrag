@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS: ICityGraphSettings = {
   },
   graphSettings: {
     ...GRAPH_SETTINGS,
-    zoomExtent: [0.2, 10],
+    zoomExtent: [0.2, 40],
     translateExtentCoefficient: [4.5, 4.5],
   },
   linkOptions: LINK_OPTIONS,

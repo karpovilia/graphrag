@@ -7,6 +7,7 @@
   import LayeredGraph from "@/components/organisms/LayeredGraph/LayeredGraph.vue";
   import LayersPanel from "@/components/organisms/LayersPanel/LayersPanel.vue";
   import NodeDrawer from "@/components/organisms/NodeDrawer/NodeDrawer.vue";
+  import EdgeDrawer from "@/components/organisms/EdgeDrawer/EdgeDrawer.vue";
   import SuggestionsSidebar from "@/components/organisms/SuggestionsSidebar/SuggestionsSidebar.vue";
   import TimelineScrubber from "@/components/organisms/TimelineScrubber/TimelineScrubber.vue";
   import AxisToggle from "@/components/organisms/TimelineScrubber/AxisToggle.vue";
@@ -55,6 +56,11 @@
   const showLayers = ref(false);
   const showTimeline = ref(false);
   const highlightedNodes = ref<id[]>([]);
+  // Fine-grained graph filters, lifted here so LayersPanel (table) and
+  // LayeredGraph (canvas) share the same state — pick "PERSON" in the
+  // side panel and the canvas hides everything else, without a round-trip.
+  const typeFilter = ref<string>("");
+  const hideUnnamedCommunities = ref<boolean>(true);
 
   // §2.1 temporal window (shared, observable, lifted out of LayeredGraph).
   const tw = useTemporalWindow(variantId);
@@ -136,6 +142,14 @@
     if (selectedNodes.value.length !== 1) return null;
     const id = selectedNodes.value[0];
     return (nodes.value ?? []).find((n) => n.id === id) ?? null;
+  });
+
+  // Edge counterpart — drives EdgeDrawer when the user clicks a link
+  // (CityGraph already mutex's selectedNodes vs selectedLink).
+  const selectedEdge = computed<Edge | null>(() => {
+    const id = selectedLink.value;
+    if (id == null) return null;
+    return (edges.value ?? []).find((e) => e.id === id) ?? null;
   });
 
   const error = variantError.value || nodesError.value || edgesError.value;
@@ -269,11 +283,15 @@
             :delta-source="deltaSource"
             v-model:selectedNodes="selectedNodes"
             v-model:selectedLink="selectedLink"
+            v-model:typeFilter="typeFilter"
+            v-model:hideUnnamedCommunities="hideUnnamedCommunities"
           />
           <LayersPanel
             v-if="showLayers"
             :nodes="nodes"
             :edges="edges"
+            v-model:typeFilter="typeFilter"
+            v-model:hideUnnamedCommunities="hideUnnamedCommunities"
             @close="showLayers = false"
             @select-node="(id) => (selectedNodes = [id])"
           />
@@ -345,8 +363,20 @@
         :node="selectedNode"
         :variant="variant"
         :cascade="cascade"
+        :all-nodes="nodes ?? []"
+        :all-edges="edges ?? []"
         @close="selectedNodes = []"
         @variant-changed="onVariantChanged"
+      />
+      <EdgeDrawer
+        v-else-if="selectedEdge"
+        :edge="selectedEdge"
+        :variant="variant"
+        :cascade="cascade"
+        :all-nodes="nodes ?? []"
+        @close="selectedLink = null"
+        @variant-changed="onVariantChanged"
+        @select-node="(id) => (selectedNodes = [id])"
       />
     </div>
 

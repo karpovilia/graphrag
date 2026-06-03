@@ -615,3 +615,114 @@ async def undo_last(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except RepositoryError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+# ---- LLM-driven node resummarize ----
+
+
+class ResummarizeResponse(DomainModel):
+    summary: str
+    model: str
+    snippet_count: int
+    """How many provenance snippets we fed the LLM. Surfaced for the
+    operator so they can spot 'summarised on 0 spans' and not save."""
+
+
+_RESUMMARIZE_SYSTEM = (
+    "You write concise factual summaries of knowledge-graph entities. "
+    "Always answer in the same language as the source excerpts. "
+    "2-4 sentences, no bullet lists, no preamble like 'This entity is…'."
+)
+
+
+def _snippet(text: str, start: int, end: int, pad: int = 120) -> str:
+    """Carve out the span with a little context on both sides so the LLM
+    sees the entity in its sentence, not just the mention."""
+
+    lo = max(0, start - pad)
+    hi = min(len(text), end + pad)
+    return text[lo:hi].strip()
+
+
+@router.post(
+    "/graphs/{variant_id}/nodes/{node_id}/resummarize",
+    response_model=ResummarizeResponse,
+)
+async def resummarize_node(
+    variant_id: Id,
+    node_id: Id,
+    repo: RepositoryProtocol = Depends(get_repository),
+    llm: CompletionClient | None = Depends(_maybe_llm),
+) -> ResummarizeResponse:
+    """Generate a new summary draft for a node using the provenance
+    spans as context, WITHOUT writing to the journal — the UI shows it
+    in the summary editor and the operator decides whether to persist
+    via the standard set_summary curation op (one user gesture = one
+    journal entry, no auto-commit)."""
+
+    if llm is None:
+        raise HTTPException(
+            status_code=503,
+            detail="no LLM provider configured — set DEEPSEEK__API_KEY",
+        )
+
+    try:
+        variant = await repo.get_variant(variant_id)
+        state = await repo.load_state(variant_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    node = next((n for n in state.nodes if str(n.id) == str(node_id)), None)
+    if node is None:
+        raise HTTPException(status_code=404, detail=f"node {node_id} not found")
+
+    if not node.provenance:
+        raise HTTPException(
+            status_code=409,
+            detail="node has no provenance spans — cannot synthesize summary",
+        )
+
+    docs = await repo.list_documents(variant.corpus_id)
+    docs_by_id = {str(d.id): d for d in docs}
+
+    snippets: list[str] = []
+    for p in node.provenance[:12]:
+        doc = docs_by_id.get(str(p.document_id))
+        if doc is None or not doc.text:
+            continue
+        snippets.append(_snippet(doc.text, p.span_start, p.span_end))
+    if not snippets:
+        raise HTTPException(
+            status_code=409,
+            detail="provenance documents have no readable text",
+        )
+
+    from api.llm.base import CompletionParams, Message
+
+    user_text = (
+        f"Entity name: {node.name}\n"
+        f"Entity type: {node.type}\n"
+        f"Source excerpts (separated by ---):\n\n"
+        + "\n\n---\n\n".join(snippets)
+        + "\n\nWrite the summary."
+    )
+    try:
+        result = await llm.complete(
+            messages=[
+                Message(role="system", content=_RESUMMARIZE_SYSTEM),
+                Message(role="user", content=user_text),
+            ],
+            params=CompletionParams(temperature=0.2, max_tokens=400),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM call failed: {e}") from e
+
+    summary = (result.text or "").strip()
+    if not summary:
+        raise HTTPException(status_code=502, detail="LLM returned empty summary")
+
+    return ResummarizeResponse(
+        summary=summary,
+        model=result.model,
+        snippet_count=len(snippets),
+    )
