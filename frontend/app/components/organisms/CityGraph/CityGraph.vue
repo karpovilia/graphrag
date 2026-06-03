@@ -249,13 +249,27 @@
     },
     { immediate: true },
   );
-  /** update data */
+  /** update data — preserve on-screen positions across a data change.
+   *
+   * A curation edit (e.g. a merge drops one node + redirects its edges)
+   * refetches the whole graph, handing changeData fresh node objects with
+   * no x/y. Left alone the simulation reseeds from scratch and the entire
+   * layout scrambles — the operator loses track of where everything was,
+   * which defeats the change-centric view. Instead we copy each surviving
+   * node's *current* (x, y) onto the incoming object and re-heat only
+   * gently, so survivors stay put and just the local neighbourhood of the
+   * change settles. */
   watch(
     checkedGraph,
     (graph) => {
       if (!graphController) return;
 
-      graphController.changeData({ links: toRaw(graph.links), nodes: toRaw(graph.nodes) }, 0.3);
+      const current = collectPositions() ?? {};
+      const nodes = toRaw(graph.nodes).map((n) => {
+        const p = current[String(n.id)];
+        return p ? Object.assign({}, n, { x: p[0], y: p[1] }) : n;
+      });
+      graphController.changeData({ links: toRaw(graph.links), nodes }, 0.1);
     },
     { immediate: true },
   );
