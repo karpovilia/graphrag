@@ -19,7 +19,13 @@
   import { themeBehaviorSubject } from "@/entities/tech";
   import { useApi } from "@/lib/api-client";
   import { formatNumber } from "@/lib/format";
-  import type { Edge, GraphVariant, Node, TimeAxis } from "@/entities/api";
+  import type {
+    Edge,
+    GraphVariant,
+    Node,
+    ProjectionImportanceResult,
+    TimeAxis,
+  } from "@/entities/api";
   import { useTemporalWindow } from "@/composables/use-temporal-window";
   import { useQueryDelta } from "@/composables/use-query-delta";
   import { useEditCascade } from "@/composables/use-edit-cascade";
@@ -57,6 +63,20 @@
   const showTimeline = ref(false);
   // DERIVED higher-order projection edges are dense → hidden by default.
   const showDerived = ref(false);
+  // #1c projection-importance panel (lazy-loaded on first open).
+  const showImportance = ref(false);
+  const importance = ref<ProjectionImportanceResult | null>(null);
+  const loadingImportance = ref(false);
+  async function loadImportance() {
+    showImportance.value = !showImportance.value;
+    if (!showImportance.value || importance.value || loadingImportance.value) return;
+    loadingImportance.value = true;
+    try {
+      importance.value = await api.graphs.projectionImportance(variantId);
+    } finally {
+      loadingImportance.value = false;
+    }
+  }
   const highlightedNodes = ref<id[]>([]);
   // Fine-grained graph filters, lifted here so LayersPanel (table) and
   // LayeredGraph (canvas) share the same state — pick "PERSON" in the
@@ -231,6 +251,14 @@
         >
           {{ showDerived ? t("graph.hideDerived") : t("graph.showDerived") }}
         </button>
+        <button
+          v-if="hasDerived"
+          type="button"
+          :class="[$style.toggle, showImportance ? $style.toggle_active : '']"
+          @click="loadImportance"
+        >
+          {{ t("graph.projectionImportance") }}
+        </button>
         <a
           :href="api.graphs.exportJournalUrl(variant.id, 'json')"
           target="_blank"
@@ -256,6 +284,39 @@
         </div>
       </dl>
     </header>
+
+    <div v-if="showImportance" :class="$style.importancePanel">
+      <header :class="$style.importanceHead">
+        <strong>{{ t("graph.projectionImportance") }}</strong>
+        <button
+          type="button"
+          :class="$style.importanceClose"
+          @click="showImportance = false"
+        >
+          ×
+        </button>
+      </header>
+      <p v-if="loadingImportance" :class="$style.importanceNote">{{ t("common.loading") }}</p>
+      <template v-else-if="importance">
+        <p
+          v-if="importance.most_redundant_pair"
+          :class="$style.importanceNote"
+        >
+          {{ t("graph.mostRedundant") }}:
+          {{ importance.most_redundant_pair.join(" ↔ ") }}
+        </p>
+        <ol :class="$style.importanceList">
+          <li v-for="p in importance.projections" :key="p.name">
+            <span :class="$style.importanceName">{{ p.name }}</span>
+            <span :class="$style.importanceScore">{{
+              (p.distinctiveness_jsd ?? p.distinctiveness_overlap).toFixed(3)
+            }}</span>
+            <span :class="$style.importanceMeta">{{ p.n_pairs }}</span>
+          </li>
+        </ol>
+        <p v-if="importance.note" :class="$style.importanceNote">{{ importance.note }}</p>
+      </template>
+    </div>
 
     <div v-if="error" :class="$style.error">
       <ErrorBanner :error="error" />
@@ -586,5 +647,69 @@
   .error {
     padding: var(--gr-space-xl);
     color: var(--gr-status-failed);
+  }
+
+  .importancePanel {
+    position: absolute;
+    right: var(--gr-space-md);
+    top: 4rem;
+    z-index: 20;
+    width: 22rem;
+    max-height: 60vh;
+    overflow: auto;
+    padding: var(--gr-space-md);
+    background: var(--ksd-card-bg-color);
+    border: 1px solid var(--ksd-border-color);
+    border-radius: var(--gr-radius-md);
+    box-shadow: var(--gr-shadow-md);
+  }
+
+  .importanceHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--gr-space-sm);
+  }
+
+  .importanceClose {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: var(--ksd-text-secondary-color);
+  }
+
+  .importanceNote {
+    margin: var(--gr-space-xs) 0;
+    font-size: 0.8125rem;
+    color: var(--ksd-text-secondary-color);
+  }
+
+  .importanceList {
+    margin: var(--gr-space-xs) 0 0;
+    padding-left: 1.2rem;
+
+    li {
+      display: flex;
+      align-items: baseline;
+      gap: var(--gr-space-sm);
+      margin: 0.15rem 0;
+    }
+  }
+
+  .importanceName {
+    flex: 1;
+    font-family: var(--gr-font-mono, monospace);
+    font-size: 0.8125rem;
+  }
+
+  .importanceScore {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  .importanceMeta {
+    font-size: 0.75rem;
+    color: var(--ksd-text-secondary-color);
   }
 </style>

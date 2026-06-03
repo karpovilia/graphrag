@@ -28,6 +28,7 @@ import type {
   StrategyDescriptor,
   Suggestion,
   SuggestionStatus,
+  ProjectionImportanceResult,
   TemporalDiff,
   TimeAxis,
   ToolInvocation,
@@ -205,6 +206,10 @@ export function createApiClient(baseUrl = "") {
     diff: (id: Id, tA: string, tB: string, axis: TimeAxis = "tx") =>
       request<TemporalDiff>(
         `/api/graphs/${id}/diff?t_a=${encodeURIComponent(tA)}&t_b=${encodeURIComponent(tB)}&axis=${axis}`,
+      ),
+    projectionImportance: (id: Id, includeDirect = true) =>
+      request<ProjectionImportanceResult>(
+        `/api/graphs/${id}/projection-importance?include_direct=${includeDirect}`,
       ),
     revertInvalidation: (
       id: Id,

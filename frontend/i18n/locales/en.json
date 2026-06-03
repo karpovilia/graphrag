@@ -74,6 +74,8 @@
     "hideSuggestions": "Hide suggestions",
     "showDerived": "Show derived edges",
     "hideDerived": "Hide derived edges",
+    "projectionImportance": "Projection importance",
+    "mostRedundant": "Most redundant pair",
     "exportJournal": "Export journal (JSON)",
     "backToCorpora": "← Back to corpora",
     "typeFilter": "type: {type}",

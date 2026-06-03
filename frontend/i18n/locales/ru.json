@@ -74,6 +74,8 @@
     "hideSuggestions": "Скрыть Suggestions",
     "showDerived": "Показать производные рёбра",
     "hideDerived": "Скрыть производные рёбра",
+    "projectionImportance": "Важность проекций",
+    "mostRedundant": "Самая избыточная пара",
     "exportJournal": "Экспорт журнала (JSON)",
     "backToCorpora": "← К списку корпусов",
     "typeFilter": "тип: {type}",

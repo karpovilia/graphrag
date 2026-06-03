@@ -465,6 +465,26 @@ export type QueryDeltaResponse = {
   total_edge_ids: Id[];
 };
 
+/** GET /projection-importance — ranking of latent two-mode projections. */
+export type ProjectionStat = {
+  name: string;
+  n_nodes: number;
+  n_pairs: number;
+  total_weight: number;
+  unique_pair_fraction: number;
+  distinctiveness_overlap: number;
+  von_neumann_entropy: number | null;
+  distinctiveness_jsd: number | null;
+};
+
+export type ProjectionImportanceResult = {
+  variant_id: Id;
+  projections: ProjectionStat[];
+  most_redundant_pair: string[] | null;
+  spectral_computed: boolean;
+  note: string | null;
+};
+
 export type GraphLayout = {
   positions: Record<string, [number, number]>;
   owner: "self" | "global";
