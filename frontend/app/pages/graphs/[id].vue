@@ -257,7 +257,13 @@
       mergePicking.value = false;
       mergePickTarget.value = null;
     }
+    // clicking empty space (ids = []) also clears the assistant's halos
+    if (ids.length === 0) highlightedNodes.value = [];
     selectedNodes.value = ids;
+  }
+
+  function clearHighlight() {
+    highlightedNodes.value = [];
   }
 
   function onMergePickCancel() {
@@ -297,9 +303,9 @@
   // Esc cancels an in-flight merge pick (the LayeredGraph's own Esc only
   // clears the active layer, so we add a page-level guard).
   function onPageKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && mergePicking.value) {
-      onMergePickCancel();
-    }
+    if (e.key !== "Escape") return;
+    if (mergePicking.value) onMergePickCancel();
+    else if (highlightedNodes.value.length) clearHighlight();
   }
 
   onMounted(() => {
@@ -536,6 +542,15 @@
           >
             {{ t("graph.mergePickBanner") }}
           </div>
+          <button
+            v-if="highlightedNodes.length && !mergePicking"
+            type="button"
+            data-testid="clear-highlight"
+            :class="$style.clearHighlight"
+            @click="clearHighlight"
+          >
+            {{ t("graph.clearHighlight", { n: highlightedNodes.length }) }}
+          </button>
           <!-- §2.3 transient ripple marker — lets e2e detect the ~600ms
                edit cascade is running and which source painted it. -->
           <span
@@ -804,6 +819,26 @@
     font-size: 0.8125rem;
     box-shadow: var(--gr-shadow-sm, 0 1px 4px rgb(0 0 0 / 30%));
     pointer-events: none;
+  }
+
+  .clearHighlight {
+    position: absolute;
+    top: var(--gr-space-sm);
+    right: var(--gr-space-sm);
+    z-index: 7;
+    padding: var(--gr-space-2xs) var(--gr-space-sm);
+    border: 1px solid var(--ksd-accent-color);
+    border-radius: var(--gr-radius-sm);
+    background: var(--ksd-card-bg-color, var(--ksd-bg-color));
+    color: var(--ksd-accent-color);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    box-shadow: var(--gr-shadow-sm, 0 1px 4px rgb(0 0 0 / 30%));
+
+    &:hover {
+      background: var(--ksd-accent-color);
+      color: #fff;
+    }
   }
 
   .cascadeMarker {
