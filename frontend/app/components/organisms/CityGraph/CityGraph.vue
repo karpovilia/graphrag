@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { GraphCanvas, type ZoomEventInterface } from "@krainovsd/graph";
   import type { ThemeName } from "@krainovsd/vue-ui";
-  import { computed, toRaw, useTemplateRef, watch } from "vue";
+  import { computed, ref, toRaw, useTemplateRef, watch } from "vue";
   import type {
     ICityGraphLink,
     ICityGraphLinkData,
@@ -30,6 +30,7 @@
     (e: "layout-changed", positions: Record<string, [number, number]>): void;
   }>();
   const graphRef = useTemplateRef("graph");
+  const containerRef = useTemplateRef<HTMLElement>("container");
   let graphController: GraphCanvas<ICityGraphNodeData, ICityGraphLinkData> | undefined;
   const selectedNodes = defineModel<id[]>("selectedNodes", { default: [] });
   const selectedLink = defineModel<id | null>("selectedLink", { default: null });
@@ -102,6 +103,67 @@
       selectedNodes.value = [];
       selectedLink.value = link.data?.id ?? null;
     }
+  }
+
+  // ---- box (marquee) selection: Shift+drag ----
+  // The lib has no rectangle-select, so we draw one ourselves over the canvas.
+  // Capture-phase pointerdown claims the gesture (preventDefault + stop) so the
+  // lib's d3-zoom doesn't pan; on release we hit-test node screen positions
+  // (screenX = k·x + tx, the lib's transform convention) against the rect and
+  // write the matches into the selectedNodes model — which the assistant reads.
+  const marquee = ref<{ left: number; top: number; width: number; height: number } | null>(null);
+  let dragStart: { x: number; y: number } | null = null;
+
+  function localPoint(e: PointerEvent): { x: number; y: number } {
+    const rect = containerRef.value?.getBoundingClientRect();
+    return { x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) };
+  }
+
+  function onMarqueeDown(e: PointerEvent): void {
+    if (!e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragStart = localPoint(e);
+    marquee.value = { left: dragStart.x, top: dragStart.y, width: 0, height: 0 };
+    window.addEventListener("pointermove", onMarqueeMove, true);
+    window.addEventListener("pointerup", onMarqueeUp, true);
+  }
+
+  function onMarqueeMove(e: PointerEvent): void {
+    if (!dragStart) return;
+    const p = localPoint(e);
+    marquee.value = {
+      left: Math.min(dragStart.x, p.x),
+      top: Math.min(dragStart.y, p.y),
+      width: Math.abs(p.x - dragStart.x),
+      height: Math.abs(p.y - dragStart.y),
+    };
+  }
+
+  function onMarqueeUp(): void {
+    window.removeEventListener("pointermove", onMarqueeMove, true);
+    window.removeEventListener("pointerup", onMarqueeUp, true);
+    const m = marquee.value;
+    marquee.value = null;
+    dragStart = null;
+    if (!m || m.width < 4 || m.height < 4 || !graphController) return;
+    const ctrl = graphController as unknown as {
+      areaTransform?: { k: number; x: number; y: number };
+      nodes: { id: id; x?: number; y?: number }[];
+    };
+    const t = ctrl.areaTransform;
+    if (!t) return;
+    const hit: id[] = [];
+    for (const n of ctrl.nodes) {
+      if (typeof n.x !== "number" || typeof n.y !== "number") continue;
+      const sx = t.k * n.x + t.x;
+      const sy = t.k * n.y + t.y;
+      if (sx >= m.left && sx <= m.left + m.width && sy >= m.top && sy <= m.top + m.height) {
+        hit.push(n.id);
+      }
+    }
+    selectedLink.value = null;
+    selectedNodes.value = hit;
   }
 
   /** Rescue the zoom transform ONLY when the entire graph bbox has left
@@ -313,13 +375,43 @@
 </script>
 
 <template>
-  <div ref="graph" :class="$style.graph"></div>
+  <div
+    ref="container"
+    :class="$style.container"
+    @pointerdown.capture="onMarqueeDown"
+  >
+    <!-- lib-owned: keep empty so Vue never diffs the canvas the lib appends -->
+    <div ref="graph" :class="$style.graph"></div>
+    <div
+      v-if="marquee"
+      :class="$style.marquee"
+      data-testid="graph-marquee"
+      :style="{
+        left: marquee.left + 'px',
+        top: marquee.top + 'px',
+        width: marquee.width + 'px',
+        height: marquee.height + 'px',
+      }"
+    />
+  </div>
 </template>
 
 <style lang="scss" module>
+  .container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
   .graph {
     width: 100%;
     height: 100%;
     position: relative;
+  }
+  .marquee {
+    position: absolute;
+    z-index: 6;
+    pointer-events: none;
+    border: 1px dashed var(--ksd-accent-color);
+    background: color-mix(in srgb, var(--ksd-accent-color) 12%, transparent);
   }
 </style>
