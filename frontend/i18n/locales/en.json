@@ -496,6 +496,9 @@
     "asking": "Thinking…",
     "history": "Query history",
     "historyEmpty": "No history yet.",
-    "showOnGraph": "Show on graph ({n})"
+    "showOnGraph": "Show on graph ({n})",
+    "temporal": "🕒 Temporal mode (recent matters more)",
+    "citations": "Citations (sources)",
+    "showChunks": "Chunks on graph ({n})"
   }
 }

@@ -73,6 +73,13 @@
   const showTimeline = ref(false);
   const showAssistant = ref(false);
   const showRag = ref(false);
+  // End of the selected period for RAG temporal mode: the scrubber's upper
+  // bound (range) or the instant; undefined when no window is set.
+  const ragAsOf = computed<string | undefined>(() => {
+    const v = scrubModel.value;
+    if (Array.isArray(v)) return v[1];
+    return v ?? undefined;
+  });
   // DERIVED higher-order projection edges are dense → hidden by default.
   const showDerived = ref(false);
   // #1c projection-importance panel (lazy-loaded on first open).
@@ -530,6 +537,7 @@
       <RagDialog
         v-if="showRag"
         :variant="variant"
+        :as-of="ragAsOf"
         @close="showRag = false"
         @highlight="(ids) => (highlightedNodes = ids)"
       />

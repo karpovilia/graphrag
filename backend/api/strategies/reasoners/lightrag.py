@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from api.domain.graph import Layer
@@ -43,6 +44,28 @@ _STOP_TOKENS = {
             "default": 3,
             "description": "Drop query tokens shorter than this.",
         },
+        "recency_boost": {
+            "type": "number",
+            "default": 0.0,
+            "description": (
+                "Temporal mode: weight recently-changed nodes higher. 0 = off. "
+                "A node's score is multiplied by (1 + boost·0.5^(age/half_life)) "
+                "where age = as_of − tx_from."
+            ),
+        },
+        "half_life_days": {
+            "type": "number",
+            "default": 30.0,
+            "description": "Recency half-life in days (smaller = sharper recency preference).",
+        },
+        "as_of": {
+            "type": "string",
+            "default": "",
+            "description": (
+                "ISO instant the recency is measured against (the selected "
+                "period's end). Empty → the latest tx_from in the graph."
+            ),
+        },
     },
     cost_hint="moderate",
     references=("docs/raw/2410.05779v3.pdf",),
@@ -64,27 +87,46 @@ class LightRAGDualKeyword:
         top_k_local = int(params.get("top_k_local", 10))
         top_k_global = int(params.get("top_k_global", 5))
         min_len = int(params.get("min_token_length", 3))
+        recency_boost = float(params.get("recency_boost", 0.0))
+        half_life = max(0.5, float(params.get("half_life_days", 30.0)))
+        as_of = _parse_dt(str(params.get("as_of") or ""))
         tokens = _tokenize(query, min_len)
 
-        local: list[tuple[int, Any]] = []
-        global_: list[tuple[int, Any]] = []
+        # Pass 1: collect matches with their raw token-overlap count.
+        local_raw: list[tuple[int, Any]] = []
+        global_raw: list[tuple[int, Any]] = []
         for variant_id in graph_variant_ids:
             for node in await loader.load_nodes(variant_id):
                 layer = getattr(node, "layer", None)
                 if layer == Layer.ENTITY:
-                    score = _score(node, tokens, with_summary=False)
-                    if score > 0:
-                        local.append((score, node))
+                    s = _score(node, tokens, with_summary=False)
+                    if s > 0:
+                        local_raw.append((s, node))
                 elif layer == Layer.COMMUNITY:
-                    # themes live in the summary → match name + summary
-                    score = _score(node, tokens, with_summary=True)
-                    if score > 0:
-                        global_.append((score, node))
+                    s = _score(node, tokens, with_summary=True)
+                    if s > 0:
+                        global_raw.append((s, node))
 
-        local.sort(key=lambda kv: (-kv[0], str(kv[1].id)))
-        global_.sort(key=lambda kv: (-kv[0], str(kv[1].id)))
-        top_local = local[:top_k_local]
-        top_global = global_[:top_k_global]
+        # Temporal mode: reference = explicit as_of, else the latest tx_from
+        # among the matches (recency relative to what the graph knows).
+        if recency_boost > 0 and as_of is None:
+            stamps = [
+                getattr(n, "tx_from", None)
+                for _, n in (local_raw + global_raw)
+                if getattr(n, "tx_from", None) is not None
+            ]
+            as_of = max(stamps) if stamps else None
+
+        def effective(raw: int, node: Any) -> float:
+            return raw * _recency_mult(node, as_of, recency_boost, half_life)
+
+        # (effective_score, raw_count, node) — sort by effective, show raw.
+        local = [(effective(s, n), s, n) for s, n in local_raw]
+        global_ = [(effective(s, n), s, n) for s, n in global_raw]
+        local.sort(key=lambda kv: (-kv[0], str(kv[2].id)))
+        global_.sort(key=lambda kv: (-kv[0], str(kv[2].id)))
+        top_local = [(s, n) for _, s, n in local[:top_k_local]]
+        top_global = [(s, n) for _, s, n in global_[:top_k_global]]
 
         if not top_local and not top_global:
             return ReasonResult(
@@ -151,3 +193,32 @@ def _score(node, tokens: set[str], *, with_summary: bool) -> int:
     if with_summary and getattr(node, "summary", None):
         hay = hay + " " + node.summary.lower()
     return sum(1 for tok in tokens if tok in hay)
+
+
+def _parse_dt(s: str) -> datetime | None:
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _recency_mult(
+    node: Any, as_of: datetime | None, boost: float, half_life_days: float
+) -> float:
+    """1 + boost · 0.5^(age/half_life). age = as_of − node.tx_from (days).
+    Recently-changed nodes (small age) get the full boost; old ones decay to 1.
+    No boost / no anchor / no stamp → neutral 1.0."""
+    if boost <= 0 or as_of is None:
+        return 1.0
+    tx = getattr(node, "tx_from", None)
+    if tx is None:
+        return 1.0
+    if tx.tzinfo is None:
+        tx = tx.replace(tzinfo=timezone.utc)
+    age_days = (as_of - tx).total_seconds() / 86400.0
+    if age_days <= 0:
+        return 1.0 + boost
+    return 1.0 + boost * (0.5 ** (age_days / half_life_days))

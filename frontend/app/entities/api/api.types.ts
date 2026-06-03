@@ -490,6 +490,20 @@ export type GraphLayout = {
   owner: "self" | "global";
 };
 
+// Answer lineage — paragraph-level citations + supporting chunk nodes.
+export type Citation = {
+  chunk_id: Id;
+  document_id?: Id | null;
+  document_title?: string | null;
+  valid_from?: string | null;
+  snippet: string;
+};
+
+export type LineageResult = {
+  citations: Citation[];
+  chunk_node_ids: Id[];
+};
+
 // On-the-fly two-mode layer-pair projection (#6).
 export type ProjectionOption = {
   target_layer: string;

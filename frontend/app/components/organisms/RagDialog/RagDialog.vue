@@ -2,13 +2,18 @@
   import { onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import type { GraphVariant, MoEResult } from "@/entities/api";
+  import type { Citation, GraphVariant, MoEResult } from "@/entities/api";
   import { useApi } from "@/lib/api-client";
   import { useAskWizard } from "@/composables/use-ask-wizard";
   import ErrorBanner from "@/components/molecules/ErrorBanner/ErrorBanner.vue";
   import RagConfigGear from "@/components/organisms/AskWizard/RagConfigGear.vue";
 
-  type Props = { variant: GraphVariant };
+  type Props = {
+    variant: GraphVariant;
+    /** End of the selected period (from the timeline scrubber). Temporal mode
+     * weights nodes changed close to it higher. */
+    asOf?: string;
+  };
   const props = defineProps<Props>();
   const emit = defineEmits<{
     (e: "close"): void;
@@ -31,7 +36,10 @@
   const HISTORY_KEY = "gr:rag-history";
 
   const running = ref(false);
+  const temporal = ref(false); // weight recently-changed nodes higher
   const result = ref<MoEResult | null>(null);
+  const citations = ref<Citation[]>([]);
+  const chunkNodeIds = ref<string[]>([]);
   const errorRaw = ref<unknown>(null);
   const history = ref<HistoryItem[]>([]);
   const showHistory = ref(false);
@@ -61,13 +69,21 @@
     errorRaw.value = null;
     try {
       const d = wizard.data.value;
+      const reasoner_params = temporal.value
+        ? {
+            ...d.reasoner_params,
+            recency_boost: 2.0,
+            half_life_days: 30,
+            as_of: props.asOf ?? "",
+          }
+        : d.reasoner_params;
       const res = await api.reason.run({
         mode: "single",
         variant_ids: [props.variant.id],
         reasoner: d.reasoner,
         aggregator: d.aggregator,
         query,
-        reasoner_params: d.reasoner_params,
+        reasoner_params,
         aggregator_params: d.aggregator_params,
       });
       result.value = res;
@@ -79,7 +95,19 @@
         answer: res.answer.text ?? "",
         evidence,
       });
-      if (evidence.length) emit("highlight", evidence); // lineage → nodes on graph
+      if (evidence.length) emit("highlight", evidence); // evidence → nodes on graph
+      // Paragraph-level lineage: pull the supporting chunks + citations.
+      citations.value = [];
+      chunkNodeIds.value = [];
+      if (evidence.length) {
+        try {
+          const lin = await api.graphs.lineage(props.variant.id, evidence);
+          citations.value = lin.citations;
+          chunkNodeIds.value = lin.chunk_node_ids.map(String);
+        } catch {
+          // lineage is best-effort — the answer still stands without it
+        }
+      }
     } catch (e) {
       errorRaw.value = e;
     } finally {
@@ -90,6 +118,10 @@
   function showOnGraph() {
     const ev = (result.value?.answer.evidence_node_ids ?? []).map(String);
     if (ev.length) emit("highlight", ev);
+  }
+
+  function showChunksOnGraph() {
+    if (chunkNodeIds.value.length) emit("highlight", chunkNodeIds.value);
   }
 
   function revisit(item: HistoryItem) {
@@ -147,6 +179,11 @@
         <strong>{{ wizard.data.value.reasoner }}</strong> ·
         <strong>{{ wizard.data.value.aggregator }}</strong>
       </div>
+      <label :class="$style.temporal" data-testid="rag-temporal">
+        <input v-model="temporal" type="checkbox" />
+        {{ t("rag.temporal") }}
+        <span v-if="temporal && asOf" :class="$style.muted">· {{ asOf.slice(0, 10) }}</span>
+      </label>
       <textarea
         v-model="wizard.data.value.query"
         :class="$style.input"
@@ -182,6 +219,27 @@
           >
             {{ t("rag.showOnGraph", { n: result.answer.evidence_node_ids.length }) }}
           </button>
+          <button
+            v-if="chunkNodeIds.length"
+            type="button"
+            :class="$style.showGraph"
+            data-testid="rag-show-chunks"
+            @click="showChunksOnGraph"
+          >
+            {{ t("rag.showChunks", { n: chunkNodeIds.length }) }}
+          </button>
+        </div>
+
+        <div v-if="citations.length" :class="$style.citations" data-testid="rag-citations">
+          <h4 :class="$style.citTitle">{{ t("rag.citations") }}</h4>
+          <ol :class="$style.citList">
+            <li v-for="(c, i) in citations" :key="i" :class="$style.cit">
+              <span :class="$style.citMeta">
+                {{ c.document_title || "—" }}<template v-if="c.valid_from"> · {{ c.valid_from.slice(0, 10) }}</template>
+              </span>
+              <span :class="$style.citText">{{ c.snippet }}</span>
+            </li>
+          </ol>
         </div>
       </div>
     </template>
@@ -237,6 +295,14 @@
     padding: var(--gr-space-xs) var(--gr-space-sm) 0;
     font-size: 0.8125rem;
     color: var(--ksd-text-secondary-color, var(--ksd-text-main-color));
+  }
+  .temporal {
+    display: flex;
+    align-items: center;
+    gap: var(--gr-space-2xs);
+    padding: var(--gr-space-2xs) var(--gr-space-sm) 0;
+    font-size: 0.8125rem;
+    cursor: pointer;
   }
   .input {
     margin: var(--gr-space-xs) var(--gr-space-sm) 0;
@@ -297,6 +363,36 @@
       background: var(--ksd-accent-color);
       color: #fff;
     }
+  }
+  .citations {
+    margin-top: var(--gr-space-sm);
+    border-top: 1px solid var(--ksd-border-color);
+    padding-top: var(--gr-space-xs);
+  }
+  .citTitle {
+    margin: 0 0 var(--gr-space-2xs);
+    font-size: 0.8rem;
+  }
+  .citList {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gr-space-2xs);
+  }
+  .cit {
+    font-size: 0.78rem;
+  }
+  .citMeta {
+    display: block;
+    color: var(--ksd-accent-color);
+    font-variant-numeric: tabular-nums;
+  }
+  .citText {
+    display: block;
+    color: var(--ksd-text-main-color);
+    white-space: pre-wrap;
+    word-break: break-word;
   }
   .history {
     flex: 1;

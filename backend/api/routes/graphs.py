@@ -8,6 +8,7 @@ GraphBuildState. Real async + persistence in 1.5.x.
 from __future__ import annotations
 
 from collections import Counter
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import Field
@@ -753,4 +754,86 @@ async def resummarize_node(
         summary=summary,
         model=result.model,
         snippet_count=len(snippets),
+    )
+
+
+# ---- answer lineage: nodes → source chunks (paragraph-level citations) ----
+
+
+class Citation(DomainModel):
+    chunk_id: Id
+    document_id: Id | None = None
+    document_title: str | None = None
+    valid_from: datetime | None = None
+    snippet: str
+
+
+class LineageResult(DomainModel):
+    citations: list[Citation]
+    chunk_node_ids: list[Id]
+    """Chunk-layer node ids supporting the given nodes — highlight these on
+    the graph to show the answer's lineage."""
+
+
+@router.get(
+    "/graphs/{variant_id}/lineage",
+    response_model=LineageResult,
+)
+async def node_lineage(
+    variant_id: Id,
+    node_ids: str,
+    max_chunks: int = 30,
+    repo: RepositoryProtocol = Depends(get_repository),
+) -> LineageResult:
+    """Paragraph-level provenance for a set of nodes (e.g. a RAG answer's
+    evidence): the chunk nodes they're MENTIONED_IN, each with a text snippet
+    carved from its source document. `node_ids` is comma-separated."""
+    try:
+        variant = await repo.get_variant(variant_id)
+        state = await repo.load_state(variant_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    wanted = {s.strip() for s in node_ids.split(",") if s.strip()}
+    nodes_by_id = {str(n.id): n for n in state.nodes}
+
+    chunk_ids: list[str] = []
+    seen: set[str] = set()
+    for nid in wanted:
+        node = nodes_by_id.get(nid)
+        if node is None:
+            continue
+        # the node itself may be a chunk; otherwise its MENTIONED_IN chunks
+        candidates = (
+            [nid] if node.layer == Layer.CHUNK else _mentioned_chunk_ids(state, node.id)
+        )
+        for cid in candidates:
+            if cid not in seen and nodes_by_id.get(cid) is not None:
+                seen.add(cid)
+                chunk_ids.append(cid)
+
+    docs = await repo.list_documents(variant.corpus_id)
+    docs_by_id = {str(d.id): d for d in docs}
+
+    citations: list[Citation] = []
+    for cid in chunk_ids[:max_chunks]:
+        ch = nodes_by_id[cid]
+        prov = ch.provenance[0] if ch.provenance else None
+        doc = docs_by_id.get(str(prov.document_id)) if prov else None
+        snippet = ""
+        if doc and doc.text and prov:
+            snippet = _snippet(doc.text, prov.span_start, prov.span_end)
+        citations.append(
+            Citation(
+                chunk_id=ch.id,
+                document_id=prov.document_id if prov else None,
+                document_title=doc.title if doc else None,
+                valid_from=ch.valid_from,
+                snippet=snippet or (ch.name or ""),
+            )
+        )
+
+    return LineageResult(
+        citations=citations,
+        chunk_node_ids=[c.chunk_id for c in citations],
     )

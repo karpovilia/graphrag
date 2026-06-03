@@ -23,6 +23,7 @@ import type {
   JournalAppendResult,
   JournalEntry,
   Kind,
+  LineageResult,
   MoEResult,
   ProposeSchemaRequest,
   QueryDeltaResponse,
@@ -252,6 +253,10 @@ export function createApiClient(baseUrl = "") {
         method: "POST",
         body: JSON.stringify(body),
       }),
+    lineage: (id: Id, nodeIds: string[], maxChunks = 30) =>
+      request<LineageResult>(
+        `/api/graphs/${id}/lineage?node_ids=${encodeURIComponent(nodeIds.join(","))}&max_chunks=${maxChunks}`,
+      ),
     getLayout: (id: Id) =>
       request<GraphLayout>(`/api/graphs/${id}/layout`),
     putLayout: (id: Id, positions: Record<string, [number, number]>) =>

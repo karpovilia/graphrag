@@ -184,6 +184,35 @@ async def test_lightrag_dual_splits_local_entities_and_global_themes() -> None:
     assert result.metadata["global_count"] == 1
 
 
+async def test_lightrag_recency_boost_reorders_recent_first() -> None:
+    from datetime import datetime, timezone
+
+    gv = new_id()
+    old = Node(
+        graph_variant_id=gv, layer=Layer.ENTITY, type="PERSON", granularity=1,
+        name="Voxys старый", tx_from=datetime(2020, 1, 1, tzinfo=timezone.utc),
+    )
+    recent = Node(
+        graph_variant_id=gv, layer=Layer.ENTITY, type="PERSON", granularity=1,
+        name="Voxys свежий", tx_from=datetime(2026, 3, 1, tzinfo=timezone.utc),
+    )
+    loader = _StaticLoader({gv: [old, recent]})
+
+    # No boost → deterministic id order (both score 1 on "voxys").
+    base = await LightRAGDualKeyword().reason(
+        query="Voxys", graph_variant_ids=[gv], params={"recency_boost": 0}, loader=loader
+    )
+    # With boost + an as_of, the recent node must come first.
+    boosted = await LightRAGDualKeyword().reason(
+        query="Voxys",
+        graph_variant_ids=[gv],
+        params={"recency_boost": 5.0, "as_of": "2026-03-15T00:00:00Z", "half_life_days": 30},
+        loader=loader,
+    )
+    assert set(base.evidence_node_ids) == {old.id, recent.id}
+    assert boosted.evidence_node_ids[0] == recent.id
+
+
 async def test_lightrag_dual_empty_when_no_match() -> None:
     gv = new_id()
     loader = _StaticLoader({gv: [_node("Мария")]})
