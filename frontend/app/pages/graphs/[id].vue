@@ -261,6 +261,13 @@
       </div>
 
       <div :class="$style.headerActions">
+        <NuxtLink
+          to="/wizards/ask"
+          data-testid="ask-rag-link"
+          :class="$style.toggle"
+        >
+          {{ t("graph.askRag") }}
+        </NuxtLink>
         <button
           type="button"
           data-testid="assistant-toggle"

@@ -97,6 +97,8 @@
         emit("merge-pick-cancel");
       }
       mergeErrorRaw.value = null;
+      deleteConfirm.value = false;
+      deleteErrorRaw.value = null;
       splitOpen.value = false;
     },
   );
@@ -292,6 +294,34 @@
       mergeErrorRaw.value = e;
     } finally {
       mergeSaving.value = false;
+    }
+  }
+
+  // ---- delete ----
+  const deleteConfirm = ref(false);
+  const deleting = ref(false);
+  const deleteErrorRaw = ref<unknown>(null);
+  async function confirmDelete() {
+    if (deleting.value) return;
+    deleting.value = true;
+    deleteErrorRaw.value = null;
+    try {
+      const result = await cascade.append({
+        op: "delete_node",
+        payload: {
+          node_id: props.node.id,
+          reason: `deleted via UI: '${props.node.name}'`,
+        },
+        expected_version: props.variant.version,
+        actor: props.actor,
+      });
+      emit("variant-changed", result.variant);
+      deleteConfirm.value = false;
+      emit("close"); // the node is gone — close its drawer
+    } catch (e) {
+      deleteErrorRaw.value = e;
+    } finally {
+      deleting.value = false;
     }
   }
 
@@ -575,6 +605,40 @@
         >
           {{ t("node.splitAction") }}
         </button>
+        <button
+          v-if="!deleteConfirm"
+          type="button"
+          data-testid="node-delete-open"
+          :class="[$style.curationBtn, $style.curationBtn_danger]"
+          :disabled="deleting"
+          @click="deleteConfirm = true"
+        >
+          {{ t("node.deleteAction") }}
+        </button>
+      </div>
+
+      <div v-if="deleteConfirm" :class="$style.mergeBox">
+        <p :class="$style.mergeHint">{{ t("node.deleteConfirm", { name: node.name }) }}</p>
+        <div :class="$style.formActions">
+          <button
+            type="button"
+            data-testid="node-delete-confirm"
+            :class="[$style.curationBtn, $style.curationBtn_danger]"
+            :disabled="deleting"
+            @click="confirmDelete"
+          >
+            {{ deleting ? t("node.deleting") : t("node.deleteConfirmYes") }}
+          </button>
+          <button
+            type="button"
+            :class="$style.renameCancel"
+            :disabled="deleting"
+            @click="deleteConfirm = false"
+          >
+            {{ t("node.mergeCancel") }}
+          </button>
+        </div>
+        <ErrorBanner v-if="deleteErrorRaw" :error="deleteErrorRaw" />
       </div>
 
       <div
@@ -937,6 +1001,16 @@
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+  }
+  .curationBtn_danger {
+    color: var(--ksd-danger-color, #c0392b);
+    border-color: var(--ksd-danger-color, #c0392b);
+
+    &:hover:not(:disabled) {
+      border-color: var(--ksd-danger-color, #c0392b);
+      color: #fff;
+      background: var(--ksd-danger-color, #c0392b);
     }
   }
   .mergeBox {

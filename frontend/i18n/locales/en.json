@@ -81,7 +81,8 @@
     "backToCorpora": "← Back to corpora",
     "typeFilter": "type: {type}",
     "clearFilter": "× clear",
-    "showCommunities": "show communities"
+    "showCommunities": "show communities",
+    "askRag": "🔍 Ask (RAG)"
   },
   "wizard": {
     "build": {
@@ -311,6 +312,10 @@
     "mergeSaving": "Merging…",
     "mergeCancel": "Cancel",
     "splitAction": "Split…",
+    "deleteAction": "Delete",
+    "deleteConfirm": "Delete node \"{name}\" and all its edges? Reversible via the journal.",
+    "deleteConfirmYes": "Delete",
+    "deleting": "Deleting…",
     "splitTitle": "Split this node",
     "splitHint": "Distribute sources between two new nodes. L → first, R → second. Both names are required and must differ.",
     "splitHintN": "Create N branches, route sources and edges. Names are required and must be unique. Per-edge routing has a smart default based on document overlap; override per row.",
