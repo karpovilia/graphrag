@@ -491,7 +491,8 @@
     "empty": "No nodes match the current filters.",
     "truncated": "Showing the first 200 nodes — narrow your filters.",
     "hideUnnamedCommunities": "Hide unnamed communities",
-    "hideUnnamedCommunitiesHint": "Hides community nodes without a summary (e.g. \"leiden #4\", \"Community 12\")."
+    "hideUnnamedCommunitiesHint": "Hides community nodes without a summary (e.g. \"leiden #4\", \"Community 12\").",
+    "types": "Entity types:"
   },
   "rag": {
     "title": "RAG — ask the graph",

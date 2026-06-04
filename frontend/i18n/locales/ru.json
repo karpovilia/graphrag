@@ -491,7 +491,8 @@
     "empty": "Нет узлов под текущие фильтры.",
     "truncated": "Показано первые 200 узлов — уточните фильтры.",
     "hideUnnamedCommunities": "Скрыть безымянные communities",
-    "hideUnnamedCommunitiesHint": "Прячет узлы community без summary (например, «leiden #4», «Community 12»)."
+    "hideUnnamedCommunitiesHint": "Прячет узлы community без summary (например, «leiden #4», «Community 12»).",
+    "types": "Типы сущностей:"
   },
   "rag": {
     "title": "RAG — вопрос к графу",

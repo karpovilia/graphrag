@@ -21,7 +21,15 @@
   const activeLayer = ref<Layer | "all">("all");
   // Lifted to the parent so the canvas (LayeredGraph) and this table
   // stay in sync — picking PERSON here filters the graph too.
-  const typeFilter = defineModel<string>("typeFilter", { default: "" });
+  // Multi-select entity-type filter (lifted to the page → also filters the
+  // canvas): [] = all, else keep nodes whose type is in the set. Toggle types
+  // as chips to show, e.g., people AND organisations at once.
+  const typeFilter = defineModel<string[]>("typeFilter", { default: () => [] });
+  function toggleType(tp: string) {
+    typeFilter.value = typeFilter.value.includes(tp)
+      ? typeFilter.value.filter((x) => x !== tp)
+      : [...typeFilter.value, tp];
+  }
   const hideUnnamedCommunities = defineModel<boolean>(
     "hideUnnamedCommunities",
     { default: true },
@@ -73,7 +81,7 @@
     const layerFilter = activeLayer.value;
     return props.nodes
       .filter((n) => (layerFilter === "all" ? true : n.layer === layerFilter))
-      .filter((n) => (tFilter ? n.type === tFilter : true))
+      .filter((n) => (tFilter.length ? tFilter.includes(n.type) : true))
       .filter((n) => (q ? (n.name ?? "").toLowerCase().includes(q) : true))
       .sort((a, b) => {
         const da = degrees.value.get(String(a.id)) ?? 0;
@@ -98,7 +106,7 @@
 
   function pickLayer(l: Layer | "all") {
     activeLayer.value = l;
-    typeFilter.value = "";
+    typeFilter.value = [];
   }
 </script>
 
@@ -139,20 +147,28 @@
         :placeholder="t('layersPanel.searchPlaceholder')"
         :class="$style.search"
       />
-      <select
-        v-if="typesForActiveLayer.length > 1"
-        v-model="typeFilter"
-        :class="$style.select"
+    </section>
+
+    <section v-if="typesForActiveLayer.length > 1" :class="$style.typeBar">
+      <span :class="$style.typeBarLabel">{{ t("layersPanel.types") }}</span>
+      <button
+        v-for="tt in typesForActiveLayer"
+        :key="tt.type"
+        type="button"
+        :class="[$style.typeChip, typeFilter.includes(tt.type) ? $style.typeChip_on : '']"
+        data-testid="type-chip"
+        @click="toggleType(tt.type)"
       >
-        <option value="">{{ t("layersPanel.typeAll") }}</option>
-        <option
-          v-for="tt in typesForActiveLayer"
-          :key="tt.type"
-          :value="tt.type"
-        >
-          {{ tt.type }} ({{ tt.count }})
-        </option>
-      </select>
+        {{ tt.type }} <span :class="$style.muted">{{ tt.count }}</span>
+      </button>
+      <button
+        v-if="typeFilter.length"
+        type="button"
+        :class="$style.typeClear"
+        @click="typeFilter = []"
+      >
+        {{ t("layersPanel.typeAll") }}
+      </button>
     </section>
 
     <section :class="$style.controls">
@@ -291,6 +307,54 @@
   }
   .search {
     flex: 1;
+  }
+  .typeBar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gr-space-2xs);
+    align-items: center;
+    padding: var(--gr-space-sm) var(--gr-space-md);
+    border-bottom: 1px solid var(--ksd-border-color);
+  }
+  .typeBarLabel {
+    font-size: 0.75rem;
+    color: var(--ksd-text-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .typeChip {
+    padding: 2px var(--gr-space-xs);
+    border: 1px solid var(--ksd-border-color);
+    border-radius: var(--gr-radius-sm);
+    background: transparent;
+    color: var(--ksd-text-main-color);
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+
+    &:hover {
+      border-color: var(--ksd-accent-color);
+    }
+  }
+  .typeChip_on {
+    background: var(--ksd-accent-color);
+    color: #fff;
+    border-color: var(--ksd-accent-color);
+
+    .muted {
+      color: rgb(255 255 255 / 80%);
+    }
+  }
+  .typeClear {
+    padding: 2px var(--gr-space-xs);
+    border: 1px dashed var(--ksd-border-color);
+    border-radius: var(--gr-radius-sm);
+    background: transparent;
+    color: var(--ksd-text-secondary-color);
+    font-size: 0.8rem;
+    cursor: pointer;
   }
   .checkRow {
     display: flex;

@@ -84,7 +84,8 @@
   // match Node.type exactly. hideUnnamedCommunities drops community-layer
   // nodes whose name still looks like a clusterer placeholder
   // ("leiden #4", "Community 12") and which never received a summary.
-  const typeFilter = defineModel<string>("typeFilter", { default: "" });
+  // Multi-select entity-type filter: [] = all types, else keep only these.
+  const typeFilter = defineModel<string[]>("typeFilter", { default: () => [] });
   const hideUnnamedCommunities = defineModel<boolean>(
     "hideUnnamedCommunities",
     { default: true },
@@ -229,7 +230,7 @@
 
     const cityNodes: ICityGraphNode[] = [];
     for (const n of nodesSorted) {
-      if (tf && n.type !== tf) continue;
+      if (tf.length && !tf.includes(n.type)) continue;
       if (
         hideUnnamed
         && n.layer === "community"
@@ -491,13 +492,14 @@
         {{ t("graph.recenter") }}
       </button>
       <button
-        v-if="typeFilter"
+        v-for="tp in typeFilter"
+        :key="tp"
         type="button"
         :class="[$style.chip, $style.chip_filter]"
         :title="t('graph.clearFilter')"
-        @click="typeFilter = ''"
+        @click="typeFilter = typeFilter.filter((x) => x !== tp)"
       >
-        {{ t("graph.typeFilter", { type: typeFilter }) }} ×
+        {{ t("graph.typeFilter", { type: tp }) }} ×
       </button>
       <button
         v-if="!hideUnnamedCommunities"

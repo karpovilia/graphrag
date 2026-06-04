@@ -170,7 +170,7 @@
   // Fine-grained graph filters, lifted here so LayersPanel (table) and
   // LayeredGraph (canvas) share the same state — pick "PERSON" in the
   // side panel and the canvas hides everything else, without a round-trip.
-  const typeFilter = ref<string>("");
+  const typeFilter = ref<string[]>([]);
   const hideUnnamedCommunities = ref<boolean>(true);
 
   // §2.1 temporal window (shared, observable, lifted out of LayeredGraph).
