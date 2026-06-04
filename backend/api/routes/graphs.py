@@ -837,3 +837,160 @@ async def node_lineage(
         citations=citations,
         chunk_node_ids=[c.chunk_id for c in citations],
     )
+
+
+# ---- grounded RAG: retrieve chunks → LLM composes the actual answer ----
+
+_RAG_SYSTEM = (
+    "Ты отвечаешь на вопрос ТОЛЬКО по приведённым фрагментам источников. "
+    "Дай связный ответ на языке вопроса (2–6 предложений). Ссылайся на "
+    "фрагменты маркерами [1], [2] … по их номерам. Если ответа в фрагментах "
+    "нет — честно скажи, что в данных его нет. Без преамбул."
+)
+
+
+class RagRequest(DomainModel):
+    query: str = Field(min_length=1)
+    variant_ids: list[Id] = Field(default_factory=list)
+    """Graphs to ask. Empty → just the path variant (single mode)."""
+    top_k_entities: int = 15
+    max_chunks: int = 12
+    recency_boost: float = 0.0
+    half_life_days: float = 30.0
+    as_of: str = ""
+
+
+class RagAnswer(DomainModel):
+    answer: str
+    model: str
+    citations: list[Citation]
+    evidence_node_ids: list[Id]
+    chunk_node_ids: list[Id]
+
+
+@router.post("/graphs/{variant_id}/rag", response_model=RagAnswer)
+async def grounded_rag(
+    variant_id: Id,
+    body: RagRequest,
+    repo: RepositoryProtocol = Depends(get_repository),
+    llm: CompletionClient | None = Depends(_maybe_llm),
+) -> RagAnswer:
+    """Real RAG: keyword+recency-rank entities, pull the paragraphs they're
+    MENTIONED_IN, and have the LLM compose a grounded answer that cites those
+    paragraphs by number. Returns the answer + the citations it was built from
+    + the supporting chunk nodes (to light up on the graph)."""
+    from api.strategies.reasoners.lightrag import (
+        _parse_dt,
+        _recency_mult,
+        _score,
+        _tokenize,
+    )
+
+    if llm is None:
+        raise HTTPException(
+            status_code=503, detail="no LLM provider configured — set DEEPSEEK__API_KEY"
+        )
+
+    vids = body.variant_ids or [variant_id]
+    tokens = _tokenize(body.query, 3)
+    as_of = _parse_dt(body.as_of)
+
+    evidence: list[Id] = []
+    chunk_ids: list[str] = []
+    seen_chunks: set[str] = set()
+    nodes_by_id: dict[str, DomainNode] = {}
+    corpus_ids: set[Id] = set()
+
+    for vid in vids:
+        try:
+            variant = await repo.get_variant(vid)
+            state = await repo.load_state(vid)
+        except NotFoundError:
+            continue
+        corpus_ids.add(variant.corpus_id)
+        # rank entities by keyword overlap × recency
+        scored: list[tuple[float, DomainNode]] = []
+        for n in state.nodes:
+            if n.layer != Layer.ENTITY:
+                continue
+            raw = _score(n, tokens, with_summary=False)
+            if raw <= 0:
+                continue
+            mult = _recency_mult(n, as_of, body.recency_boost, body.half_life_days)
+            scored.append((raw * mult, n))
+        scored.sort(key=lambda kv: (-kv[0], str(kv[1].id)))
+        for _, n in scored[: body.top_k_entities]:
+            evidence.append(n.id)
+            for cid in _mentioned_chunk_ids(state, n.id):
+                if cid not in seen_chunks:
+                    seen_chunks.add(cid)
+                    chunk_ids.append(cid)
+        for n in state.nodes:
+            nodes_by_id.setdefault(str(n.id), n)
+
+    docs: dict[str, Document] = {}
+    for cid_ in corpus_ids:
+        for d in await repo.list_documents(cid_):
+            docs[str(d.id)] = d
+
+    # Build numbered citations from the supporting chunks.
+    citations: list[Citation] = []
+    for cid in chunk_ids[: body.max_chunks]:
+        ch = nodes_by_id.get(cid)
+        if ch is None:
+            continue
+        prov = ch.provenance[0] if ch.provenance else None
+        doc = docs.get(str(prov.document_id)) if prov else None
+        snippet = (
+            _snippet(doc.text, prov.span_start, prov.span_end)
+            if doc and doc.text and prov
+            else (ch.name or "")
+        )
+        citations.append(
+            Citation(
+                chunk_id=ch.id,
+                document_id=prov.document_id if prov else None,
+                document_title=doc.title if doc else None,
+                valid_from=ch.valid_from,
+                snippet=snippet,
+            )
+        )
+
+    if not citations:
+        return RagAnswer(
+            answer=f"По запросу «{body.query}» в данных не нашлось релевантных фрагментов.",
+            model="",
+            citations=[],
+            evidence_node_ids=evidence,
+            chunk_node_ids=[],
+        )
+
+    from api.llm.base import CompletionParams, Message
+
+    numbered = "\n\n".join(
+        f"[{i + 1}] ({c.document_title or '—'}"
+        + (f", {c.valid_from.date().isoformat()}" if c.valid_from else "")
+        + f"): {c.snippet}"
+        for i, c in enumerate(citations)
+    )
+    try:
+        out = await llm.complete(
+            messages=[
+                Message(role="system", content=_RAG_SYSTEM),
+                Message(
+                    role="user",
+                    content=f"Вопрос: {body.query}\n\nФрагменты:\n{numbered}\n\nОтвет:",
+                ),
+            ],
+            params=CompletionParams(temperature=0.2, max_tokens=600),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM call failed: {e}") from e
+
+    return RagAnswer(
+        answer=(out.text or "").strip(),
+        model=out.model,
+        citations=citations,
+        evidence_node_ids=evidence,
+        chunk_node_ids=[c.chunk_id for c in citations],
+    )

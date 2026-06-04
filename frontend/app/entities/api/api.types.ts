@@ -504,6 +504,15 @@ export type LineageResult = {
   chunk_node_ids: Id[];
 };
 
+// Grounded RAG — LLM answer composed from retrieved chunk text + citations.
+export type RagAnswer = {
+  answer: string;
+  model: string;
+  citations: Citation[];
+  evidence_node_ids: Id[];
+  chunk_node_ids: Id[];
+};
+
 // On-the-fly two-mode layer-pair projection (#6).
 export type ProjectionOption = {
   target_layer: string;

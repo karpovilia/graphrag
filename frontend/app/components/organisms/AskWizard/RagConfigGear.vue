@@ -149,9 +149,9 @@
     background: transparent;
     color: var(--ksd-text-main-color);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.6rem;
     line-height: 1;
-    padding: 2px 6px;
+    padding: 6px 12px;
 
     &:hover {
       border-color: var(--ksd-accent-color);

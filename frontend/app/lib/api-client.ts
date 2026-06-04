@@ -24,6 +24,7 @@ import type {
   JournalEntry,
   Kind,
   LineageResult,
+  RagAnswer,
   MoEResult,
   ProposeSchemaRequest,
   QueryDeltaResponse,
@@ -250,6 +251,21 @@ export function createApiClient(baseUrl = "") {
       ),
     assistant: (id: Id, body: AssistantRequest) =>
       request<AssistantResponse>(`/api/graphs/${id}/assistant`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    rag: (
+      id: Id,
+      body: {
+        query: string;
+        variant_ids?: Id[];
+        top_k_entities?: number;
+        recency_boost?: number;
+        half_life_days?: number;
+        as_of?: string;
+      },
+    ) =>
+      request<RagAnswer>(`/api/graphs/${id}/rag`, {
         method: "POST",
         body: JSON.stringify(body),
       }),

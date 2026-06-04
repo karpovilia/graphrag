@@ -499,6 +499,13 @@
     "showOnGraph": "Show on graph ({n})",
     "temporal": "🕒 Temporal mode (recent matters more)",
     "citations": "Citations (sources)",
-    "showChunks": "Chunks on graph ({n})"
+    "showChunks": "Chunks on graph ({n})",
+    "config": "Settings",
+    "graphs": "Graphs",
+    "depth": "Depth (entities)",
+    "modeMoe": "Mode: multiple graphs (MoE)",
+    "modeSingle": "Mode: single graph",
+    "presetName": "Preset name…",
+    "savePreset": "Save"
   }
 }
