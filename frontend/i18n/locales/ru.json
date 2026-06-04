@@ -89,7 +89,8 @@
     "projApply": "Показать",
     "projClear": "Убрать",
     "projEdges": "{n} производных рёбер ({norm})",
-    "clearHighlight": "✕ Сбросить подсветку ({n})"
+    "clearHighlight": "✕ Сбросить подсветку ({n})",
+    "projNone": "— нет —"
   },
   "wizard": {
     "build": {

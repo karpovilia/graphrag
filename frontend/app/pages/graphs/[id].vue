@@ -96,12 +96,17 @@
       loadingImportance.value = false;
     }
   }
-  // #6 — layer-pair projection picker.
+  // #6 — layer-pair projection picker. Two slots (A, B) so two projections
+  // can be overlaid at once, each in its own colour.
+  const PROJ_COLOR_A = "#e8743b"; // orange
+  const PROJ_COLOR_B = "#1f9e89"; // teal
   const showProjection = ref(false);
   const projOptions = ref<ProjectionOption[]>([]);
   const projChoiceKey = ref<string>("");
+  const projChoiceKeyB = ref<string>(""); // "" = second projection off
   const projNorm = ref<string>("newman");
   const projResult = ref<ProjectionResult | null>(null);
+  const projResultB = ref<ProjectionResult | null>(null);
   const projLoading = ref(false);
   function projKey(o: ProjectionOption) {
     return `${o.target_layer}|${o.via}|${o.neighbor_layer}`;
@@ -114,17 +119,23 @@
       projChoiceKey.value = projKey(first ?? projOptions.value[0] ?? ({} as ProjectionOption));
     }
   }
+  async function _fetchProj(key: string): Promise<ProjectionResult | null> {
+    const o = projOptions.value.find((x) => projKey(x) === key);
+    if (!o) return null;
+    return api.graphs.projection(variantId, {
+      target_layer: o.target_layer,
+      via: o.via,
+      neighbor_layer: o.neighbor_layer,
+      normalization: projNorm.value,
+    });
+  }
   async function applyProjection() {
-    const o = projOptions.value.find((x) => projKey(x) === projChoiceKey.value);
-    if (!o) return;
     projLoading.value = true;
     try {
-      projResult.value = await api.graphs.projection(variantId, {
-        target_layer: o.target_layer,
-        via: o.via,
-        neighbor_layer: o.neighbor_layer,
-        normalization: projNorm.value,
-      });
+      projResult.value = await _fetchProj(projChoiceKey.value);
+      projResultB.value = projChoiceKeyB.value
+        ? await _fetchProj(projChoiceKeyB.value)
+        : null;
       showDerived.value = true; // make the overlay visible
     } finally {
       projLoading.value = false;
@@ -132,6 +143,7 @@
   }
   function clearProjection() {
     projResult.value = null;
+    projResultB.value = null;
   }
   const highlightedNodes = ref<id[]>([]);
   // Fine-grained graph filters, lifted here so LayersPanel (table) and
@@ -214,23 +226,28 @@
       (edges.value ?? []).some((e) => e.type === "derived") ||
       projectionEdges.value.length > 0,
   );
-  // #6 — on-the-fly layer-pair projection overlaid as synthetic DERIVED edges.
-  const projectionEdges = computed<Edge[]>(() => {
-    const p = projResult.value;
+  // #6 — on-the-fly layer-pair projection(s) overlaid as synthetic DERIVED
+  // edges. Two slots (A orange, B teal) can be shown at once for comparison.
+  function _projEdges(p: ProjectionResult | null, color: string, tag: string): Edge[] {
     if (!p || !variant.value) return [];
     return p.edges.map(
       (e) =>
         ({
-          id: `proj:${e.source_node_id}:${e.target_node_id}`,
+          id: `proj${tag}:${e.source_node_id}:${e.target_node_id}`,
           graph_variant_id: variant.value!.id,
           type: "derived",
           source_node_id: e.source_node_id,
           target_node_id: e.target_node_id,
           weight: e.weight,
           relation: `${p.target_layer} via ${p.neighbor_layer}`,
+          attributes: { color },
         }) as unknown as Edge,
     );
-  });
+  }
+  const projectionEdges = computed<Edge[]>(() => [
+    ..._projEdges(projResult.value, PROJ_COLOR_A, "A"),
+    ..._projEdges(projResultB.value, PROJ_COLOR_B, "B"),
+  ]);
   const visibleEdges = computed<Edge[]>(() => {
     let all = edges.value ?? [];
     if (!showDerived.value) all = all.filter((e) => e.type !== "derived");
@@ -470,8 +487,21 @@
         </button>
       </header>
       <label :class="$style.projRow">
-        <span :class="$style.projLabel">{{ t("graph.projPair") }}</span>
+        <span :class="$style.projLabel">
+          <span :class="$style.projDot" :style="{ background: '#e8743b' }" /> {{ t("graph.projPair") }} A
+        </span>
         <select v-model="projChoiceKey" :class="$style.projSelect" data-testid="projection-pair">
+          <option v-for="o in projOptions" :key="projKey(o)" :value="projKey(o)">
+            {{ o.label }}
+          </option>
+        </select>
+      </label>
+      <label :class="$style.projRow">
+        <span :class="$style.projLabel">
+          <span :class="$style.projDot" :style="{ background: '#1f9e89' }" /> {{ t("graph.projPair") }} B
+        </span>
+        <select v-model="projChoiceKeyB" :class="$style.projSelect" data-testid="projection-pair-b">
+          <option value="">{{ t("graph.projNone") }}</option>
           <option v-for="o in projOptions" :key="projKey(o)" :value="projKey(o)">
             {{ o.label }}
           </option>
@@ -507,7 +537,12 @@
         </button>
       </div>
       <p v-if="projResult" :class="$style.importanceNote" data-testid="projection-count">
+        <span :class="$style.projDot" :style="{ background: '#e8743b' }" />
         {{ t("graph.projEdges", { n: projResult.edges.length, norm: projResult.normalization }) }}
+      </p>
+      <p v-if="projResultB" :class="$style.importanceNote">
+        <span :class="$style.projDot" :style="{ background: '#1f9e89' }" />
+        {{ t("graph.projEdges", { n: projResultB.edges.length, norm: projResultB.normalization }) }}
       </p>
     </div>
 
@@ -963,6 +998,13 @@
     display: flex;
     gap: var(--gr-space-xs);
     margin-top: var(--gr-space-sm);
+  }
+  .projDot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    vertical-align: middle;
   }
 
   .importanceHead {

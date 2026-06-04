@@ -89,7 +89,8 @@
     "projApply": "Show",
     "projClear": "Clear",
     "projEdges": "{n} derived edges ({norm})",
-    "clearHighlight": "✕ Clear highlight ({n})"
+    "clearHighlight": "✕ Clear highlight ({n})",
+    "projNone": "— none —"
   },
   "wizard": {
     "build": {

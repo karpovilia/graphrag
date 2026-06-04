@@ -345,8 +345,16 @@
         data: {
           id: i,
           // Higher-order (2nd-order) DERIVED projection edges get a distinct
-          // violet so they read apart from builder edges; delta overrides win.
-          color: delta.color ?? (e.type === "derived" ? "#9467bd" : "#888888"),
+          // violet so they read apart from builder edges; an explicit
+          // attributes.color (e.g. two layer-pair projections shown at once,
+          // each its own colour) wins; delta overrides win over all.
+          color:
+            delta.color ??
+            (typeof e.attributes?.color === "string"
+              ? (e.attributes.color as string)
+              : e.type === "derived"
+                ? "#9467bd"
+                : "#888888"),
           alpha,
           strike: delta.strike || undefined,
           explanation: e.explanation ?? e.relation ?? "",
