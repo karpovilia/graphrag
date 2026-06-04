@@ -22,14 +22,20 @@
     axis: TimeAxis;
     mode: "instant" | "diff";
     playing?: boolean;
+    /** How many entities predate the timeline (born before the first event /
+     * timeless). Renders a leading "⋯" genesis cell that selects them. */
+    genesisCount?: number;
   };
 
-  const props = withDefaults(defineProps<Props>(), { playing: false });
+  const props = withDefaults(defineProps<Props>(), { playing: false, genesisCount: 0 });
 
   // modelValue: ISO string (instant) or [t_a, t_b] (diff).
   const model = defineModel<string | [string, string] | null>({ default: null });
   const emit = defineEmits<{
     (e: "update:playing", value: boolean): void;
+    /** User clicked the leading genesis ("⋯") cell — select the entities
+     * that existed before the timeline begins. */
+    (e: "select-genesis"): void;
   }>();
 
   // Sorted event times (ms epoch) along the active axis. `tx` sorts by
@@ -287,6 +293,17 @@
       {{ playing ? "⏸" : "▶" }}
     </button>
 
+    <button
+      v-if="genesisCount > 0"
+      type="button"
+      :class="$style.genesis"
+      data-testid="timeline-genesis"
+      :title="tr('timeline.genesisTip', { n: genesisCount })"
+      @click="emit('select-genesis')"
+    >
+      ⋯
+    </button>
+
     <div
       ref="trackRef"
       data-testid="timeline-track"
@@ -378,6 +395,24 @@
     background: var(--ksd-accent-color);
     color: var(--ksd-bg-color);
     border-color: var(--ksd-accent-color);
+  }
+
+  .genesis {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: 1px dashed var(--ksd-border-color);
+    border-radius: var(--gr-radius-sm);
+    background: transparent;
+    cursor: pointer;
+    color: var(--ksd-text-secondary-color, var(--ksd-text-main-color));
+    font-size: 1.1rem;
+    line-height: 1;
+
+    &:hover {
+      border-color: var(--ksd-accent-color);
+      color: var(--ksd-accent-color);
+    }
   }
 
   .track {

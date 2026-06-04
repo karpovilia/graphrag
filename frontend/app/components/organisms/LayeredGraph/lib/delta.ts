@@ -19,6 +19,7 @@
 
 export type DeltaState =
   | "born"
+  | "changed"
   | "dead"
   | "persisted"
   | "moved_community"
@@ -33,6 +34,7 @@ export type DeltaSource = "time" | "query" | "edit" | null;
 
 export const DELTA_COLORS: Record<NonNullable<DeltaState>, string | null> = {
   born: "#2ca02c",
+  changed: "#1f77b4", // a persisted entity whose facts changed in the window
   dead: "#6b7280",
   invalidated: "#6b7280",
   persisted: null, // keep base color
@@ -43,6 +45,7 @@ export const DELTA_COLORS: Record<NonNullable<DeltaState>, string | null> = {
 
 export const DELTA_ALPHA: Record<NonNullable<DeltaState>, number> = {
   born: 1.0,
+  changed: 1.0,
   evidence: 1.0,
   persisted: 1.0,
   moved_community: 1.0,
@@ -91,6 +94,6 @@ export function resolveDelta(
     alpha: DELTA_ALPHA[state],
     border: state === "moved_community" ? DELTA_COLORS.moved_community : null,
     strike: state === "dead" || state === "invalidated",
-    glow: state === "born" || state === "evidence",
+    glow: state === "born" || state === "evidence" || state === "changed",
   };
 }

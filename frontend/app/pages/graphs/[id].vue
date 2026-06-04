@@ -146,6 +146,26 @@
     projResultB.value = null;
   }
   const highlightedNodes = ref<id[]>([]);
+  // #2 — entities that exist before the timeline begins (stamp earlier than
+  // the first event, or timeless). The scrubber's leading "⋯" cell selects
+  // them as the genesis / pre-window population.
+  const genesisNodeIds = computed<id[]>(() => {
+    const evs = timeline.value ?? [];
+    if (!evs.length) return [];
+    const valid = tw.axis.value === "valid";
+    const firstMs = Math.min(
+      ...evs.map((e) => Date.parse(valid ? e.event_time : e.ingested_at)),
+    );
+    return (nodes.value ?? [])
+      .filter((n) => n.layer === "entity")
+      .filter((n) => {
+        // ≤ first event: the initial population present when the timeline
+        // opens (their creation isn't shown), plus timeless entities.
+        const stamp = valid ? n.valid_from : n.tx_from;
+        return stamp == null || Date.parse(stamp) <= firstMs;
+      })
+      .map((n) => n.id);
+  });
   // Fine-grained graph filters, lifted here so LayersPanel (table) and
   // LayeredGraph (canvas) share the same state — pick "PERSON" in the
   // side panel and the canvas hides everything else, without a round-trip.
@@ -200,10 +220,26 @@
 
   // The delta overlay fed to LayeredGraph. Priority: edit-cascade ripple
   // (transient, highest) > time diff > query-delta evidence.
+  // #3 — a node that merely *persisted* across the window but gained or lost
+  // an incident fact (edge born/dead/invalidated) is "changed", not static.
+  // Upgrade those from persisted → changed using the edge endpoints.
+  function withChanged(base: Map<string, DeltaState>): Map<string, DeltaState> {
+    const out = new Map(base);
+    for (const e of edges.value ?? []) {
+      const est = base.get(String(e.id));
+      if (est === "born" || est === "dead" || est === "invalidated") {
+        for (const nid of [e.source_node_id, e.target_node_id]) {
+          if (out.get(String(nid)) === "persisted") out.set(String(nid), "changed");
+        }
+      }
+    }
+    return out;
+  }
   const deltaIndex = computed<Map<string, DeltaState> | null>(() => {
     if (cascade.rippleActive.value && cascade.deltaIndex.value)
       return cascade.deltaIndex.value;
-    if (tw.mode.value === "diff" && tw.deltaIndex.value) return tw.deltaIndex.value;
+    if (tw.mode.value === "diff" && tw.deltaIndex.value)
+      return withChanged(tw.deltaIndex.value);
     if (queryDeltaActive.value) return queryDelta.buildDeltaIndex(variantId);
     return null;
   });
@@ -694,7 +730,9 @@
             :axis="tw.axis.value"
             :mode="tw.mode.value"
             :playing="tw.playing.value"
+            :genesis-count="genesisNodeIds.length"
             @update:playing="(p) => (tw.playing.value = p)"
+            @select-genesis="highlightedNodes = genesisNodeIds"
           />
         </div>
       </div>

@@ -439,7 +439,8 @@
     "modeInstant": "Срез",
     "modeDiff": "Период",
     "clear": "Сбросить",
-    "playTip": "Проигрывание (пробел)"
+    "playTip": "Проигрывание (пробел)",
+    "genesisTip": "Выбрать {n} сущностей, существовавших до начала таймлайна"
   },
   "deltaLegend": {
     "sourceTime": "Дифф по времени: {a} → {b}",
@@ -450,7 +451,8 @@
     "dead": "исчезло",
     "persisted": "без изменений",
     "moved_community": "сменило сообщество",
-    "evidence": "evidence"
+    "evidence": "evidence",
+    "changed": "изменилась"
   },
   "errorBanner": {
     "genericTitle": "Ошибка",

@@ -439,7 +439,8 @@
     "modeInstant": "Instant",
     "modeDiff": "Period",
     "clear": "Clear",
-    "playTip": "Play (space)"
+    "playTip": "Play (space)",
+    "genesisTip": "Select {n} entities that predate the timeline"
   },
   "deltaLegend": {
     "sourceTime": "Time diff: {a} → {b}",
@@ -450,7 +451,8 @@
     "dead": "dead",
     "persisted": "persisted",
     "moved_community": "moved community",
-    "evidence": "evidence"
+    "evidence": "evidence",
+    "changed": "changed"
   },
   "errorBanner": {
     "genericTitle": "Error",

@@ -24,6 +24,7 @@
   // The five canonical encodings, in legend order.
   const keys = [
     { state: "born", color: DELTA_COLORS.born },
+    { state: "changed", color: DELTA_COLORS.changed },
     { state: "dead", color: DELTA_COLORS.dead },
     { state: "persisted", color: "#9aa0a6" },
     { state: "moved_community", color: DELTA_COLORS.moved_community },
