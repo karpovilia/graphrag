@@ -2,7 +2,7 @@
   import { onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import type { Citation, GraphVariant, Id, RagAnswer } from "@/entities/api";
+  import type { Citation, GraphVariant, Id, RagAnswer, ToGResult } from "@/entities/api";
   import { useApi } from "@/lib/api-client";
   import ErrorBanner from "@/components/molecules/ErrorBanner/ErrorBanner.vue";
 
@@ -79,8 +79,10 @@
   type HistoryItem = { query: string; ts: number; answer: string; evidence: string[] };
   const HISTORY_KEY = "gr:rag-history";
   const query = ref("");
+  const engine = ref<"rag" | "tog">("rag"); // grounded RAG vs Think-on-Graph
   const running = ref(false);
   const result = ref<RagAnswer | null>(null);
+  const tog = ref<ToGResult | null>(null);
   const citations = ref<Citation[]>([]);
   const chunkNodeIds = ref<string[]>([]);
   const errorRaw = ref<unknown>(null);
@@ -110,7 +112,34 @@
     if (!q || running.value) return;
     running.value = true;
     errorRaw.value = null;
+    if (engine.value === "tog") {
+      try {
+        const res = await api.graphs.tog(props.variant.id, {
+          query: q,
+          variant_ids: selectedVariantIds.value,
+          width: 3,
+          depth: 3,
+        });
+        tog.value = res;
+        result.value = null;
+        citations.value = [];
+        chunkNodeIds.value = [];
+        const evidence = res.evidence_node_ids.map(String);
+        history.value = [
+          { query: q, ts: Date.now(), answer: res.answer, evidence },
+          ...history.value,
+        ].slice(0, 50);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history.value));
+        if (evidence.length) emit("highlight", evidence);
+      } catch (e) {
+        errorRaw.value = e;
+      } finally {
+        running.value = false;
+      }
+      return;
+    }
     try {
+      tog.value = null;
       const res = await api.graphs.rag(props.variant.id, {
         query: q,
         variant_ids: selectedVariantIds.value,
@@ -247,6 +276,23 @@
     </div>
 
     <template v-else>
+      <div :class="$style.engineRow" data-testid="rag-engine">
+        <button
+          type="button"
+          :class="[$style.engineBtn, engine === 'rag' ? $style.engineBtn_active : '']"
+          @click="engine = 'rag'"
+        >
+          {{ t("rag.engineRag") }}
+        </button>
+        <button
+          type="button"
+          :class="[$style.engineBtn, engine === 'tog' ? $style.engineBtn_active : '']"
+          data-testid="rag-engine-tog"
+          @click="engine = 'tog'"
+        >
+          {{ t("rag.engineTog") }}
+        </button>
+      </div>
       <textarea
         v-model="query"
         :class="$style.input"
@@ -298,6 +344,39 @@
                 [{{ i + 1 }}] {{ c.document_title || "—" }}<template v-if="c.valid_from"> · {{ c.valid_from.slice(0, 10) }}</template>
               </span>
               <span :class="$style.citText">{{ c.snippet }}</span>
+            </li>
+          </ol>
+        </details>
+      </div>
+
+      <!-- ToG agentic result: answer + reasoning paths -->
+      <div v-if="tog" :class="$style.answer" data-testid="tog-answer">
+        <p :class="$style.answerText">{{ tog.answer }}</p>
+        <div :class="$style.answerMeta">
+          <span :class="$style.muted">
+            {{ tog.sufficient ? t("rag.togSufficient") : t("rag.togPartial") }} ·
+            depth {{ tog.depth_reached }} · {{ tog.llm_calls }} LLM
+          </span>
+          <button
+            v-if="tog.evidence_node_ids.length"
+            type="button"
+            :class="$style.showGraph"
+            data-testid="tog-show-graph"
+            @click="emit('highlight', tog.evidence_node_ids.map(String))"
+          >
+            {{ t("rag.showOnGraph", { n: tog.evidence_node_ids.length }) }}
+          </button>
+        </div>
+        <details v-if="tog.paths.length" :class="$style.citations" data-testid="tog-paths">
+          <summary :class="$style.citTitle">{{ t("rag.togPaths") }} ({{ tog.paths.length }})</summary>
+          <ol :class="$style.citList">
+            <li v-for="(p, i) in tog.paths" :key="i" :class="$style.cit">
+              <span :class="$style.citText">
+                <template v-if="p.triples.length">
+                  <template v-for="(tr, j) in p.triples" :key="j">{{ j === 0 ? tr.subject + " " : "" }}—[{{ tr.relation }}]→ {{ tr.object }} </template>
+                </template>
+                <template v-else>(seed)</template>
+              </span>
             </li>
           </ol>
         </details>
@@ -437,6 +516,30 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+  }
+  .engineRow {
+    display: flex;
+    gap: var(--gr-space-2xs);
+    margin: var(--gr-space-sm) var(--gr-space-sm) 0;
+  }
+  .engineBtn {
+    flex: 1;
+    padding: var(--gr-space-2xs) var(--gr-space-xs);
+    border: 1px solid var(--ksd-border-color);
+    border-radius: var(--gr-radius-sm);
+    background: transparent;
+    color: var(--ksd-text-main-color);
+    cursor: pointer;
+    font-size: 0.8125rem;
+
+    &:hover {
+      border-color: var(--ksd-accent-color);
+    }
+  }
+  .engineBtn_active {
+    background: var(--ksd-accent-color);
+    color: #fff;
+    border-color: var(--ksd-accent-color);
   }
   .input {
     margin: var(--gr-space-sm) var(--gr-space-sm) 0;

@@ -504,6 +504,20 @@ export type LineageResult = {
   chunk_node_ids: Id[];
 };
 
+// Think-on-Graph (ToG) — agentic beam search reasoning paths + answer.
+export type ToGTriple = { subject: string; relation: string; object: string };
+export type ToGPath = { triples: ToGTriple[]; score: number };
+export type ToGResult = {
+  answer: string;
+  model: string;
+  sufficient: boolean;
+  depth_reached: number;
+  llm_calls: number;
+  paths: ToGPath[];
+  evidence_node_ids: Id[];
+  evidence_edge_ids: Id[];
+};
+
 // Grounded RAG — LLM answer composed from retrieved chunk text + citations.
 export type RagAnswer = {
   answer: string;

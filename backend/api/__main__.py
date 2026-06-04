@@ -29,6 +29,7 @@ from api.routes import (
     reason_router,
     strategies_router,
     temporal_router,
+    tog_router,
     tools_router,
 )
 
@@ -53,6 +54,7 @@ app.include_router(graphs_router)
 app.include_router(agents_router)
 app.include_router(reason_router)
 app.include_router(temporal_router)
+app.include_router(tog_router)
 app.include_router(journal_export_router)
 app.include_router(tools_router)
 app.include_router(analysis_router)

@@ -11,6 +11,7 @@ from .journal_export import router as journal_export_router
 from .reason import router as reason_router
 from .strategies import router as strategies_router
 from .temporal import router as temporal_router
+from .tog import router as tog_router
 from .tools import router as tools_router
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     "reason_router",
     "strategies_router",
     "temporal_router",
+    "tog_router",
     "tools_router",
 ]

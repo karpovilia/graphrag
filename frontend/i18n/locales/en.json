@@ -509,6 +509,11 @@
     "modeMoe": "Mode: multiple graphs (MoE)",
     "modeSingle": "Mode: single graph",
     "presetName": "Preset name…",
-    "savePreset": "Save"
+    "savePreset": "Save",
+    "engineRag": "RAG",
+    "engineTog": "ToG (agent)",
+    "togPaths": "Reasoning paths",
+    "togSufficient": "sufficient",
+    "togPartial": "partial"
   }
 }

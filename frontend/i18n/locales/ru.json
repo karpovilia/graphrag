@@ -509,6 +509,11 @@
     "modeMoe": "Режим: несколько графов (MoE)",
     "modeSingle": "Режим: один граф",
     "presetName": "Имя пресета…",
-    "savePreset": "Сохранить"
+    "savePreset": "Сохранить",
+    "engineRag": "RAG",
+    "engineTog": "ToG (агент)",
+    "togPaths": "Пути рассуждения",
+    "togSufficient": "достаточно путей",
+    "togPartial": "частичный ответ"
   }
 }

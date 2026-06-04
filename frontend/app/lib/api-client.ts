@@ -25,6 +25,7 @@ import type {
   Kind,
   LineageResult,
   RagAnswer,
+  ToGResult,
   MoEResult,
   ProposeSchemaRequest,
   QueryDeltaResponse,
@@ -266,6 +267,14 @@ export function createApiClient(baseUrl = "") {
       },
     ) =>
       request<RagAnswer>(`/api/graphs/${id}/rag`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    tog: (
+      id: Id,
+      body: { query: string; variant_ids?: Id[]; width?: number; depth?: number },
+    ) =>
+      request<ToGResult>(`/api/graphs/${id}/tog`, {
         method: "POST",
         body: JSON.stringify(body),
       }),
