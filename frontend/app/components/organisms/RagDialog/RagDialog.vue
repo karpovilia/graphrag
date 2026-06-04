@@ -290,8 +290,8 @@
           </button>
         </div>
 
-        <div v-if="citations.length" :class="$style.citations" data-testid="rag-citations">
-          <h4 :class="$style.citTitle">{{ t("rag.citations") }}</h4>
+        <details v-if="citations.length" :class="$style.citations" data-testid="rag-citations">
+          <summary :class="$style.citTitle">{{ t("rag.citations") }} ({{ citations.length }})</summary>
           <ol :class="$style.citList">
             <li v-for="(c, i) in citations" :key="i" :class="$style.cit">
               <span :class="$style.citMeta">
@@ -300,7 +300,7 @@
               <span :class="$style.citText">{{ c.snippet }}</span>
             </li>
           </ol>
-        </div>
+        </details>
       </div>
     </template>
   </aside>
@@ -506,6 +506,8 @@
   .citTitle {
     margin: 0 0 var(--gr-space-2xs);
     font-size: 0.8rem;
+    cursor: pointer;
+    user-select: none;
   }
   .citList {
     margin: 0;
