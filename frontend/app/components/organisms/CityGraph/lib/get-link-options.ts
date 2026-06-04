@@ -26,7 +26,9 @@ export function getLinkOptions(
       particleBorderColor: fill,
       // Native per-link alpha (sec0); defaults to 1 when unset.
       alpha: link.data?.alpha ?? 1,
-      width: selected ? 0.3 : 0.1,
+      width: selected
+        ? 0.3
+        : ((link.data as { width?: number } | undefined)?.width ?? 0.1),
       // × mark at the link midpoint for dead / invalidated edges (§0).
       drawExtraLink(
         this: GraphCanvas<ICityGraphNodeData, ICityGraphLinkData>,

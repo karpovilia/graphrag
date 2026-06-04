@@ -108,6 +108,7 @@
   const projResult = ref<ProjectionResult | null>(null);
   const projResultB = ref<ProjectionResult | null>(null);
   const projLoading = ref(false);
+  const projectionsOnly = ref(true); // hide base edges while projections shown
   function projKey(o: ProjectionOption) {
     return `${o.target_layer}|${o.via}|${o.neighbor_layer}`;
   }
@@ -285,17 +286,18 @@
     ..._projEdges(projResultB.value, PROJ_COLOR_B, "B"),
   ]);
   const visibleEdges = computed<Edge[]>(() => {
+    const proj = projectionEdges.value;
+    // "Projections only": when a layer-pair projection is loaded and the
+    // toggle is on, hide the base edges entirely so the two coloured
+    // projection structures read cleanly instead of drowning in 3k+ edges.
+    if (proj.length && projectionsOnly.value) return proj;
     let all = edges.value ?? [];
     if (!showDerived.value) all = all.filter((e) => e.type !== "derived");
     const ids = tw.visibleEdgeIds.value;
     if (tw.mode.value === "instant" && ids) {
       all = all.filter((e) => ids.has(String(e.id)));
     }
-    // Synthetic projection edges aren't time-stamped — show them whenever a
-    // projection is loaded and derived edges are visible.
-    return showDerived.value && projectionEdges.value.length
-      ? [...all, ...projectionEdges.value]
-      : all;
+    return showDerived.value && proj.length ? [...all, ...proj] : all;
   });
 
   const selectedNode = computed<Node | null>(() => {
@@ -542,6 +544,10 @@
             {{ o.label }}
           </option>
         </select>
+      </label>
+      <label :class="$style.cfgCheck" style="display:flex;gap:6px;align-items:center;margin-top:6px">
+        <input v-model="projectionsOnly" type="checkbox" />
+        {{ t("graph.projOnly") }}
       </label>
       <label :class="$style.projRow">
         <span :class="$style.projLabel">{{ t("graph.projNorm") }}</span>

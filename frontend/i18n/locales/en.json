@@ -90,7 +90,8 @@
     "projClear": "Clear",
     "projEdges": "{n} derived edges ({norm})",
     "clearHighlight": "✕ Clear highlight ({n})",
-    "projNone": "— none —"
+    "projNone": "— none —",
+    "projOnly": "Projections only (hide base edges)"
   },
   "wizard": {
     "build": {

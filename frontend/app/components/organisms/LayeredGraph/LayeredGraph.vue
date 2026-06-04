@@ -356,6 +356,8 @@
                 ? "#9467bd"
                 : "#888888"),
           alpha,
+          // Projection / derived edges drawn thicker so the overlay reads.
+          width: e.type === "derived" ? 0.35 : undefined,
           strike: delta.strike || undefined,
           explanation: e.explanation ?? e.relation ?? "",
         },
