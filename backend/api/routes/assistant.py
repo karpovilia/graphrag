@@ -110,7 +110,9 @@ async def _apply_schema_actions(
     )
     await repo.update_corpus(corpus)
 
-    builder = variant.builder if variant.builder in _SCHEMA_AWARE_BUILDERS else "lightrag"
+    # Microsoft GraphRAG-style LLM extraction (gleaning passes) is the most
+    # reliable schema-guided extractor on free Russian text.
+    builder = variant.builder if variant.builder in _SCHEMA_AWARE_BUILDERS else "microsoft"
     asyncio.create_task(
         _background_rebuild(repo, variant, builder, schema, llm)
     )
