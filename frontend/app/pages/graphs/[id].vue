@@ -26,8 +26,6 @@
     GraphVariant,
     Node,
     ProjectionImportanceResult,
-    ProjectionOption,
-    ProjectionResult,
     TimeAxis,
   } from "@/entities/api";
   import { useTemporalWindow } from "@/composables/use-temporal-window";
@@ -96,56 +94,6 @@
       loadingImportance.value = false;
     }
   }
-  // #6 — layer-pair projection picker. Two slots (A, B) so two projections
-  // can be overlaid at once, each in its own colour.
-  const PROJ_COLOR_A = "#e8743b"; // orange
-  const PROJ_COLOR_B = "#1f9e89"; // teal
-  const showProjection = ref(false);
-  const projOptions = ref<ProjectionOption[]>([]);
-  const projChoiceKey = ref<string>("");
-  const projChoiceKeyB = ref<string>(""); // "" = second projection off
-  const projNorm = ref<string>("newman");
-  const projResult = ref<ProjectionResult | null>(null);
-  const projResultB = ref<ProjectionResult | null>(null);
-  const projLoading = ref(false);
-  const projectionsOnly = ref(true); // hide base edges while projections shown
-  function projKey(o: ProjectionOption) {
-    return `${o.target_layer}|${o.via}|${o.neighbor_layer}`;
-  }
-  async function toggleProjection() {
-    showProjection.value = !showProjection.value;
-    if (showProjection.value && !projOptions.value.length) {
-      projOptions.value = await api.graphs.projectionAvailable(variantId);
-      const first = projOptions.value.find((o) => o.target_layer === "entity");
-      projChoiceKey.value = projKey(first ?? projOptions.value[0] ?? ({} as ProjectionOption));
-    }
-  }
-  async function _fetchProj(key: string): Promise<ProjectionResult | null> {
-    const o = projOptions.value.find((x) => projKey(x) === key);
-    if (!o) return null;
-    return api.graphs.projection(variantId, {
-      target_layer: o.target_layer,
-      via: o.via,
-      neighbor_layer: o.neighbor_layer,
-      normalization: projNorm.value,
-    });
-  }
-  async function applyProjection() {
-    projLoading.value = true;
-    try {
-      projResult.value = await _fetchProj(projChoiceKey.value);
-      projResultB.value = projChoiceKeyB.value
-        ? await _fetchProj(projChoiceKeyB.value)
-        : null;
-      showDerived.value = true; // make the overlay visible
-    } finally {
-      projLoading.value = false;
-    }
-  }
-  function clearProjection() {
-    projResult.value = null;
-    projResultB.value = null;
-  }
   const highlightedNodes = ref<id[]>([]);
   // #2 — entities that exist before the timeline begins (stamp earlier than
   // the first event, or timeless). The scrubber's leading "⋯" cell selects
@@ -171,6 +119,7 @@
   // LayeredGraph (canvas) share the same state — pick "PERSON" in the
   // side panel and the canvas hides everything else, without a round-trip.
   const typeFilter = ref<string[]>([]);
+  const typeColors = ref<Record<string, string>>({});
   const hideUnnamedCommunities = ref<boolean>(true);
 
   // §2.1 temporal window (shared, observable, lifted out of LayeredGraph).
@@ -258,46 +207,17 @@
     if (tw.mode.value !== "instant" || !ids) return all;
     return all.filter((n) => ids.has(String(n.id)));
   });
-  const hasDerived = computed(
-    () =>
-      (edges.value ?? []).some((e) => e.type === "derived") ||
-      projectionEdges.value.length > 0,
+  const hasDerived = computed(() =>
+    (edges.value ?? []).some((e) => e.type === "derived"),
   );
-  // #6 — on-the-fly layer-pair projection(s) overlaid as synthetic DERIVED
-  // edges. Two slots (A orange, B teal) can be shown at once for comparison.
-  function _projEdges(p: ProjectionResult | null, color: string, tag: string): Edge[] {
-    if (!p || !variant.value) return [];
-    return p.edges.map(
-      (e) =>
-        ({
-          id: `proj${tag}:${e.source_node_id}:${e.target_node_id}`,
-          graph_variant_id: variant.value!.id,
-          type: "derived",
-          source_node_id: e.source_node_id,
-          target_node_id: e.target_node_id,
-          weight: e.weight,
-          relation: `${p.target_layer} via ${p.neighbor_layer}`,
-          attributes: { color },
-        }) as unknown as Edge,
-    );
-  }
-  const projectionEdges = computed<Edge[]>(() => [
-    ..._projEdges(projResult.value, PROJ_COLOR_A, "A"),
-    ..._projEdges(projResultB.value, PROJ_COLOR_B, "B"),
-  ]);
   const visibleEdges = computed<Edge[]>(() => {
-    const proj = projectionEdges.value;
-    // "Projections only": when a layer-pair projection is loaded and the
-    // toggle is on, hide the base edges entirely so the two coloured
-    // projection structures read cleanly instead of drowning in 3k+ edges.
-    if (proj.length && projectionsOnly.value) return proj;
     let all = edges.value ?? [];
     if (!showDerived.value) all = all.filter((e) => e.type !== "derived");
     const ids = tw.visibleEdgeIds.value;
     if (tw.mode.value === "instant" && ids) {
       all = all.filter((e) => ids.has(String(e.id)));
     }
-    return showDerived.value && proj.length ? [...all, ...proj] : all;
+    return all;
   });
 
   const selectedNode = computed<Node | null>(() => {
@@ -426,14 +346,6 @@
           {{ t("layersPanel.open") }}
         </button>
         <button
-          type="button"
-          data-testid="projection-toggle"
-          :class="[$style.toggle, showProjection ? $style.toggle_active : '']"
-          @click="toggleProjection"
-        >
-          {{ t("graph.layerProjection") }}
-        </button>
-        <button
           v-if="timeline && timeline.length"
           type="button"
           data-testid="timeline-toggle"
@@ -517,77 +429,6 @@
       </template>
     </div>
 
-    <div v-if="showProjection" :class="$style.importancePanel" data-testid="projection-panel">
-      <header :class="$style.importanceHead">
-        <strong>{{ t("graph.layerProjection") }}</strong>
-        <button type="button" :class="$style.importanceClose" @click="showProjection = false">
-          ×
-        </button>
-      </header>
-      <label :class="$style.projRow">
-        <span :class="$style.projLabel">
-          <span :class="$style.projDot" :style="{ background: '#e8743b' }" /> {{ t("graph.projPair") }} A
-        </span>
-        <select v-model="projChoiceKey" :class="$style.projSelect" data-testid="projection-pair">
-          <option v-for="o in projOptions" :key="projKey(o)" :value="projKey(o)">
-            {{ o.label }}
-          </option>
-        </select>
-      </label>
-      <label :class="$style.projRow">
-        <span :class="$style.projLabel">
-          <span :class="$style.projDot" :style="{ background: '#1f9e89' }" /> {{ t("graph.projPair") }} B
-        </span>
-        <select v-model="projChoiceKeyB" :class="$style.projSelect" data-testid="projection-pair-b">
-          <option value="">{{ t("graph.projNone") }}</option>
-          <option v-for="o in projOptions" :key="projKey(o)" :value="projKey(o)">
-            {{ o.label }}
-          </option>
-        </select>
-      </label>
-      <label :class="$style.cfgCheck" style="display:flex;gap:6px;align-items:center;margin-top:6px">
-        <input v-model="projectionsOnly" type="checkbox" />
-        {{ t("graph.projOnly") }}
-      </label>
-      <label :class="$style.projRow">
-        <span :class="$style.projLabel">{{ t("graph.projNorm") }}</span>
-        <select v-model="projNorm" :class="$style.projSelect">
-          <option value="newman">newman</option>
-          <option value="cosine">cosine</option>
-          <option value="jaccard">jaccard</option>
-          <option value="min">min</option>
-          <option value="raw">raw</option>
-        </select>
-      </label>
-      <div :class="$style.projActions">
-        <button
-          type="button"
-          :class="$style.toggle"
-          :disabled="projLoading || !projChoiceKey"
-          data-testid="projection-apply"
-          @click="applyProjection"
-        >
-          {{ projLoading ? t("common.loading") : t("graph.projApply") }}
-        </button>
-        <button
-          v-if="projResult"
-          type="button"
-          :class="$style.toggle"
-          @click="clearProjection"
-        >
-          {{ t("graph.projClear") }}
-        </button>
-      </div>
-      <p v-if="projResult" :class="$style.importanceNote" data-testid="projection-count">
-        <span :class="$style.projDot" :style="{ background: '#e8743b' }" />
-        {{ t("graph.projEdges", { n: projResult.edges.length, norm: projResult.normalization }) }}
-      </p>
-      <p v-if="projResultB" :class="$style.importanceNote">
-        <span :class="$style.projDot" :style="{ background: '#1f9e89' }" />
-        {{ t("graph.projEdges", { n: projResultB.edges.length, norm: projResultB.normalization }) }}
-      </p>
-    </div>
-
     <div v-if="error" :class="$style.error">
       <ErrorBanner :error="error" />
     </div>
@@ -667,6 +508,7 @@
             @update:selectedNodes="onSelectNodes"
             v-model:selectedLink="selectedLink"
             v-model:typeFilter="typeFilter"
+            v-model:typeColors="typeColors"
             v-model:hideUnnamedCommunities="hideUnnamedCommunities"
           />
           <LayersPanel
@@ -674,9 +516,8 @@
             :nodes="nodes"
             :edges="edges"
             v-model:typeFilter="typeFilter"
-            v-model:hideUnnamedCommunities="hideUnnamedCommunities"
+            v-model:typeColors="typeColors"
             @close="showLayers = false"
-            @select-node="(id) => (selectedNodes = [id])"
           />
         </div>
 

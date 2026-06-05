@@ -357,7 +357,9 @@
     "factSource": "Source",
     "factDelete": "Delete fact",
     "factNoSource": "No shared source.",
-    "factDeleted": "Fact deleted"
+    "factDeleted": "Fact deleted",
+    "fullscreen": "Fullscreen",
+    "popout": "Open in a separate window"
   },
   "edge": {
     "close": "Close",
@@ -500,7 +502,11 @@
     "truncated": "Showing the first 200 nodes — narrow your filters.",
     "hideUnnamedCommunities": "Hide unnamed communities",
     "hideUnnamedCommunitiesHint": "Hides community nodes without a summary (e.g. \"leiden #4\", \"Community 12\").",
-    "types": "Entity types:"
+    "types": "Entity types:",
+    "typesTitle": "Entity types",
+    "typesHint": "Pick types to show (multi-select) and set a colour to tell them apart on the graph. Layers are in the toolbar above; node search is in the assistant.",
+    "colorTitle": "Colour for this type's nodes",
+    "noTypes": "No entity types."
   },
   "rag": {
     "title": "RAG — ask the graph",

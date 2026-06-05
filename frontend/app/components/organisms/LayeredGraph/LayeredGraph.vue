@@ -86,6 +86,10 @@
   // ("leiden #4", "Community 12") and which never received a summary.
   // Multi-select entity-type filter: [] = all types, else keep only these.
   const typeFilter = defineModel<string[]>("typeFilter", { default: () => [] });
+  // Per-entity-type colour overrides (type → hex), set in the Entity types panel.
+  const typeColors = defineModel<Record<string, string>>("typeColors", {
+    default: () => ({}),
+  });
   const hideUnnamedCommunities = defineModel<boolean>(
     "hideUnnamedCommunities",
     { default: true },
@@ -259,6 +263,11 @@
           const cid = e2c.get(n.id);
           if (cid !== undefined) baseColor = colorForCommunity(String(cid));
         }
+      }
+      // Per-entity-type colour override (set via the Entity types panel) wins,
+      // so the operator can tell PERSON vs ORG vs CONCEPT apart on the canvas.
+      if (n.layer === "entity" && typeColors.value[n.type]) {
+        baseColor = typeColors.value[n.type] as string;
       }
 
       // §0 delta fold — overrides come AFTER layer color/alpha so the two

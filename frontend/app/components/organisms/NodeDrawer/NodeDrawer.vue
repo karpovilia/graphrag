@@ -40,6 +40,9 @@
     /** Ids of the nodes currently visible (the time-window slice). When set,
      * the "chunks this entity appears in" list is scoped to it. */
     visibleNodeIds?: Id[];
+    /** Rendered as a standalone full-page card (the pop-out window) — hides
+     * the fullscreen/pop-out/close-graph-specific affordances. */
+    standalone?: boolean;
   };
 
   const props = withDefaults(defineProps<Props>(), {
@@ -48,7 +51,19 @@
     allEdges: () => [],
     visibleNodeIds: () => [],
     mergePickTarget: null,
+    standalone: false,
   });
+
+  // In-place fullscreen toggle (separate from `standalone`, which is the
+  // pop-out window). Opens the card over the whole viewport to work on it.
+  const fullscreen = ref(false);
+  function openInWindow() {
+    window.open(
+      `/nodes/${props.variant.id}/${props.node.id}`,
+      `node-${props.node.id}`,
+      "width=960,height=960,scrollbars=yes",
+    );
+  }
 
   // §2 — chunks this entity appears in (via MENTIONED_IN), scoped to the
   // current time-window slice when one is provided. Computed from the lists
@@ -563,7 +578,11 @@
 </script>
 
 <template>
-  <aside :class="$style.drawer" data-testid="node-drawer" aria-label="Node detail panel">
+  <aside
+    :class="[$style.drawer, (fullscreen || standalone) ? $style.drawer_full : '']"
+    data-testid="node-drawer"
+    aria-label="Node detail panel"
+  >
     <header :class="$style.header">
       <div :class="$style.titleRow">
         <template v-if="!editing">
@@ -611,6 +630,26 @@
             {{ t("node.renameCancel") }}
           </button>
         </form>
+        <button
+          v-if="!editing && !standalone"
+          type="button"
+          :class="$style.iconBtn"
+          data-testid="node-fullscreen"
+          :title="t('node.fullscreen')"
+          @click="fullscreen = !fullscreen"
+        >
+          {{ fullscreen ? "🗗" : "⛶" }}
+        </button>
+        <button
+          v-if="!editing && !standalone"
+          type="button"
+          :class="$style.iconBtn"
+          data-testid="node-popout"
+          :title="t('node.popout')"
+          @click="openInWindow"
+        >
+          ↗
+        </button>
         <button
           v-if="!editing"
           type="button"
@@ -1010,6 +1049,17 @@
     overflow-y: auto;
     padding: var(--gr-space-md);
     flex-shrink: 0;
+  }
+  .drawer_full {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    z-index: 300;
+    border-left: none;
+    /* roomy two-column-ish reading width, centred content */
+    padding: var(--gr-space-lg) clamp(var(--gr-space-md), 8vw, 8rem);
   }
 
   .header {
