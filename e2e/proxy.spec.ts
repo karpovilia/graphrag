@@ -201,7 +201,7 @@ test("PipelineStep cards expose multi-line tooltips", async ({
   expect(titles.some((t) => /Параметры|слои/.test(t))).toBe(true);
 });
 
-test("Layers panel: open, switch layer chip, click row selects node", async ({
+test("Entity types panel: multi-select chips + per-type colour", async ({
   page,
   request,
 }) => {
@@ -220,24 +220,19 @@ test("Layers panel: open, switch layer chip, click row selects node", async ({
 
   await page.goto(`/graphs/${ready!.id}`);
   await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(2000);
 
-  // Localised label is "Слои" (RU) or "Layers" (EN). The select is
-  // anchored on the chrome/header area.
-  await page
-    .getByRole("button", { name: /^(Слои|Layers)$/ })
-    .click();
+  await page.getByRole("button", { name: /^(Слои|Layers)$/ }).click();
 
-  const panel = page.locator('aside[aria-label*="Layers"], aside[aria-label*="слой"], aside[aria-label*="узлов"]');
-  await expect(panel.first()).toBeVisible();
-
-  // Switch to entity layer specifically (the Russian podcast graph
-  // always has entity nodes).
-  await panel.getByRole("button", { name: /entity/i }).first().click();
-  // Pick the first row and click — selection should not throw.
-  const rows = panel.locator("tbody tr");
-  if ((await rows.count()) > 0) {
-    await rows.first().click();
-  }
+  // The panel is now entity-types only: chips + per-type colour pickers, no
+  // node table and no chunk-layer types.
+  const chips = page.getByTestId("type-chip");
+  await expect(chips.first()).toBeVisible();
+  const labels = await chips.allTextContents();
+  expect(labels.some((l) => /chunk/i.test(l))).toBe(false); // chunks excluded
+  await expect(page.getByTestId("type-color").first()).toBeVisible();
+  // toggling a type chip must not throw
+  await chips.first().click();
 });
 
 test("/graphs/{id}: visiting the page persists a force-layout cache", async ({
