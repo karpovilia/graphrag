@@ -83,6 +83,122 @@
     }
     return ids.size;
   });
+
+  // ---- facts (the entity's extracted relations) — verify / fix / source ----
+  function chunkIdsOf(nodeId: Id): Set<Id> {
+    const out = new Set<Id>();
+    for (const e of props.allEdges) {
+      if (e.type !== "mentioned_in") continue;
+      if (e.source_node_id === nodeId) out.add(e.target_node_id);
+      else if (e.target_node_id === nodeId) out.add(e.source_node_id);
+    }
+    return out;
+  }
+  const facts = computed(() => {
+    const nid = props.node.id;
+    const nameById = new Map(props.allNodes.map((n) => [String(n.id), n.name]));
+    const out: {
+      edge: Edge;
+      otherId: Id;
+      otherName: string;
+      verified: boolean;
+    }[] = [];
+    for (const e of props.allEdges) {
+      if (e.type !== "entity_relation") continue;
+      let otherId: Id | null = null;
+      if (e.source_node_id === nid) otherId = e.target_node_id;
+      else if (e.target_node_id === nid) otherId = e.source_node_id;
+      else continue;
+      out.push({
+        edge: e,
+        otherId,
+        otherName: nameById.get(String(otherId)) ?? String(otherId),
+        verified: Boolean((e.attributes as Record<string, unknown> | undefined)?.verified),
+      });
+    }
+    return out
+      .sort((a, b) => (b.edge.weight ?? 0) - (a.edge.weight ?? 0))
+      .slice(0, 50);
+  });
+
+  const factBusy = ref<string | null>(null);
+  const factErrorRaw = ref<unknown>(null);
+  const openSourceFor = ref<string | null>(null);
+  const editingFactId = ref<string | null>(null);
+  const factRelDraft = ref("");
+
+  async function factEdit(edge: Edge, updates: Record<string, unknown>) {
+    factBusy.value = String(edge.id);
+    factErrorRaw.value = null;
+    try {
+      const result = await cascade.append({
+        op: "edit_edge",
+        payload: { edge_id: edge.id, updates },
+        expected_version: props.variant.version,
+        actor: props.actor,
+      });
+      emit("variant-changed", result.variant);
+    } catch (e) {
+      factErrorRaw.value = e;
+    } finally {
+      factBusy.value = null;
+      editingFactId.value = null;
+    }
+  }
+  function verifyFact(f: { edge: Edge; verified: boolean }) {
+    const attrs = { ...(f.edge.attributes ?? {}), verified: !f.verified };
+    void factEdit(f.edge, { attributes: attrs });
+  }
+  function startEditFact(edge: Edge) {
+    editingFactId.value = String(edge.id);
+    factRelDraft.value = edge.relation ?? "";
+  }
+  function saveEditFact(edge: Edge) {
+    const rel = factRelDraft.value.trim();
+    if (rel) void factEdit(edge, { relation: rel });
+    else editingFactId.value = null;
+  }
+  async function deleteFact(edge: Edge) {
+    factBusy.value = String(edge.id);
+    factErrorRaw.value = null;
+    try {
+      const result = await cascade.append({
+        op: "delete_edge",
+        payload: { edge_id: edge.id, reason: "removed via fact card" },
+        expected_version: props.variant.version,
+        actor: props.actor,
+      });
+      emit("variant-changed", result.variant);
+    } catch (e) {
+      factErrorRaw.value = e;
+    } finally {
+      factBusy.value = null;
+    }
+  }
+  // Drill into the primary source: the chunks BOTH entities appear in
+  // (the co-mention that the fact was extracted from), with a text snippet.
+  function factSources(f: { otherId: Id }): { week: string; text: string }[] {
+    const a = chunkIdsOf(props.node.id);
+    const b = chunkIdsOf(f.otherId);
+    const shared = [...a].filter((c) => b.has(c));
+    const docs = new Map((corpusDocs.value ?? []).map((d) => [String(d.id), d]));
+    const out: { week: string; text: string }[] = [];
+    for (const cid of shared.slice(0, 4)) {
+      const ch = props.allNodes.find((n) => n.id === cid);
+      const prov = ch?.provenance?.[0];
+      const doc = prov ? docs.get(String(prov.document_id)) : undefined;
+      const text =
+        doc?.text && prov
+          ? doc.text.slice(Math.max(0, prov.span_start - 80), prov.span_end + 80).trim()
+          : (ch?.name ?? "");
+      out.push({ week: String(ch?.valid_from ?? "").slice(0, 10), text });
+    }
+    return out;
+  }
+  function toggleSource(edge: Edge) {
+    openSourceFor.value =
+      openSourceFor.value === String(edge.id) ? null : String(edge.id);
+  }
   const emit = defineEmits<{
     (e: "close"): void;
     (e: "variant-changed", variant: GraphVariant): void;
@@ -622,6 +738,72 @@
       </ul>
     </section>
 
+    <section v-if="facts.length" :class="$style.facts" data-testid="node-facts">
+      <h3 :class="$style.subhead">
+        {{ t("node.factsTitle") }} <span :class="$style.muted">{{ facts.length }}</span>
+      </h3>
+      <ul :class="$style.factList">
+        <li v-for="f in facts" :key="String(f.edge.id)" :class="$style.factItem">
+          <div :class="$style.factRow">
+            <span v-if="f.verified" :class="$style.factVerified" :title="t('node.factVerified')">✓</span>
+            <template v-if="editingFactId === String(f.edge.id)">
+              <input
+                v-model="factRelDraft"
+                :class="$style.factEdit"
+                @keydown.enter.prevent="saveEditFact(f.edge)"
+                @keydown.esc="editingFactId = null"
+              />
+              <button type="button" :class="$style.factBtn" @click="saveEditFact(f.edge)">✓</button>
+            </template>
+            <template v-else>
+              <span :class="$style.factText">
+                <span :class="$style.factRel">{{ f.edge.relation || "—" }}</span>
+                → {{ f.otherName }}
+                <span v-if="f.edge.valid_from" :class="$style.muted">· {{ String(f.edge.valid_from).slice(0, 10) }}</span>
+              </span>
+            </template>
+            <span :class="$style.factActions">
+              <button
+                type="button"
+                :class="[$style.factBtn, f.verified ? $style.factBtn_on : '']"
+                :disabled="factBusy === String(f.edge.id)"
+                :title="t('node.factVerify')"
+                data-testid="fact-verify"
+                @click="verifyFact(f)"
+              >✓</button>
+              <button
+                type="button"
+                :class="$style.factBtn"
+                :title="t('node.factEdit')"
+                @click="startEditFact(f.edge)"
+              >✎</button>
+              <button
+                type="button"
+                :class="$style.factBtn"
+                :title="t('node.factSource')"
+                data-testid="fact-source"
+                @click="toggleSource(f.edge)"
+              >📄</button>
+              <button
+                type="button"
+                :class="[$style.factBtn, $style.factBtn_danger]"
+                :disabled="factBusy === String(f.edge.id)"
+                :title="t('node.factDelete')"
+                @click="deleteFact(f.edge)"
+              >🗑</button>
+            </span>
+          </div>
+          <div v-if="openSourceFor === String(f.edge.id)" :class="$style.factSource">
+            <p v-if="!factSources(f).length" :class="$style.muted">{{ t("node.factNoSource") }}</p>
+            <p v-for="(s, si) in factSources(f)" :key="si" :class="$style.factSnippet">
+              <span :class="$style.muted">{{ s.week }}</span> {{ s.text }}
+            </p>
+          </div>
+        </li>
+      </ul>
+      <ErrorBanner v-if="factErrorRaw" :error="factErrorRaw" />
+    </section>
+
     <section v-if="linkedChunksTotal > 0" :class="$style.chunks">
       <h3 :class="$style.subhead">
         {{ t("node.chunksTitle") }}
@@ -1058,6 +1240,92 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+  }
+  .facts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gr-space-2xs);
+  }
+  .factList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .factItem {
+    border-bottom: 1px solid var(--ksd-border-color);
+    padding: 3px 0;
+  }
+  .factRow {
+    display: flex;
+    align-items: center;
+    gap: var(--gr-space-2xs);
+    font-size: 0.8125rem;
+  }
+  .factText {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .factRel {
+    color: var(--ksd-accent-color);
+  }
+  .factVerified {
+    color: #2ca02c;
+    font-weight: 700;
+  }
+  .factEdit {
+    flex: 1;
+    padding: 1px var(--gr-space-2xs);
+    border: 1px solid var(--ksd-accent-color);
+    border-radius: var(--gr-radius-sm);
+    background: var(--ksd-bg-color);
+    color: var(--ksd-text-main-color);
+    font-size: 0.8125rem;
+  }
+  .factActions {
+    display: inline-flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .factBtn {
+    border: 1px solid transparent;
+    border-radius: var(--gr-radius-sm);
+    background: transparent;
+    color: var(--ksd-text-secondary-color);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 1px 4px;
+
+    &:hover:not(:disabled) {
+      border-color: var(--ksd-accent-color);
+      color: var(--ksd-accent-color);
+    }
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+  .factBtn_on {
+    color: #2ca02c;
+    border-color: #2ca02c;
+  }
+  .factBtn_danger:hover:not(:disabled) {
+    border-color: var(--ksd-danger-color, #c0392b);
+    color: var(--ksd-danger-color, #c0392b);
+  }
+  .factSource {
+    padding: var(--gr-space-2xs) 0 var(--gr-space-2xs) var(--gr-space-sm);
+  }
+  .factSnippet {
+    margin: 2px 0;
+    font-size: 0.76rem;
+    color: var(--ksd-text-main-color);
+    white-space: pre-wrap;
   }
   .chunks {
     display: flex;

@@ -349,7 +349,15 @@
     "splitConfirm": "Split",
     "splitCancel": "Cancel",
     "chunksTitle": "Appears in chunks",
-    "chunksNoneInWindow": "None in the current window ({total} outside)"
+    "chunksNoneInWindow": "None in the current window ({total} outside)",
+    "factsTitle": "Facts (relations)",
+    "factVerify": "Verify fact",
+    "factVerified": "verified",
+    "factEdit": "Fix relation",
+    "factSource": "Source",
+    "factDelete": "Delete fact",
+    "factNoSource": "No shared source.",
+    "factDeleted": "Fact deleted"
   },
   "edge": {
     "close": "Close",

@@ -349,7 +349,15 @@
     "splitConfirm": "Разбить",
     "splitCancel": "Отмена",
     "chunksTitle": "Упоминается в чанках",
-    "chunksNoneInWindow": "В текущем окне нет ({total} вне окна)"
+    "chunksNoneInWindow": "В текущем окне нет ({total} вне окна)",
+    "factsTitle": "Факты (связи)",
+    "factVerify": "Подтвердить факт",
+    "factVerified": "подтверждён",
+    "factEdit": "Исправить отношение",
+    "factSource": "Первоисточник",
+    "factDelete": "Удалить факт",
+    "factNoSource": "Нет общего первоисточника.",
+    "factDeleted": "Факт удалён"
   },
   "edge": {
     "close": "Закрыть",
