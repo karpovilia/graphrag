@@ -59,6 +59,17 @@ _VIEW_CATALOG: dict[str, str] = {
     ),
 }
 
+# Schema actions — add a type to the corpus ontology and trigger a background
+# rebuild of a new variant. Handled by the route (not journal, not view).
+_SCHEMA_CATALOG: dict[str, str] = {
+    "add_entity_type": (
+        '{"op":"add_entity_type","name":"<ТИП>","description":"<что это>"}'
+    ),
+    "add_relation_type": (
+        '{"op":"add_relation_type","name":"<ТИП_ОТНОШЕНИЯ>","description":"<смысл>"}'
+    ),
+}
+
 # Which payload fields hold node/edge ids — used to resolve a name the model
 # may have echoed instead of the id.
 _NODE_ID_FIELDS = ("node_id", "survivor_id")
@@ -76,7 +87,15 @@ _SYSTEM_PROMPT = """\
 Операции-просмотр (НИЧЕГО не меняют, только подсвечивают узлы на графе):
 {view_catalog}
 
+Операции-схема (добавляют тип в онтологию корпуса и запускают ФОНОВЫЙ пересчёт
+нового варианта графа):
+{schema_catalog}
+
 Правила:
+- Если пользователь просит ДОБАВИТЬ новый тип сущности или тип отношения \
+(«добавь тип сущности „ключевые понятия"», «добавь отношение „конкурирует с"») — \
+используй add_entity_type / add_relation_type. После этого граф пересчитается в \
+фоне; так появляются новые виды сущностей (например, ключевые понятия).
 - Если пользователь просит НАЙТИ / ПОКАЗАТЬ / ПОДСВЕТИТЬ / ВЫДЕЛИТЬ узлы \
 («найди всех Миш», «покажи организации») — это НЕ повод переспрашивать. \
 Используй highlight_nodes с "query" (подстрока имени, регистр игнорируется) — \
@@ -101,12 +120,21 @@ class PlannedOp(DomainModel):
     payload: dict[str, Any]
 
 
+class SchemaAction(DomainModel):
+    op: str  # "add_entity_type" | "add_relation_type"
+    name: str
+    description: str = ""
+
+
 class AssistantPlan(DomainModel):
     message: str
     ops: list[PlannedOp]
     highlight: list[str] = []
     """Node ids the assistant wants lit up on the graph (read-only — from
     highlight_nodes view actions). Resolved server-side against the slice."""
+    schema_actions: list[SchemaAction] = []
+    """Ontology changes (add_entity_type/add_relation_type) → corpus schema +
+    a background rebuild. Handled by the route, not journalled."""
 
 
 class CurationAssistant:
@@ -154,6 +182,7 @@ class CurationAssistant:
                 content=_SYSTEM_PROMPT.format(
                     catalog="\n".join(f"- {v}" for v in _OP_CATALOG.values()),
                     view_catalog="\n".join(f"- {v}" for v in _VIEW_CATALOG.values()),
+                    schema_catalog="\n".join(f"- {v}" for v in _SCHEMA_CATALOG.values()),
                 ),
             )
         ]
@@ -182,15 +211,33 @@ class CurationAssistant:
         raw_ops = parsed.get("ops")
         ops: list[PlannedOp] = []
         highlight: set[str] = set()
+        schema_actions: list[SchemaAction] = []
         if isinstance(raw_ops, list):
             for raw in raw_ops:
-                if isinstance(raw, dict) and raw.get("op") in _VIEW_CATALOG:
+                if not isinstance(raw, dict):
+                    continue
+                opname = raw.get("op")
+                if opname in _VIEW_CATALOG:
                     highlight |= _resolve_highlight(raw, slice_nodes, name_to_id)
+                    continue
+                if opname in _SCHEMA_CATALOG and str(raw.get("name") or "").strip():
+                    schema_actions.append(
+                        SchemaAction(
+                            op=str(opname),
+                            name=str(raw["name"]).strip(),
+                            description=str(raw.get("description") or "").strip(),
+                        )
+                    )
                     continue
                 op = _validate_op(raw, name_to_id)
                 if op is not None:
                     ops.append(op)
-        return AssistantPlan(message=reply, ops=ops, highlight=sorted(highlight))
+        return AssistantPlan(
+            message=reply,
+            ops=ops,
+            highlight=sorted(highlight),
+            schema_actions=schema_actions,
+        )
 
 
 _FALLBACK_MSG = "Не удалось разобрать ответ модели. Уточни запрос."

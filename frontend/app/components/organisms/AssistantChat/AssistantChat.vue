@@ -33,7 +33,7 @@
   const { t } = useI18n();
   const api = useApi();
 
-  type Turn = AssistantChatMessage & { applied?: AppliedOp[] };
+  type Turn = AssistantChatMessage & { applied?: AppliedOp[]; rebuilding?: string[] };
   const turns = ref<Turn[]>([]);
   // The assistant's own memory of what it last highlighted — carried into the
   // next turn so "слей их всех" / "удали этих" resolve to that set.
@@ -72,6 +72,7 @@
         role: "assistant",
         content: res.message,
         applied: res.applied,
+        rebuilding: res.rebuilding,
       });
       // Any successful op bumped the variant → repaint the graph.
       if (res.applied.some((a) => a.ok)) emit("variant-changed", res.variant);
@@ -132,6 +133,13 @@
             {{ op.ok ? "✓" : "✕" }} {{ op.op }}
           </li>
         </ul>
+        <p
+          v-for="(note, k) in m.rebuilding || []"
+          :key="'rb' + k"
+          :class="$style.rebuild"
+        >
+          ⏳ {{ note }}
+        </p>
       </div>
     </div>
 
@@ -249,6 +257,11 @@
   .op_ok {
     background: rgb(40 167 69 / 18%);
     color: var(--ksd-text-main-color);
+  }
+  .rebuild {
+    margin: 4px 0 0;
+    font-size: 0.78rem;
+    color: var(--ksd-accent-color);
   }
   .op_fail {
     background: rgb(220 53 69 / 20%);

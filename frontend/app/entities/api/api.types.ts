@@ -578,6 +578,7 @@ export type AssistantResponse = {
   message: string;
   applied: AppliedOp[];
   highlight: string[];
+  rebuilding?: string[];
   variant: GraphVariant;
   recompute_ms: number;
 };

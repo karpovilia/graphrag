@@ -8,19 +8,30 @@ the updated variant so the canvas can refresh.
 
 from __future__ import annotations
 
+import asyncio
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
+from loguru import logger
 from pydantic import Field
 
 from api.assistant import CurationAssistant
+from api.assistant.curation_assistant import SchemaAction
 from api.domain.curation import JournalEntry
-from api.domain.graph import GraphVariant
-from api.domain.types import DomainModel, Id
+from api.domain.graph import GraphVariant, GraphVariantStatus
+from api.domain.types import DomainModel, Id, new_id
 from api.llm import CompletionClient
 from api.llm.registry import get_completion_client
+from api.orchestrator import run_build_pipeline
 from api.repository import NotFoundError, RepositoryProtocol
 from api.runtime import get_repository
 
 router = APIRouter(prefix="/api", tags=["assistant"])
+
+# Builders that extract against the corpus schema (so a freshly-added type is
+# actually picked up). ner_extraction (natasha) uses fixed types, so a schema
+# rebuild switches to an LLM schema-guided builder.
+_SCHEMA_AWARE_BUILDERS = {"lightrag", "microsoft", "fastrag", "tog3", "llm_extract"}
 
 
 def _assistant_llm() -> CompletionClient | None:
@@ -63,8 +74,94 @@ class AssistantResponse(DomainModel):
     applied: list[AppliedOp]
     highlight: list[str] = []
     """Node ids to light up on the graph (read-only, from highlight_nodes)."""
+    rebuilding: list[str] = []
+    """Human notes about background rebuilds the assistant kicked off."""
     variant: GraphVariant
     recompute_ms: float = 0.0
+
+
+async def _apply_schema_actions(
+    repo: RepositoryProtocol,
+    variant: GraphVariant,
+    actions: list[SchemaAction],
+    llm: CompletionClient,
+) -> list[str]:
+    """Add the requested types to the corpus schema and kick off ONE background
+    rebuild of a new variant so the new ontology is extracted. Returns notes."""
+    if not actions:
+        return []
+    corpus = await repo.get_corpus(variant.corpus_id)
+    schema = dict(corpus.metadata.get("schema") or {})
+    schema.setdefault("entity_types", [])
+    schema.setdefault("relation_types", [])
+    added: list[str] = []
+    for a in actions:
+        entry = {"name": a.name, "description": a.description}
+        bucket = "entity_types" if a.op == "add_entity_type" else "relation_types"
+        if a.op == "add_relation_type":
+            entry.update({"domain": [], "range": []})
+        if not any(t.get("name") == a.name for t in schema[bucket]):
+            schema[bucket].append(entry)
+            added.append(f"{a.name} ({'сущность' if bucket == 'entity_types' else 'отношение'})")
+    if not added:
+        return []
+    corpus = corpus.model_copy(
+        update={"metadata": {**corpus.metadata, "schema": schema}}
+    )
+    await repo.update_corpus(corpus)
+
+    builder = variant.builder if variant.builder in _SCHEMA_AWARE_BUILDERS else "lightrag"
+    asyncio.create_task(
+        _background_rebuild(repo, variant, builder, schema, llm)
+    )
+    return [
+        f"Добавлено в онтологию: {', '.join(added)}. Запущен фоновый пересчёт "
+        f"(builder={builder}); новый вариант появится в списке, когда будет готов."
+    ]
+
+
+async def _background_rebuild(
+    repo: RepositoryProtocol,
+    base: GraphVariant,
+    builder: str,
+    schema: dict,
+    llm: CompletionClient,
+) -> None:
+    try:
+        docs = await repo.list_documents(base.corpus_id)
+        docs_with_text = [
+            (d, d.text or d.metadata.get("raw_text") or "")
+            for d in docs
+            if (d.text or d.metadata.get("raw_text"))
+        ]
+        if not docs_with_text:
+            logger.warning("schema rebuild: corpus {} has no document text", base.corpus_id)
+            return
+        vid = new_id()
+        _, state = await run_build_pipeline(
+            corpus_id=base.corpus_id,
+            documents=docs_with_text,
+            builder=builder,
+            cleaner_chain=base.cleaner_chain,
+            clusterer=base.clusterer,
+            builder_params={"schema": schema},
+            graph_variant_id=vid,
+            llm=llm,
+        )
+        variant = GraphVariant(
+            id=vid,
+            corpus_id=base.corpus_id,
+            name=f"{base.name} +schema",
+            status=GraphVariantStatus.READY,
+            builder=builder,
+            cleaner_chain=base.cleaner_chain,
+            clusterer=base.clusterer,
+            completed_at=datetime.now(tz=timezone.utc),
+        )
+        await repo.create_variant(variant, state)
+        logger.info("schema rebuild done: new variant {} ({} nodes)", vid, len(state.nodes))
+    except Exception as e:  # noqa: BLE001
+        logger.error("schema rebuild failed: {}", e)
 
 
 @router.post(
@@ -130,10 +227,13 @@ async def assistant_chat(
                 )
             )
 
+    rebuilding = await _apply_schema_actions(repo, variant, plan.schema_actions, llm)
+
     return AssistantResponse(
         message=plan.message,
         applied=applied,
         highlight=plan.highlight,
+        rebuilding=rebuilding,
         variant=variant,
         recompute_ms=total_ms,
     )
