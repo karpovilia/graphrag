@@ -98,6 +98,10 @@ export interface GraphMeta {
   nodeCount: number;
   edgeCount: number;
   layersPresent: Layer[];
+  /** Nodes pinned by a curator — excluded from every agent and skill.
+   *  Stored here (not in the journal) since a pin is an annotation, not a
+   *  graph edit; overlaid onto Node.pinned when the state is materialized. */
+  pinnedNodeIds?: Id[];
 }
 
 /** Layer → default numeric granularity. */

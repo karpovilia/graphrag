@@ -1,0 +1,28 @@
+{
+  "name": "@graphcraft/collab-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@graphcraft/core": "workspace:*",
+    "@graphcraft/shared": "workspace:*",
+    "fastify": "^5.2.1",
+    "@fastify/cors": "^10.0.1",
+    "ioredis": "^5.4.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.8",
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13"
+  }
+}

@@ -11,6 +11,7 @@ export * from "./engine/payloads.js";
 export * from "./engine/applier.js";
 export * from "./engine/temporal.js";
 export * from "./engine/ctdg.js";
+export * from "./engine/layout.js";
 
 // skills
 export * from "./skills/compiler.js";

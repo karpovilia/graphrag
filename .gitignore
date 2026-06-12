@@ -18,6 +18,9 @@ dist/
 
 # Data / runtime artifacts
 data/
+# Per-graph stores are portable & git-mergeable by design, but the demo
+# sample is generated — ignore it. Commit real graph dirs with `git add -f`.
+graphs/
 *.log
 
 # OS / editor
