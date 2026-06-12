@@ -1,0 +1,28 @@
+{
+  "name": "graphcraft",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-user, agent-driven knowledge-graph curation",
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "import:kb-ui-demo": "tsx scripts/import-kb-ui-demo.ts",
+    "gen:sample": "tsx scripts/gen-sample.ts",
+    "install:skill": "tsx scripts/install-skill.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "@types/node": "^22.10.2"
+  }
+}
