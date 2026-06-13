@@ -58,7 +58,7 @@ function nodeOptions() {
       alpha: dim ? 0.12 : NODE_OPTIONS.alpha ?? 1,
       labelSize: 5,
       labelAlpha: dim ? 0.1 : 1,
-      labelColor: dim ? "#5f6470" : "#d2d2d2",
+      labelColor: dim ? "#b0b4bb" : "#3c4043",
       borderColor: accent ?? NODE_OPTIONS.borderColor,
       borderWidth: accent ? 1.4 : NODE_OPTIONS.borderWidth,
     };

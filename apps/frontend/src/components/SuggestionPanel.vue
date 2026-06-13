@@ -60,8 +60,8 @@ const nodeIdsOf = (s: Record<string, unknown>) => (s.targetNodeIds as string[]) 
   margin-bottom: 4px;
 }
 .tag {
-  background: #2a3a5a;
-  color: #cdd9ff;
+  background: var(--gc-accent-soft);
+  color: var(--gc-accent);
   border-radius: 4px;
   padding: 1px 6px;
   font-size: 11px;

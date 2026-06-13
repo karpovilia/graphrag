@@ -149,15 +149,15 @@ onMounted(async () => {
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
-  background: var(--gc-panel, #1b1e24);
-  border-bottom: 1px solid #2a2e36;
+  background: var(--gc-panel);
+  border-bottom: 1px solid var(--gc-border);
 }
 .spacer {
   flex: 1;
 }
 .badge {
-  background: #2a3a5a;
-  color: #cdd9ff;
+  background: var(--gc-accent-soft);
+  color: var(--gc-accent);
   border-radius: 5px;
   padding: 1px 6px;
   font-size: 12px;
@@ -213,7 +213,9 @@ onMounted(async () => {
   display: flex;
   gap: 8px;
   align-items: center;
-  background: var(--gc-panel, #1b1e24);
+  background: var(--gc-panel);
+  border: 1px solid var(--gc-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   padding: 6px 10px;
   border-radius: 8px;
   max-width: 60%;
@@ -225,8 +227,8 @@ onMounted(async () => {
 }
 .sidebar {
   width: clamp(300px, 28vw, 420px);
-  border-left: 1px solid #2a2e36;
-  background: var(--gc-panel, #1b1e24);
+  border-left: 1px solid var(--gc-border);
+  background: var(--gc-panel);
   display: flex;
   flex-direction: column;
   padding: 10px;
@@ -238,15 +240,16 @@ onMounted(async () => {
 }
 .tabs button {
   flex: 1;
-  background: #20242c;
-  border: none;
-  color: #cdd0d6;
+  background: var(--gc-card);
+  border: 1px solid var(--gc-border);
+  color: var(--gc-fg);
   padding: 6px;
   border-radius: 6px;
   cursor: pointer;
 }
 .tabs button.active {
-  background: #2a3a5a;
+  background: var(--gc-accent);
+  border-color: var(--gc-accent);
   color: #fff;
 }
 .agent-buttons {
