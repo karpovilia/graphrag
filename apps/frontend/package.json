@@ -1,0 +1,26 @@
+{
+  "name": "@graphcraft/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@graphcraft/shared": "workspace:*",
+    "@krainovsd/graph": "0.11.0",
+    "@krainovsd/js-helpers": "0.16.3",
+    "vue": "3.5.13",
+    "vue-i18n": "^11.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "5.2.4",
+    "typescript": "^5.7.2",
+    "vite": "6.2.1",
+    "vue-tsc": "2.2.10",
+    "@types/node": "^22.10.2"
+  }
+}
