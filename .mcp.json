@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "graphcraft": {
+      "command": "pnpm",
+      "args": [
+        "--filter",
+        "@graphcraft/mcp-service",
+        "start"
+      ],
+      "cwd": "/home/ki/repos/graphcraft",
+      "env": {
+        "COLLAB_HTTP_URL": "http://127.0.0.1:4001"
+      }
+    }
+  }
+}

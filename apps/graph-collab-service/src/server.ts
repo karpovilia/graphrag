@@ -114,7 +114,97 @@ app.post("/api/graphs/:id/pin", async (req) => {
   return { ok: true };
 });
 
-// interactive decision loop over HTTP (used by mcp-service as a fallback)
+// agent presence — registers "agent:claude" as a room participant
+app.post("/api/graphs/:id/presence/agent", async (req) => {
+  const { id } = req.params as { id: string };
+  const body = (req.body ?? {}) as { actor?: string; name?: string };
+  const actor = body.actor ?? "agent:claude";
+  const room = await getRoom(id);
+  room.join({ actor, name: body.name ?? actor, color: colorFor(actor), kind: "agent" });
+  return { ok: true, version: room.currentVersion };
+});
+
+// command the canvas to center/highlight a slice
+app.post("/api/graphs/:id/focus", async (req) => {
+  const { id } = req.params as { id: string };
+  const body = req.body as { nodeIds: string[]; note?: string; by?: string };
+  (await getRoom(id)).focus(body.by ?? "agent:claude", body.nodeIds, body.note);
+  return { ok: true };
+});
+
+// agent proposes a suggestion (shows in the suggestion panel)
+app.post("/api/graphs/:id/suggest", async (req) => {
+  const { id } = req.params as { id: string };
+  const b = req.body as {
+    agent?: string;
+    action: "merge" | "split" | "retype" | "move" | "delete" | "edit_relation";
+    targetNodeIds?: string[];
+    payload?: Record<string, unknown>;
+    rationale?: string;
+    confidence?: number;
+  };
+  const room = await getRoom(id);
+  const s = {
+    id: crypto.randomUUID(),
+    graphId: id,
+    agent: b.agent ?? "agent:claude",
+    action: b.action,
+    targetNodeIds: b.targetNodeIds ?? [],
+    targetEdgeIds: [],
+    payload: b.payload ?? {},
+    confidence: b.confidence ?? 0.7,
+    rationale: b.rationale ?? "",
+    evidence: [],
+    status: "pending" as const,
+    createdAt: new Date().toISOString(),
+  };
+  room.addSuggestion(s);
+  return s;
+});
+
+// name search
+app.get("/api/graphs/:id/search", async (req) => {
+  const { id } = req.params as { id: string };
+  const { q, limit } = req.query as { q?: string; limit?: string };
+  const needle = (q ?? "").toLowerCase();
+  const lim = limit ? Number(limit) : 20;
+  const state = await store.getState(id);
+  return state.nodes
+    .filter((n) => n.name.toLowerCase().includes(needle))
+    .slice(0, lim)
+    .map((n) => ({ id: n.id, name: n.name, type: n.type, layer: n.layer, pinned: n.pinned }));
+});
+
+// k-hop slice around seed nodes
+app.get("/api/graphs/:id/slice", async (req) => {
+  const { id } = req.params as { id: string };
+  const { seeds, depth } = req.query as { seeds?: string; depth?: string };
+  const seedIds = (seeds ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const d = depth ? Number(depth) : 1;
+  const state = await store.getState(id);
+  const adj = new Map<string, string[]>();
+  for (const e of state.edges) {
+    (adj.get(e.sourceId) ?? adj.set(e.sourceId, []).get(e.sourceId)!).push(e.targetId);
+    (adj.get(e.targetId) ?? adj.set(e.targetId, []).get(e.targetId)!).push(e.sourceId);
+  }
+  const keep = new Set(seedIds);
+  let frontier = [...seedIds];
+  for (let i = 0; i < d; i++) {
+    const next: string[] = [];
+    for (const id2 of frontier)
+      for (const nb of adj.get(id2) ?? []) if (!keep.has(nb)) { keep.add(nb); next.push(nb); }
+    frontier = next;
+  }
+  const nodes = state.nodes
+    .filter((n) => keep.has(n.id))
+    .map((n) => ({ id: n.id, name: n.name, type: n.type, layer: n.layer }));
+  const edges = state.edges
+    .filter((e) => keep.has(e.sourceId) && keep.has(e.targetId) && !e.invalidation)
+    .map((e) => ({ id: e.id, source: e.sourceId, target: e.targetId, relation: e.relation, confidence: e.confidence }));
+  return { nodes, edges };
+});
+
+// interactive decision loop over HTTP (used by mcp-service)
 app.post("/api/graphs/:id/decisions", async (req) => {
   const { id } = req.params as { id: string };
   const body = req.body as { by?: string; timeoutMs?: number; request: Parameters<Room["requestDecision"]>[1] };
