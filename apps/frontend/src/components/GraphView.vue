@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, toRaw, watch } from "vue";
-import { GraphCanvas } from "@krainovsd/graph";
+import { onBeforeUnmount, onMounted, toRaw, ref, watch } from "vue";
+import {
+  GraphCanvas,
+  FORCE_SETTINGS,
+  GRAPH_SETTINGS,
+  HIGHLIGHT_SETTINGS,
+  LINK_OPTIONS,
+  LINK_SETTINGS,
+  NODE_OPTIONS,
+  NODE_SETTINGS,
+} from "@krainovsd/graph";
 import type { RenderGraph } from "@/lib/api";
 
 const props = defineProps<{
@@ -38,18 +47,20 @@ function nodeOptions() {
   return (node: any) => {
     const inFocus = focus.has(node.id);
     const dim = focusing && !inFocus;
-    const status = delta[node.id];
-    const deltaBorder = status ? DELTA_BORDER[status] : undefined;
+    const deltaBorder = node.id in delta ? DELTA_BORDER[delta[node.id]] : undefined;
     const pinned = node.data?.pinned;
+    const accent = deltaBorder ?? (pinned ? "#f9ab00" : inFocus ? "#1a73e8" : undefined);
     return {
+      ...NODE_OPTIONS,
       label: node.name,
-      color: node.data?.color ?? "#4f86f7",
-      radius: node.data?.size ?? 1.2,
-      alpha: dim ? 0.12 : 1,
-      textAlpha: dim ? 0.12 : 1,
-      labelAlpha: dim ? 0.12 : 1,
-      borderColor: deltaBorder ?? (pinned ? "#f9ab00" : inFocus ? "#1a73e8" : node.data?.borderColor),
-      borderWidth: deltaBorder ? 1.4 : pinned || inFocus ? 0.9 : node.data?.borderColor ? 0.5 : 0,
+      color: node.data?.color ?? NODE_OPTIONS.color,
+      radius: 6 + (node.data?.size ?? 1) * 2,
+      alpha: dim ? 0.12 : NODE_OPTIONS.alpha ?? 1,
+      labelSize: 5,
+      labelAlpha: dim ? 0.1 : 1,
+      labelColor: dim ? "#5f6470" : "#d2d2d2",
+      borderColor: accent ?? NODE_OPTIONS.borderColor,
+      borderWidth: accent ? 1.4 : NODE_OPTIONS.borderWidth,
     };
   };
 }
@@ -57,8 +68,10 @@ function nodeOptions() {
 function linkOptions() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (link: any) => ({
-    color: link.data?.color ?? "#9aa0a6",
-    width: 0.12,
+    ...LINK_OPTIONS,
+    width: 0.5,
+    color: link.data?.color ?? LINK_OPTIONS.color ?? "#5b6470",
+    arrowColor: link.data?.color ?? LINK_OPTIONS.arrowColor ?? "#5b6470",
   });
 }
 
@@ -66,8 +79,18 @@ function applyOptions() {
   if (!controller) return;
   try {
     controller.changeSettings.call(toRaw(controller), {
-      nodeSettings: { options: nodeOptions() },
-      linkSettings: { options: linkOptions() },
+      nodeSettings: { ...NODE_SETTINGS, options: nodeOptions() },
+      linkSettings: { ...LINK_SETTINGS, options: linkOptions() },
+      forceSettings: {
+        ...FORCE_SETTINGS,
+        linkDistance: 90,
+        chargeForce: true,
+        chargeStrength: -320,
+        collideForce: true,
+        collideAdditionalRadius: 8,
+      },
+      highlightSettings: HIGHLIGHT_SETTINGS,
+      graphSettings: { ...GRAPH_SETTINGS, zoomExtent: [0.05, 12], zoomInitial: 2.2 },
     });
   } catch {
     /* engine not ready */
@@ -83,7 +106,7 @@ onMounted(() => {
     root: root.value,
     nodes: data.nodes,
     links: data.links,
-    graphSettings: { zoomExtent: [0.1, 10], translateExtentCoefficient: [10, 10] },
+    graphSettings: { ...GRAPH_SETTINGS, zoomExtent: [0.05, 12], zoomInitial: 2.2 },
     listeners: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onClick: (_e: unknown, node: any) => emit("select-node", node?.id ?? null),
@@ -105,9 +128,8 @@ watch(
   () => props.graph,
   () => {
     if (!controller) return;
-    const data = cloneData();
     try {
-      controller.changeData.call(toRaw(controller), data, 0.3);
+      controller.changeData.call(toRaw(controller), cloneData(), 0.4);
     } catch {
       /* noop */
     }
