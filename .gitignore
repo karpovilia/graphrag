@@ -22,6 +22,7 @@ data/
 # sample is generated — ignore it. Commit real graph dirs with `git add -f`.
 graphs/
 *.log
+*-debug.png
 
 # OS / editor
 .DS_Store

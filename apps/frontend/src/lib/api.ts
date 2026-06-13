@@ -25,10 +25,10 @@ export interface RenderGraph {
 }
 
 async function j<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-  });
+  const headers = init?.body
+    ? { "content-type": "application/json", ...(init?.headers ?? {}) }
+    : init?.headers;
+  const res = await fetch(path, { ...init, headers });
   if (!res.ok) throw new Error(`${res.status} ${path}: ${await res.text()}`);
   return (res.status === 204 ? null : await res.json()) as T;
 }

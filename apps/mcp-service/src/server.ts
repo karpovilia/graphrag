@@ -13,10 +13,10 @@ const BASE = process.env.COLLAB_HTTP_URL ?? "http://127.0.0.1:4001";
 const ACTOR = process.env.AGENT_ACTOR ?? "agent:claude";
 
 async function api(path: string, init?: RequestInit): Promise<unknown> {
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-  });
+  const headers = init?.body
+    ? { "content-type": "application/json", ...(init?.headers ?? {}) }
+    : init?.headers;
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
   const text = await res.text();
   if (!res.ok) throw new Error(`${res.status} ${path}: ${text.slice(0, 300)}`);
   return text ? JSON.parse(text) : null;
