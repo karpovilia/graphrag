@@ -2,11 +2,17 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import {
   applyJournalOp,
+  deriveSchema,
+  layerRegistry,
+  reconcile,
   replayJournal,
   type CompiledSkill,
   type GraphMeta,
+  type GraphSchema,
   type GraphState,
+  type IngestionResult,
   type JournalEntry,
+  type LayerDef,
 } from "@graphcraft/core";
 
 export class ConcurrentEditError extends Error {
@@ -52,6 +58,13 @@ export class GraphStore {
 
   private dir(id: string) {
     return path.join(this.graphsDir, id);
+  }
+
+  /** Permanently delete a graph (its on-disk dir + caches). */
+  async deleteGraph(id: string): Promise<void> {
+    await fs.rm(this.dir(id), { recursive: true, force: true });
+    this.cache.delete(id);
+    this.locks.delete(id);
   }
 
   /** Serialize async work per graph id (single-writer guarantee). */
@@ -154,6 +167,86 @@ export class GraphStore {
 
   async getMeta(id: string): Promise<GraphMeta> {
     return (await this.load(id)).meta;
+  }
+
+  /** Day-2 ingestion: reconcile a freshly-built delta subgraph into the graph,
+   *  appending new data to base and the curation-driven decisions to the
+   *  journal. Returns the reconciliation report for review. */
+  async ingestDelta(id: string, delta: GraphState): Promise<IngestionResult> {
+    return this.run(id, async () => {
+      const loaded = await this.load(id);
+      const r = reconcile(loaded.current, delta, { now: new Date().toISOString() });
+      const d = this.dir(id);
+      const baseDump: GraphState = {
+        nodes: [...loaded.base.nodes, ...r.addNodes],
+        edges: [...loaded.base.edges, ...r.addEdges],
+        journal: [],
+      };
+      await fs.writeFile(path.join(d, "base.json"), JSON.stringify(baseDump, null, 2));
+      if (r.journalEntries.length)
+        await fs.appendFile(path.join(d, "journal.jsonl"), r.journalEntries.map((e) => JSON.stringify(e)).join("\n") + "\n");
+      // recompute current + meta
+      this.cache.delete(id);
+      const reloaded = await this.load(id);
+      const meta: GraphMeta = {
+        ...reloaded.meta,
+        version: reloaded.meta.version + 1,
+        nodeCount: reloaded.current.nodes.length,
+        edgeCount: reloaded.current.edges.length,
+        layersPresent: [...new Set(reloaded.current.nodes.map((n) => n.layer))],
+      };
+      await fs.writeFile(path.join(d, "meta.json"), JSON.stringify(meta, null, 2));
+      this.cache.delete(id);
+      return r;
+    });
+  }
+
+  // ── data-model schema (sidecar graphs/<id>/schema.json) ──
+  private schemaPath(id: string) {
+    return path.join(this.dir(id), "schema.json");
+  }
+  /** Stored schema if present, else derived from the live data. */
+  async getSchema(id: string): Promise<GraphSchema> {
+    try {
+      return JSON.parse(await fs.readFile(this.schemaPath(id), "utf8")) as GraphSchema;
+    } catch {
+      return deriveSchema((await this.load(id)).current);
+    }
+  }
+  async saveSchema(id: string, schema: GraphSchema): Promise<void> {
+    await fs.writeFile(this.schemaPath(id), JSON.stringify(schema, null, 2));
+  }
+  /** Re-derive from data and persist. */
+  async deriveAndSaveSchema(id: string): Promise<GraphSchema> {
+    const schema = { ...deriveSchema((await this.load(id)).current), derivedAt: new Date().toISOString() };
+    await this.saveSchema(id, schema);
+    return schema;
+  }
+
+  /** The effective layer registry (canonical + meta + present) with counts. */
+  async getLayers(id: string): Promise<(LayerDef & { count: number })[]> {
+    const loaded = await this.load(id);
+    const count = new Map<string, number>();
+    for (const n of loaded.current.nodes) count.set(n.layer, (count.get(n.layer) ?? 0) + 1);
+    return layerRegistry(loaded.meta.layers, count.keys()).map((d) => ({
+      ...d,
+      count: count.get(d.name) ?? 0,
+    }));
+  }
+
+  /** Upsert a layer definition (name/granularity/color/description) into the
+   *  per-graph registry. An annotation, not a graph edit — no version bump. */
+  async defineLayer(id: string, def: LayerDef): Promise<void> {
+    return this.run(id, async () => {
+      const loaded = await this.load(id);
+      const layers = [...(loaded.meta.layers ?? [])];
+      const i = layers.findIndex((l) => l.name === def.name);
+      if (i >= 0) layers[i] = { ...layers[i], ...def };
+      else layers.push(def);
+      const meta = { ...loaded.meta, layers };
+      await fs.writeFile(path.join(this.dir(id), "meta.json"), JSON.stringify(meta, null, 2));
+      this.cache.set(id, { ...loaded, meta });
+    });
   }
 
   // ── compiled skills (sidecar graphs/<id>/skills.json) ──

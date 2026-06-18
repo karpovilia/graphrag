@@ -15,6 +15,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "import:kb-ui-demo": "tsx scripts/import-kb-ui-demo.ts",
+    "build:graph": "tsx scripts/build-graph.ts",
     "gen:sample": "tsx scripts/gen-sample.ts",
     "install:skill": "tsx scripts/install-skill.ts"
   },

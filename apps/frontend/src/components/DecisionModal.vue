@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DecisionRequest } from "@graphcraft/shared";
 
@@ -24,19 +24,30 @@ function submitEdit() {
     /* invalid json — ignore */
   }
 }
+function defer() {
+  editing.value = false;
+  emit("resolve", "defer");
+}
+
+// Esc defers (not-now) — the card is non-blocking, so the canvas stays usable.
+function onKey(e: KeyboardEvent) {
+  if (e.key === "Escape" && props.decision) defer();
+}
+onMounted(() => window.addEventListener("keydown", onKey));
+onUnmounted(() => window.removeEventListener("keydown", onKey));
+watch(() => props.decision, () => (editing.value = false));
 </script>
 
 <template>
-  <div v-if="decision" class="decision-backdrop">
-    <div class="decision-card">
+  <transition name="slide">
+    <div v-if="decision" class="decision-card" role="dialog" aria-live="polite">
       <div class="decision-head">
-        🤖 {{ t("decision") }} <span class="muted">{{ t("by") }} {{ decision.by }}</span>
+        <span>🤖 {{ t("decision") }} <span class="muted">{{ t("by") }} {{ decision.by }}</span></span>
+        <button class="x" :title="t('defer')" @click="defer">✕</button>
       </div>
       <div class="decision-body">
         <p class="proposal">{{ decision.proposal }}</p>
-        <div class="muted small">
-          {{ decision.kind }} · {{ decision.nodeIds.length }} nodes
-        </div>
+        <div class="muted small">{{ decision.kind }} · {{ decision.nodeIds.length }} nodes</div>
         <template v-if="editing">
           <textarea v-model="editText" class="edit-area" rows="6" />
           <div class="row">
@@ -50,42 +61,59 @@ function submitEdit() {
         <button class="btn" @click="emit('resolve', 'reject')">✕ {{ t("reject") }}</button>
         <button v-if="decision.op" class="btn" @click="startEdit">✎ {{ t("edit") }}</button>
         <button class="btn" @click="emit('resolve', 'pin')">📌 {{ t("pin") }}</button>
+        <button class="btn ghost" :title="t('deferTip')" @click="defer">🕒 {{ t("defer") }}</button>
       </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 <style scoped>
-.decision-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
+/* Non-blocking corner card — the canvas stays fully usable behind it. */
 .decision-card {
-  background: var(--gc-panel, #1b1e24);
-  color: var(--gc-fg, #e8eaed);
-  width: min(440px, 92vw);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2000;
+  background: var(--gc-panel, #fff);
+  color: var(--gc-fg, #202124);
+  width: min(380px, 92vw);
+  border: 1px solid var(--gc-border, #dadce0);
+  border-left: 3px solid var(--gc-accent, #1a73e8);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
 }
 .decision-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-weight: 600;
   margin-bottom: 8px;
 }
+.x {
+  border: none;
+  background: transparent;
+  color: var(--gc-muted, #80868b);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.x:hover {
+  color: var(--gc-fg, #202124);
+}
 .proposal {
-  font-size: 15px;
-  margin: 6px 0;
+  font-size: 14px;
+  margin: 4px 0;
 }
 .decision-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 14px;
+  gap: 6px;
+  margin-top: 12px;
   flex-wrap: wrap;
+}
+.btn.ghost {
+  margin-left: auto;
+  color: var(--gc-muted, #80868b);
 }
 .edit-area {
   width: 100%;
@@ -99,9 +127,18 @@ function submitEdit() {
   margin-top: 8px;
 }
 .muted {
-  color: #9aa0a6;
+  color: var(--gc-muted, #9aa0a6);
 }
 .small {
   font-size: 12px;
+}
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateY(12px);
+  opacity: 0;
 }
 </style>

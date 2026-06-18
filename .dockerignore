@@ -1,0 +1,28 @@
+# Keep images lean AND keep private data / secrets out of the build context.
+node_modules
+**/node_modules
+dist
+**/dist
+.turbo
+**/.turbo
+.vite
+*.tsbuildinfo
+.git
+.github
+
+# Secrets — never bake into an image (injected at runtime via env_file).
+.env
+
+# Private data / runtime artifacts — never ship.
+projects
+data
+data_test
+graphs
+other
+apps/assist-monitor
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode
+*.log

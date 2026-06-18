@@ -29,6 +29,22 @@ describe("applier", () => {
     expect(state.nodes).toHaveLength(3);
   });
 
+  it("merge preserves all aliases (absorbed names + existing aliases + renamed survivor)", () => {
+    const a = makeNode({ id: "a", name: "Иван Чепиков", attributes: { aliases: ["I. Chepikov"] } });
+    const b = makeNode({ id: "b", name: "Ваня", attributes: { aliases: ["Vanya"] } });
+    const state = makeState({ nodes: [a, b], edges: [] });
+    const out = applyJournalOp(
+      state,
+      makeEntry("merge_nodes", { survivorId: "a", absorbedIds: ["b"], newName: "Иван Чепиков (HSE)" }),
+    );
+    const survivor = out.nodes.find((n) => n.id === "a")!;
+    const aliases = (survivor.attributes.aliases as string[]).slice().sort();
+    // absorbed name + absorbed alias + survivor's own alias + old (renamed) survivor name
+    expect(aliases).toEqual(["I. Chepikov", "Vanya", "Иван Чепиков", "Ваня"].sort());
+    // the canonical name is never in its own alias list
+    expect(aliases).not.toContain("Иван Чепиков (HSE)");
+  });
+
   it("merge dedups parallel edges and drops self-loops", () => {
     const a = makeNode({ id: "a" });
     const b = makeNode({ id: "b" });
@@ -175,5 +191,44 @@ describe("applier", () => {
     const aff = affectedSet(state, makeEntry("retype_node", { nodeId: "n", newType: "ORG" }));
     expect(aff.nodeIds.has("n")).toBe(true);
     expect(aff.communityIds.has("c")).toBe(true);
+  });
+
+  it("set_verified stamps who/when/asOf and clears on false", () => {
+    const n = makeNode({ id: "n" });
+    const state = makeState({ nodes: [n] });
+    const e = makeEntry("set_verified", { nodeId: "n", verified: true, asOf: "2026-01-01T00:00:00.000Z", axis: "valid" }, "user:kira");
+    const out = applyJournalOp(state, e);
+    expect(out.nodes[0]!.verified).toMatchObject({ by: "user:kira", asOf: "2026-01-01T00:00:00.000Z", axis: "valid" });
+    expect(out.nodes[0]!.verified!.at).toBe(e.createdAt);
+    const cleared = applyJournalOp(out, makeEntry("set_verified", { nodeId: "n", verified: false }));
+    expect(cleared.nodes[0]!.verified).toBeNull();
+  });
+
+  it("set_verified / set_confidence target facts: edge and node attribute", () => {
+    const a = makeNode({ id: "a", attributes: { role: "lead" } });
+    const b = makeNode({ id: "b" });
+    const e1 = makeEdge({ id: "e1", sourceId: "a", targetId: "b" });
+    let st = makeState({ nodes: [a, b], edges: [e1] });
+    // confidence + verify on an EDGE (relation fact)
+    st = applyJournalOp(st, makeEntry("set_confidence", { edgeId: "e1", confidence: 0.95 }));
+    st = applyJournalOp(st, makeEntry("set_verified", { edgeId: "e1", verified: true }, "user:k"));
+    expect(st.edges[0]!.confidenceScore).toBe(0.95);
+    expect(st.edges[0]!.verified).toMatchObject({ by: "user:k" });
+    // confidence + verify on a NODE ATTRIBUTE (attribute fact)
+    st = applyJournalOp(st, makeEntry("set_confidence", { nodeId: "a", attrKey: "role", confidence: 0.8 }));
+    st = applyJournalOp(st, makeEntry("set_verified", { nodeId: "a", attrKey: "role", verified: true }, "user:k"));
+    const meta = (st.nodes.find((n) => n.id === "a")!.attributes.__factmeta__ as Record<string, any>).role;
+    expect(meta.confidence).toBe(0.8);
+    expect(meta.verified).toMatchObject({ by: "user:k" });
+  });
+
+  it("set_layer moves a node to a new (emergent) layer with granularity", () => {
+    const n = makeNode({ id: "n", layer: "entity", granularity: 1 });
+    const state = makeState({ nodes: [n] });
+    const out = applyJournalOp(state, makeEntry("set_layer", { nodeId: "n", newLayer: "metric", granularity: 1 }));
+    expect(out.nodes[0]).toMatchObject({ layer: "metric", granularity: 1 });
+    // default granularity falls back via granularityOf (canonical community = 2)
+    const out2 = applyJournalOp(state, makeEntry("set_layer", { nodeId: "n", newLayer: "community" }));
+    expect(out2.nodes[0]).toMatchObject({ layer: "community", granularity: 2 });
   });
 });

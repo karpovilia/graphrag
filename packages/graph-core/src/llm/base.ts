@@ -18,6 +18,9 @@ export interface CompletionParams {
 
 export interface CompletionClient {
   provider: string;
+  /** The default model id this client sends requests to (may be overridden
+   *  per-call via CompletionParams.model). */
+  model?: string;
   complete(
     messages: Message[],
     params?: CompletionParams,

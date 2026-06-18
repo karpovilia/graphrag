@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 const props = defineProps<{ suggestions: Record<string, unknown>[] }>();
@@ -10,6 +11,20 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const nodeIdsOf = (s: Record<string, unknown>) => (s.targetNodeIds as string[]) ?? [];
+
+// hover = transient preview; CLICK pins a suggestion so its highlight survives
+// when you move the mouse toward those nodes (mouseleave restores the pin, not clear).
+const pinnedId = ref<string | null>(null);
+const idOf = (s: Record<string, unknown>, i: number) => (s.id as string) ?? String(i);
+function pinned(): string[] {
+  const s = props.suggestions.find((x, i) => idOf(x, i) === pinnedId.value);
+  return s ? nodeIdsOf(s) : [];
+}
+function togglePin(s: Record<string, unknown>, i: number) {
+  const id = idOf(s, i);
+  pinnedId.value = pinnedId.value === id ? null : id;
+  emit("focus", pinned());
+}
 </script>
 
 <template>
@@ -23,17 +38,19 @@ const nodeIdsOf = (s: Record<string, unknown>) => (s.targetNodeIds as string[]) 
         v-for="(s, i) in props.suggestions"
         :key="(s.id as string) ?? i"
         class="card"
+        :class="{ pinned: pinnedId === idOf(s, i) }"
         @mouseenter="emit('focus', nodeIdsOf(s))"
-        @mouseleave="emit('focus', [])"
+        @mouseleave="emit('focus', pinned())"
+        @click="togglePin(s, i)"
       >
         <div class="card-head">
           <span class="tag">{{ s.action }}</span>
-          <span class="muted small">{{ ((s.confidence as number) ?? 0).toFixed(2) }}</span>
+          <span class="muted small">{{ pinnedId === idOf(s, i) ? "📌 " : "" }}{{ ((s.confidence as number) ?? 0).toFixed(2) }}</span>
         </div>
         <div class="rationale">{{ s.rationale }}</div>
         <div class="row gap">
-          <button class="btn sm primary" @click="emit('accept', s)">✓ {{ t("accept") }}</button>
-          <button class="btn sm" @click="emit('reject', s)">✕ {{ t("reject") }}</button>
+          <button class="btn sm primary" @click.stop="emit('accept', s)">✓ {{ t("accept") }}</button>
+          <button class="btn sm" @click.stop="emit('reject', s)">✕ {{ t("reject") }}</button>
         </div>
       </li>
     </ul>
@@ -53,6 +70,12 @@ const nodeIdsOf = (s: Record<string, unknown>) => (s.targetNodeIds as string[]) 
   background: var(--gc-card, #20242c);
   border-radius: 8px;
   padding: 8px 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.card.pinned {
+  border-color: var(--gc-accent);
+  box-shadow: 0 0 0 1px var(--gc-accent) inset;
 }
 .card-head {
   display: flex;

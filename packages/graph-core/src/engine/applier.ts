@@ -1,5 +1,5 @@
-import type { Node, Edge } from "../domain/graph.js";
-import { LAYER_GRANULARITY, type Layer } from "../domain/graph.js";
+import type { Node, Edge, Verification } from "../domain/graph.js";
+import { granularityOf, FACTMETA_KEY, type Layer } from "../domain/graph.js";
 import type { JournalEntry } from "../domain/journal.js";
 import { newId, type Id } from "../domain/types.js";
 import { communityOf, type GraphState } from "./state.js";
@@ -84,6 +84,42 @@ export function applyJournalOp(
     case "update_node_name": {
       const p = parsePayload("update_node_name", entry.payload);
       nodes = updateNode(nodes, p.nodeId, { name: p.name });
+      break;
+    }
+    case "set_layer": {
+      const p = parsePayload("set_layer", entry.payload);
+      nodes = updateNode(nodes, p.nodeId, {
+        layer: p.newLayer,
+        granularity: p.granularity ?? granularityOf(p.newLayer),
+      });
+      break;
+    }
+    case "set_verified": {
+      const p = parsePayload("set_verified", entry.payload);
+      const v: Verification | null = p.verified
+        ? { by: entry.actor, at: entry.createdAt, asOf: p.asOf ?? null, axis: p.axis ?? "tx" }
+        : null;
+      if (p.edgeId) edges = updateEdge(edges, p.edgeId, { verified: v });
+      else if (p.nodeId && p.attrKey) nodes = updateFactMeta(nodes, p.nodeId, p.attrKey, { verified: v });
+      else if (p.nodeId) nodes = updateNode(nodes, p.nodeId, { verified: v });
+      break;
+    }
+    case "set_confidence": {
+      const p = parsePayload("set_confidence", entry.payload);
+      if (p.edgeId) edges = updateEdge(edges, p.edgeId, { confidenceScore: p.confidence });
+      else if (p.nodeId && p.attrKey)
+        nodes = updateFactMeta(nodes, p.nodeId, p.attrKey, { confidence: p.confidence });
+      break;
+    }
+    case "set_attribute": {
+      const p = parsePayload("set_attribute", entry.payload);
+      nodes = nodes.map((n) => {
+        if (n.id !== p.nodeId) return n;
+        const attrs = { ...n.attributes };
+        if (p.value === null || p.value === undefined) delete attrs[p.key];
+        else attrs[p.key] = p.value;
+        return { ...n, attributes: attrs };
+      });
       break;
     }
   }
@@ -183,11 +219,26 @@ export function affectedSet(
       break;
     }
     case "set_summary":
-    case "update_node_name": {
-      const nid = String(
-        (entry.payload as Record<string, unknown>).nodeId ?? "",
-      );
-      if (nid) out.nodeIds.add(nid);
+    case "update_node_name":
+    case "set_layer":
+    case "set_verified":
+    case "set_confidence":
+    case "set_attribute": {
+      const pl = entry.payload as Record<string, unknown>;
+      const nid = String(pl.nodeId ?? "");
+      const eid = String(pl.edgeId ?? "");
+      if (nid) {
+        out.nodeIds.add(nid);
+        addCommunity(nid);
+      }
+      if (eid) {
+        out.edgeIds.add(eid);
+        const edge = before.edges.find((e) => e.id === eid);
+        if (edge) {
+          out.nodeIds.add(edge.sourceId);
+          out.nodeIds.add(edge.targetId);
+        }
+      }
       break;
     }
   }
@@ -222,20 +273,43 @@ function applyMerge(
   if (absorbed.has(p.survivorId))
     throw new JournalApplyError("survivor cannot be in absorbed list");
 
-  if (p.newName != null) {
-    let seen = false;
-    nodes = nodes.map((n) => {
-      if (n.id === p.survivorId) {
-        seen = true;
-        return { ...n, name: p.newName as string };
-      }
-      return n;
-    });
-    if (!seen)
-      throw new JournalApplyError(
-        `merge_nodes: survivor ${p.survivorId} not found`,
-      );
+  // Preserve every alias so nothing is lost: the absorbed nodes' names + their
+  // existing aliases (and, when the survivor is renamed, its old name) all roll
+  // up onto the survivor's `attributes.aliases`.
+  const aliasOf = (n: Node): string[] => {
+    const a = (n.attributes as Record<string, unknown>)?.aliases;
+    return Array.isArray(a) ? a.map((x) => String(x)) : [];
+  };
+  const aliasSet = new Set<string>();
+  const addAlias = (s: string | null | undefined) => {
+    const v = (s ?? "").trim();
+    if (v) aliasSet.add(v);
+  };
+  for (const n of nodes) {
+    if (!absorbed.has(n.id)) continue;
+    addAlias(n.name);
+    for (const a of aliasOf(n)) addAlias(a);
   }
+
+  let seen = false;
+  nodes = nodes.map((n) => {
+    if (n.id !== p.survivorId) return n;
+    seen = true;
+    for (const a of aliasOf(n)) addAlias(a); // keep the survivor's own aliases
+    const finalName = p.newName != null ? (p.newName as string) : n.name;
+    if (p.newName != null) addAlias(n.name); // renamed → old name is an alias
+    aliasSet.delete(finalName); // a node is never its own alias
+    const aliases = [...aliasSet];
+    const attributes =
+      aliases.length > 0
+        ? { ...n.attributes, aliases }
+        : n.attributes;
+    return { ...n, name: finalName, attributes };
+  });
+  if (!seen)
+    throw new JournalApplyError(
+      `merge_nodes: survivor ${p.survivorId} not found`,
+    );
 
   nodes = nodes.filter((n) => !absorbed.has(n.id));
   const redirect = new Map<Id, Id>();
@@ -351,6 +425,35 @@ function updateNode(nodes: Node[], id: Id, updates: Partial<Node>): Node[] {
   return out;
 }
 
+function updateEdge(edges: Edge[], id: Id, updates: Partial<Edge>): Edge[] {
+  let found = false;
+  const out = edges.map((e) => {
+    if (e.id === id) {
+      found = true;
+      return { ...e, ...updates };
+    }
+    return e;
+  });
+  if (!found) throw new JournalApplyError(`edge ${id} not found`);
+  return out;
+}
+
+/** Set per-attribute fact metadata (confidence/verified) under the node's
+ *  reserved __factmeta__ attribute. */
+function updateFactMeta(
+  nodes: Node[],
+  id: Id,
+  attrKey: string,
+  patch: { confidence?: number | null; verified?: Verification | null },
+): Node[] {
+  return updateNode(nodes, id, {} as Partial<Node>).map((n) => {
+    if (n.id !== id) return n;
+    const meta = { ...((n.attributes[FACTMETA_KEY] as Record<string, unknown>) ?? {}) };
+    meta[attrKey] = { ...((meta[attrKey] as Record<string, unknown>) ?? {}), ...patch };
+    return { ...n, attributes: { ...n.attributes, [FACTMETA_KEY]: meta } };
+  });
+}
+
 /** Redirect edge endpoints; drop self-loops; dedup identical
  *  (src,tgt,type,relation), keeping the first. */
 function redirectEdges(edges: Edge[], redirect: Map<Id, Id>): Edge[] {
@@ -390,8 +493,7 @@ export function coerceNode(spec: Record<string, unknown>, graphId: Id): Node {
     graphId: (spec.graphId as string) ?? graphId,
     layer,
     type: (spec.type as string) ?? "MISC",
-    granularity:
-      (spec.granularity as number) ?? LAYER_GRANULARITY[layer] ?? 1,
+    granularity: (spec.granularity as number) ?? granularityOf(layer),
     name: (spec.name as string) ?? "",
     summary: (spec.summary as string | null) ?? null,
     attributes: (spec.attributes as Record<string, unknown>) ?? {},

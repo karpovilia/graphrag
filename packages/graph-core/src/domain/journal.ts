@@ -14,6 +14,10 @@ export const JOURNAL_OPS = [
   "add_edge",
   "set_summary",
   "update_node_name",
+  "set_layer",
+  "set_verified",
+  "set_confidence",
+  "set_attribute",
 ] as const;
 export type JournalOp = (typeof JOURNAL_OPS)[number];
 

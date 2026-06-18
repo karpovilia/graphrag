@@ -1,5 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy",
+    "NODE_USE_ENV_PROXY",
+    "DEEPSEEK_API_KEY", "DEEPSEEK_MODEL", "DEEPSEEK_BASE_URL", "DSKEY_FILE",
+    "LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL", "LLM_PROVIDER",
+    "ZAI_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY",
+    "EMBEDDINGS_API_KEY", "EMBEDDINGS_BASE_URL", "EMBEDDINGS_MODEL", "EMBEDDINGS_PROVIDER"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

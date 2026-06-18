@@ -73,6 +73,41 @@ export const updateNodeNamePayload = z.object({
   name: z.string(),
 });
 
+export const setLayerPayload = z.object({
+  nodeId: z.string(),
+  newLayer: z.string(),
+  /** Explicit granularity for an emergent layer; defaults via granularityOf. */
+  granularity: z.number().nullish(),
+  oldLayer: z.string().nullish(),
+});
+
+// Verify a FACT: a node (summary), an edge (relation), or a node attribute.
+export const setVerifiedPayload = z.object({
+  nodeId: z.string().nullish(),
+  edgeId: z.string().nullish(),
+  attrKey: z.string().nullish(),
+  /** false → clear the verification. */
+  verified: z.boolean(),
+  /** The temporal view the curator confirmed in (null = live). */
+  asOf: z.string().nullish(),
+  axis: z.enum(["tx", "valid"]).nullish(),
+});
+
+// Set/clear a scalar attribute value (a field fact). value null → remove.
+export const setAttributePayload = z.object({
+  nodeId: z.string(),
+  key: z.string(),
+  value: z.unknown(),
+});
+
+// Claude's numeric confidence (0–1) on a fact: edge, or node attribute.
+export const setConfidencePayload = z.object({
+  edgeId: z.string().nullish(),
+  nodeId: z.string().nullish(),
+  attrKey: z.string().nullish(),
+  confidence: z.number().min(0).max(1),
+});
+
 export const OP_SCHEMAS = {
   merge_nodes: mergeNodesPayload,
   split_node: splitNodePayload,
@@ -84,6 +119,10 @@ export const OP_SCHEMAS = {
   add_edge: addEdgePayload,
   set_summary: setSummaryPayload,
   update_node_name: updateNodeNamePayload,
+  set_layer: setLayerPayload,
+  set_verified: setVerifiedPayload,
+  set_confidence: setConfidencePayload,
+  set_attribute: setAttributePayload,
 } as const satisfies Record<JournalOp, z.ZodType>;
 
 export type PayloadOf<O extends JournalOp> = z.infer<(typeof OP_SCHEMAS)[O]>;

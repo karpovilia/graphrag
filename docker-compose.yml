@@ -1,0 +1,29 @@
+# GraphCraft — container stack: collab hub + nginx-served frontend.
+# Copy .env.example → .env and set any secrets before `docker compose up`.
+services:
+  collab:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.collab
+    env_file: .env
+    environment:
+      COLLAB_PORT: "4001"
+      GRAPHS_DIR: /app/graphs
+    volumes:
+      - graphcraft_graphs:/app/graphs
+    ports:
+      - "4001:4001"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    depends_on:
+      - collab
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  graphcraft_graphs:
