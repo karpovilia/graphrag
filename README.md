@@ -41,8 +41,8 @@ with provenance back to the source chunks.
 │  (Vue 3 +    │  /api  /ws      │  rooms · presence ·   │  :4001
 │   canvas)    │ ◀───────────── │  decisions · RAG      │
 └──────────────┘                 └──────────┬────────────┘
-        ▲                                    │ reads/writes
-        │ MCP (stdio)                        ▼
+        ▲                                   │ reads/writes
+        │ MCP (stdio)                       ▼
 ┌──────────────┐                 ┌──────────────────────┐
 │  mcp-service │ ─────────────▶ │  per-graph stores    │  graphs/<id>/
 │  (agent API) │                 │  (portable JSON)     │
