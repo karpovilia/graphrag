@@ -36,16 +36,16 @@ with provenance back to the source chunks.
 ## Architecture
 
 ```
-┌──────────────┐    WS + HTTP    ┌──────────────────────┐
-│  frontend     │ ──────────────▶ │ graph-collab-service  │  Fastify + ws hub
-│  (Vue 3 +     │  /api  /ws      │  rooms · presence ·    │  :4001
-│   canvas)     │ ◀────────────── │  decisions · RAG       │
+┌──────────────┐    WS + HTTP    ┌───────────────────────┐
+│  frontend    │ ──────────────▶│ graph-collab-service  │  Fastify + ws hub
+│  (Vue 3 +    │  /api  /ws      │  rooms · presence ·   │  :4001
+│   canvas)    │ ◀───────────── │  decisions · RAG      │
 └──────────────┘                 └──────────┬────────────┘
         ▲                                    │ reads/writes
         │ MCP (stdio)                        ▼
 ┌──────────────┐                 ┌──────────────────────┐
-│  mcp-service  │ ──────────────▶ │  per-graph stores      │  graphs/<id>/
-│  (agent API)  │                 │  (portable JSON)       │
+│  mcp-service │ ─────────────▶ │  per-graph stores    │  graphs/<id>/
+│  (agent API) │                 │  (portable JSON)     │
 └──────────────┘                 └──────────────────────┘
 ```
 
@@ -128,17 +128,6 @@ Container deployment (Docker Compose: hub + nginx-served frontend) is documented
 cp .env.example .env          # set secrets
 docker compose up -d --build
 ```
-
----
-
-## Security
-
-- **Never commit secrets.** `.env` is git-ignored; only `.env.example` (with empty
-  values) is tracked. Bring your own keys.
-- **No data ships in this repo.** Ingested corpora (`projects/`, `data/`,
-  `graphs/`, `data_test/`) are git-ignored — they may contain PII / internal links.
-  Build your own from your sources.
-- Rotate any key that has ever been pasted into a tracked file.
 
 ---
 

@@ -18,10 +18,8 @@ dist/
 
 # Data / runtime artifacts
 data/
-# Private ingested corpora (PII / internal links) and local test data —
-# NEVER publish. Ship only .env.example + code; bring your own data.
 projects/
-data_test/
+
 # Local-only dev helper (hardcoded machine paths)
 apps/assist-monitor/
 # Per-graph stores are portable & git-mergeable by design, but the demo
